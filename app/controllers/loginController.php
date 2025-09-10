@@ -28,8 +28,8 @@ class loginController extends Controller implements ControllerInterface
       }
   
       // Data pasada del formulario
-      $usuario  = clean($_POST['usuario']);
-      $password = clean($_POST['password']);
+      $usuario  = sanitize_input($_POST['usuario']);
+      $password = sanitize_input($_POST['password']);
   
       // Información del usuario loggeado, simplemente se puede reemplazar aquí con un query a la base de datos
       // para cargar la información del usuario si es existente
