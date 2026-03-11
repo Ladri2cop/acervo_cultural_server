@@ -694,7 +694,7 @@ class adminController extends Controller implements ControllerInterface
       'id_modulo'             => 5
     ];
 
-    // Validación básica
+    // // Validación básica
     // if (empty($data['codigo_interno']) || empty($data['no_inventario']) || empty($data['nombre_titulo_pieza'])) {
     //   header('Content-Type: application/json');
     //   echo json_encode([
