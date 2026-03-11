@@ -29,4 +29,4 @@
 <?php echo load_scripts(); ?>
 
 <!-- Scripts personalizados Bee Framework -->
-<script src="<?php echo JS . 'main.min.js?v=' . get_asset_version(); ?>"></script>
+<script src="<?php echo JS . 'main.js?v=' . get_asset_version(); ?>"></script>

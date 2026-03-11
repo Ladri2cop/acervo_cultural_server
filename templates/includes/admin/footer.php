@@ -27,13 +27,20 @@
 <?php echo load_bee_obj(); ?>
 
 <!-- Scripts personalizados Bee Framework -->
-<script src="<?php echo JS . 'main.min.js?v=' . get_asset_version(); ?>"></script>
+<script src="<?php echo JS . 'main.js?v=' . get_asset_version(); ?>"></script>
 
 <!-- Chartjs -->
 <script src="<?php echo JS . 'admin/Chart.min.js'; ?>"></script>
 
 <!-- Custom scripts for all pages-->
 <script src="<?php echo JS . 'admin/sb-admin-2.min.js'; ?>"></script>
+
+<!-- Custom scripts for all pages-->
+<script src="<?php echo JS . 'admin/admin.js'; ?>"></script>
+<script src="<?php if (getCurrentPage()) { echo JS . 'admin/' . getCurrentPage() . '.js'; } ?>"></script>
+
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <!-- Scripts registrados manualmente -->
 <?php echo load_scripts(); ?>

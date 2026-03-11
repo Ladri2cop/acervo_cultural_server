@@ -72,7 +72,7 @@ class Bee
   private $missing_params      = false;
   private $is_ajax             = false;
   private $is_endpoint         = false;
-  private $endpoints           = ['api']; // Rutas o endpoints autorizados de la API por defecto
+  private $endpoints           = ['api', 'acervoGeneral']; // Rutas o endpoints autorizados de la API por defecto
   private $ajaxes              = ['ajax']; // Rutas o controladores para procesar peticiones asíncronas o AJAX
 
   // La función principal que se ejecuta al instanciar nuestra clase

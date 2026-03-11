@@ -8,10 +8,10 @@ class creatorController extends Controller implements ControllerInterface
   function __construct()
   {
     // Prevenir el ingreso en Producción
-    if (!is_local()) {
-      Flasher::error(get_bee_message(0));
-      Redirect::to(DEFAULT_CONTROLLER);
-    }
+    // if (!is_local()) {
+    //   Flasher::error(get_bee_message(0));
+    //   Redirect::to(DEFAULT_CONTROLLER);
+    // }
 
     // Ejecutar la funcionalidad del Controller padre
     parent::__construct();

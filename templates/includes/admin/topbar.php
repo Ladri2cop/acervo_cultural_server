@@ -1,9 +1,9 @@
 <!-- Topbar -->
-<nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow">
+<nav class="navbar navbar-expand navbar-light bg-white topbar mb-4 static-top shadow px-2">
 
   <!-- Sidebar Toggle (Topbar) -->
-  <button id="sidebarToggleTop" class="btn btn-link d-md-none rounded-circle mr-3">
-    <i class="fa fa-bars"></i>
+  <button class="btn btn-menu__custom" id="sidebarToggle">
+    <i class="bx bx-arrow-to-left-stroke" id="toggleIcon"></i>
   </button>
 
   <!-- Topbar Search -->

@@ -1,22 +1,24 @@
 <?php
+
 /**
  * Plantilla general de modelos
  * @version 1.1.8
  *
  * Modelo de producto
  */
-class productoModel extends Model {
+class acervoModel extends Model
+{
   /**
-  * Nombre de la tabla
-  */
+   * Nombre de la tabla
+   */
   public static $t1 = 'productos';
-  
+
   // Nombre de tablas secundarias
   //public static $t2 = '__tabla 2__'; 
   //public static $t3 = '__tabla 3__'; 
 
   // Esquema del Modelo
-  
+
 
   function __construct()
   {
@@ -27,7 +29,7 @@ class productoModel extends Model {
   {
     return parent::add(self::$t1, $data);
   }
-  
+
   static function all()
   {
     // Todos los registros
@@ -66,4 +68,3 @@ class productoModel extends Model {
     return parent::remove(self::$t1, ['id' => $id]);
   }
 }
-

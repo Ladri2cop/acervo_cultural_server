@@ -190,13 +190,13 @@ function json_build(int $status = 200, $data = [], string $msg = '', $error_code
 	}
 
 	$json =
-	[
-		'status'     => $status,
-		'error'      => false,
-		'error_code' => $error_code,
-		'msg'        => $msg,
-		'data'       => $data
-	];
+		[
+			'status'     => $status,
+			'error'      => false,
+			'error_code' => $error_code,
+			'msg'        => $msg,
+			'data'       => $data
+		];
 
 	if (in_array($status, [400, 403, 404, 405, 500])) {
 		$json['error'] = true;
@@ -1418,6 +1418,36 @@ function load_scripts()
 }
 
 /**
+ * Regresa la sección actual del sistema admin
+ * Ejemplo: formularios, usuarios, ajustes, etc.
+ *
+ * @param string|null $url
+ * @return string|null
+ */
+function getCurrentPage($url = null)
+{
+	// Si no se pasa una URL, se usa la actual
+	if ($url === null) {
+		$url = $_SERVER['REQUEST_URI'];
+	}
+
+	// Elimina parámetros GET si existen
+	$url = parse_url($url, PHP_URL_PATH);
+
+	// Divide la URL en segmentos
+	$segmentos = explode('/', trim($url, '/'));
+
+	// Busca el índice de 'admin' para encontrar la sección siguiente
+	$indiceAdmin = array_search('admin', $segmentos);
+
+	if ($indiceAdmin !== false && isset($segmentos[$indiceAdmin + 1])) {
+		return $segmentos[$indiceAdmin + 1]; // Ej: 'formularios', 'usuarios', etc.
+	}
+
+	return null; // No se encontró la sección
+}
+
+/**
  * Registar un nuevo valor para el objeto Bee
  * insertado en el pie del sitio como objeto para
  * acceder a los parámetros de forma sencilla
@@ -2040,10 +2070,10 @@ function get_new_password($password = null)
 	$password = $password === null ? random_password() : $password;
 
 	return
-	[
-		'password' => $password,
-		'hash'     => password_hash($password . AUTH_SALT, PASSWORD_BCRYPT)
-	];
+		[
+			'password' => $password,
+			'hash'     => password_hash($password . AUTH_SALT, PASSWORD_BCRYPT)
+		];
 }
 
 /**
@@ -2064,10 +2094,10 @@ function bee_die(string $error, $headers = [])
 	}
 
 	$data =
-	[
-		'title' => 'Hubo un error',
-		'error' => $error
-	];
+		[
+			'title' => 'Hubo un error',
+			'error' => $error
+		];
 
 	$html = get_module('bee/generalError', $data);
 	die($html);
@@ -2086,10 +2116,10 @@ function bee_db_die(string $error)
 	header("Pragma: no-cache");
 
 	$data =
-	[
-		'title' => 'Error en la base de datos',
-		'error' => $error
-	];
+		[
+			'title' => 'Error en la base de datos',
+			'error' => $error
+		];
 
 	echo get_module('bee/dbError', $data);
 	die();
@@ -2655,7 +2685,7 @@ function get_site_charset()
 function get_referer_url($fallbackUrl = null)
 {
 	// TODO: Implementar al inicio de la carga del sitio para almacenarla y tenerla disponible
-	
+
 	// Verificar si el encabezado 'Referer' está presente
 	if (isset($_SERVER['HTTP_REFERER'])) {
 		// Obtener la URL de referencia
@@ -2698,16 +2728,36 @@ function is_temporary_email($email)
 {
 	// Lista de proveedores de correo temporal
 	$temporaryDomains = [
-		'guerrillamail.com', 'mailinator.com', 'sharklasers.com', 'getnada.com', 'fakeinbox.com',
-		'dispostable.com', 'yopmail.com', 'tempmail.com', 'mailnesia.com', 'jetable.com',
-		'mintemail.com', 'emailondeck.com', 'throwawaymail.com', 'spambog.com', 'mailexpire.com',
-		'mailcatch.com', 'inboxbear.com', '10minutemail.com', 'temp-mail.com', 'burnermail.io',
-		'tempmailaddress.com', '20minutemail.com', 'maildrop.cc', 'trashmail.com', 'mailimate.com'
+		'guerrillamail.com',
+		'mailinator.com',
+		'sharklasers.com',
+		'getnada.com',
+		'fakeinbox.com',
+		'dispostable.com',
+		'yopmail.com',
+		'tempmail.com',
+		'mailnesia.com',
+		'jetable.com',
+		'mintemail.com',
+		'emailondeck.com',
+		'throwawaymail.com',
+		'spambog.com',
+		'mailexpire.com',
+		'mailcatch.com',
+		'inboxbear.com',
+		'10minutemail.com',
+		'temp-mail.com',
+		'burnermail.io',
+		'tempmailaddress.com',
+		'20minutemail.com',
+		'maildrop.cc',
+		'trashmail.com',
+		'mailimate.com'
 	];
 
 	// Sepára los elementos del correo electrónico
 	$emailParts = explode('@', $email);
-	
+
 	// Contar las partes del correo electrónico
 	if (count($emailParts) !== 2) {
 		return false;
@@ -2718,7 +2768,7 @@ function is_temporary_email($email)
 
 	// buscar en el array de dominios no autorizados
 	if (!in_array($domain, $temporaryDomains)) {
-		return false; 
+		return false;
 	}
 
 	return true; // se encontró dentro de la lista
@@ -2742,10 +2792,11 @@ function new_anchor(string $anchor)
  * @param string $string
  * @return string
  */
-function remove_accents(string $string) {
+function remove_accents(string $string)
+{
 	$accents     = array('á', 'é', 'í', 'ó', 'ú', 'ü', 'Á', 'É', 'Í', 'Ó', 'Ú', 'Ü', 'ñ', 'Ñ');
 	$substitutes = array('a', 'e', 'i', 'o', 'u', 'u', 'A', 'E', 'I', 'O', 'U', 'U', 'n', 'N');
-	
+
 	return strtr($string, array_combine($accents, $substitutes));
 }
 
@@ -2756,7 +2807,7 @@ function remove_accents(string $string) {
  */
 function get_cur_page()
 {
-	return CUR_PAGE;	
+	return CUR_PAGE;
 }
 
 /**
@@ -2769,7 +2820,7 @@ function remove_dir(string $dir)
 {
 	if (is_dir($dir)) {
 		$objects = scandir($dir);
-		
+
 		foreach ($objects as $object) {
 			if ($object != "." && $object != "..") {
 				if (is_dir($dir . DIRECTORY_SEPARATOR . $object) && !is_link($dir . "/" . $object)) {
@@ -2796,7 +2847,6 @@ function can_user(string $role, string $permission)
 	try {
 		$role = new BeeRoleManager($role);
 		return $role->can($permission);
-		
 	} catch (Exception $e) {
 		return false;
 	}
@@ -2807,6 +2857,7 @@ function can_user(string $role, string $permission)
  *
  * @return boolean
  */
-function is_ajax() {
+function is_ajax()
+{
 	return defined('DOING_AJAX') && DOING_AJAX === true;
 }

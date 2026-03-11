@@ -36,7 +36,7 @@ class BeeFormBuilder
    * @var array
    */
   private $classes      = [];
-  
+
   /**
    * El método a utilizar, puede ser sólo GET o POST
    *
@@ -108,256 +108,9 @@ class BeeFormBuilder
     $this->encType  = $sendFiles === true ? 'multipart/form-data' : '';
   }
 
-  /**
-   * Método general para agregar campos repetitivos en estructura
-   *
-   * @param string $name
-   * @param string $type
-   * @param string $label
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @param array $options
-   * @param string $defaultValue
-   * @return void
-   */
-  private function addField($name, $type, $label, $classes = [], $id = null, $required = false, $options = [], $defaultValue = null)
+  public function addField(array $field)
   {
-    $field = 
-    [
-      'name'         => $name,
-      'type'         => $type,
-      'label'        => $label,
-      'classes'      => $classes,
-      'id'           => $id,
-      'options'      => $options,
-      'defaultValue' => $defaultValue,
-      'required'     => $required === true
-    ];
-
     $this->fields[] = $field;
-  }
-
-  /**
-   * Agrega un campo personalizado o varios, básicamente inserta código html en el formulario
-   *
-   * @param string $fields
-   * @return void
-   */
-  function addCustomFields($fields)
-  {
-    $customField = 
-    [
-      'name'         => null,
-      'type'         => 'custom',
-      'label'        => null,
-      'classes'      => [],
-      'id'           => null,
-      'options'      => [],
-      'defaultValue' => null,
-      'required'     => null,
-      'content'      => $fields
-    ];
-
-    $this->fields[]       = $customField;
-
-    $this->customFields[] = $fields;
-  }
-
-  /**
-   * Agrega un campo escondido o hidden
-   *
-   * @param string $name
-   * @param string $label
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @param string $defaultValue
-   * @return void
-   */
-  public function addHiddenField($name, $label, $classes = [], $id = null, $required = false, $defaultValue = null)
-  {
-    $this->addField($name, 'hidden', $label, $classes, $id, $required, [], $defaultValue);
-  }
-
-  /**
-   * Agrega un campo de texto al formulario
-   *
-   * @param string $name
-   * @param string $label
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @param string $defaultValue
-   * @return void
-   */
-  public function addTextField($name, $label, $classes = [], $id = null, $required = false, $defaultValue = null)
-  {
-    $this->addField($name, 'text', $label, $classes, $id, $required, [], $defaultValue);
-  }
-
-  /**
-   * Agrega un campo de tipo password o contraseña
-   *
-   * @param string $name
-   * @param string $label
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @param string $defaultValue
-   * @return void
-   */
-  public function addPasswordField($name, $label, $classes = [], $id = null, $required = false, $defaultValue = null)
-  {
-    $this->addField($name, 'password', $label, $classes, $id, $required, [], $defaultValue);
-  }
-
-  /**
-   * Agrega un campo de tipo email
-   *
-   * @param string $name
-   * @param string $label
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @param string $defaultValue
-   * @return void
-   */
-  public function addEmailField($name, $label, $classes = [], $id = null, $required = false, $defaultValue = null)
-  {
-    $this->addField($name, 'email', $label, $classes, $id, $required, [], $defaultValue);
-  }
-
-  /**
-   * Agrega un campo de tipo select y sus opciones
-   *
-   * @param string $name
-   * @param string $label
-   * @param array $options
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @param string $defaultValue
-   * @return void
-   */
-  public function addSelectField($name, $label, $options = [], $classes = [], $id = null, $required = false, $defaultValue = null)
-  {
-    $this->addField($name, 'select', $label, $classes, $id, $required, $options, $defaultValue);
-  }
-
-  /**
-   * Agrega un campo de tipo checkbox
-   *
-   * @param string $name
-   * @param string $label
-   * @param string $value
-   * @param array $classes
-   * @param string $id
-   * @param boolean $checked
-   * @param boolean $required
-   * @return void
-   */
-  public function addCheckboxField($name, $label, $value, $classes = [], $id = null, $checked = false, $required = false)
-  {
-    $field = 
-    [
-      'name'     => $name,
-      'type'     => 'checkbox',
-      'label'    => $label,
-      'value'    => $value,
-      'classes'  => $classes,
-      'id'       => $id,
-      'checked'  => $checked,
-      'required' => $required
-    ];
-
-    $this->fields[] = $field;
-  }
-
-  /**
-   * Agrega un campo tipo radio
-   *
-   * @param string $name
-   * @param string $label
-   * @param string $value
-   * @param array $classes
-   * @param string $id
-   * @param boolean $checked
-   * @param boolean $required
-   * @return void
-   */
-  public function addRadioField($name, $label, $value, $classes = [], $id = null, $checked = false, $required = false)
-  {
-    $field = 
-    [
-      'name'     => $name,
-      'type'     => 'radio',
-      'label'    => $label,
-      'value'    => $value,
-      'classes'  => $classes,
-      'id'       => $id,
-      'checked'  => $checked,
-      'required' => $required
-    ];
-
-    $this->fields[] = $field;
-  }
-
-  /**
-   * Agrega un campo textarea al formulario
-   *
-   * @param string $name
-   * @param string $label
-   * @param int $rows
-   * @param int $cols
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @param string $defaultValue
-   * @return void
-   */
-  public function addTextareaField($name, $label, $rows, $cols, $classes = [], $id = null, $required = false, $defaultValue = null)
-  {
-    $field = 
-    [
-      'name'         => $name,
-      'type'         => 'textarea',
-      'label'        => $label,
-      'rows'         => $rows,
-      'cols'         => $cols,
-      'classes'      => $classes,
-      'id'           => $id,
-      'defaultValue' => $defaultValue,
-      'required'     => $required === true
-    ];
-
-    $this->fields[] = $field;
-  }
-
-  /**
-   * Agrega un campo de archivo o file
-   *
-   * @param string $name
-   * @param string $label
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @return void
-   */
-  public function addFileField($name, $label, $classes = [], $id = null, $required = false)
-  {
-    $field = 
-    [
-      'name'     => $name,
-      'type'     => 'file',
-      'label'    => $label,
-      'classes'  => $classes,
-      'id'       => $id,
-      'required' => $required
-    ];
-
-    $this->fields[] = $field;
-    $this->files[]  = $name;
   }
 
   /**
@@ -372,138 +125,44 @@ class BeeFormBuilder
    */
   public function addButton($name, $type, $value, $classes = [], $id = null)
   {
-    $button = 
-    [
-      'name'    => $name,
-      'type'    => $type,
-      'value'   => $value,
-      'id'      => $id,
-      'classes' => $classes
-    ];
+    $button =
+      [
+        'name'    => $name,
+        'type'    => $type,
+        'value'   => $value,
+        'id'      => $id,
+        'classes' => $classes
+      ];
 
     $this->buttons[] = $button;
   }
 
   /**
-   * Agrega un campo de tipo slider o range
+   * Agrega un campo personalizado o varios, básicamente inserta código html en el formulario
    *
-   * @param strin $name
-   * @param string $label
-   * @param float $min
-   * @param float $max
-   * @param float $step
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @param mixed $defaultValue
+   * @param string $fields
    * @return void
    */
-  public function addSliderField($name, $label, $min, $max, $step, $classes = [], $id = null, $required = false, $defaultValue = null)
+  function addCustomFields($fields)
   {
-    $field = 
-    [
-      'name'         => $name,
-      'type'         => 'slider',
-      'label'        => $label,
-      'min'          => $min,
-      'max'          => $max,
-      'step'         => $step,
-      'classes'      => $classes,
-      'id'           => $id,
-      'defaultValue' => $defaultValue,
-      'required'     => $required
-    ];
+    $customField =
+      [
+        'name'         => null,
+        'type'         => 'custom',
+        'label'        => null,
+        'classes'      => [],
+        'id'           => null,
+        'options'      => [],
+        'defaultValue' => null,
+        'required'     => null,
+        'content'      => $fields
+      ];
 
-    $this->fields[]  = $field;
-    $this->sliders[] = $name;
+    $this->fields[]       = $customField;
+
+    $this->customFields[] = $fields;
   }
 
-  /**
-   * Agrega un campo de tipo color
-   *
-   * @param string $name
-   * @param string $label
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @param string $defaultValue
-   * @return void
-   */
-  public function addColorField($name, $label, $classes = [], $id = null, $required = false, $defaultValue = null)
-  {
-    $field = 
-    [
-      'name'         => $name,
-      'type'         => 'color',
-      'label'        => $label,
-      'classes'      => $classes,
-      'id'           => $id,
-      'required'     => $required,
-      'defaultValue' => $defaultValue
-    ];
-
-    $this->fields[] = $field;
-  }
-
-  /**
-   * Agrega un campo de tipo número
-   *
-   * @param string $name
-   * @param string $label
-   * @param string $min
-   * @param float $max
-   * @param float $step
-   * @param float $defaultValue
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @return void
-   */
-  public function addNumberField($name, $label, $min = null, $max = null, $step = null, $defaultValue = null, $classes = [], $id = null, $required = false, )
-  {
-    $field = 
-    [
-      'name'         => $name,
-      'type'         => 'number',
-      'label'        => $label,
-      'min'          => $min,
-      'max'          => $max,
-      'step'         => $step,
-      'defaultValue' => $defaultValue,
-      'classes'      => $classes,
-      'id'           => $id,
-      'required'     => $required
-    ];
-
-    $this->fields[] = $field;
-  }
-
-  /**
-   * Agregar un campo de tipo fecha o date
-   *
-   * @param string $name
-   * @param string $label
-   * @param string $defaultValue
-   * @param array $classes
-   * @param string $id
-   * @param boolean $required
-   * @return void
-   */
-  public function addDateField($name, $label, $defaultValue = null, $classes = [], $id = null, $required = false)
-  {
-    $field = 
-    [
-      'name'         => $name,
-      'type'         => 'date',
-      'label'        => $label,
-      'defaultValue' => $defaultValue,
-      'classes'      => $classes,
-      'id'           => $id,
-      'required'     => $required
-    ];
-
-    $this->fields[] = $field;
-  }
 
   /**
    * Procesa todos los campos y elementos agregados del formulario
@@ -512,88 +171,98 @@ class BeeFormBuilder
    */
   private function buildForm()
   {
-    $this->formHtml = sprintf('<form id="%s" data-form-name="%s" class="%s" action="%s" method="%s" %s>', 
-      $this->id, 
-      $this->formName, 
+    $this->formHtml = sprintf(
+      '<form id="%s" data-form-name="%s" class="%s" action="%s" method="%s" %s>',
+      $this->id,
+      $this->formName,
       implode(' ', $this->classes),
-      $this->action, 
-      $this->method, 
+      $this->action,
+      $this->method,
       !empty($this->encType) ? sprintf('enctype="%s"', $this->encType) : ''
     );
 
-    // Procesamiento de todos los inputs y elementos del formulario
+    $this->formHtml .= '<div class="row">'; //Aquí quiero que se defina el tamaño de las columnas
+
     foreach ($this->fields as $field) {
       $fieldName    = $field['name'];
       $fieldType    = $field['type'];
       $fieldLabel   = $field['label'];
-      $fieldClasses = empty($field['classes']) ? 'form-label' : implode(' ', $field['classes']);
+      $fieldClasses = $field['class'];
       $fieldId      = $field['id'];
-      $fieldOptions = isset($field['options']) ? $field['options'] : [];
-      $fieldValue   = isset($field['value']) ? $field['value'] : '';
-      $defaultValue = isset($field['defaultValue']) ? $field['defaultValue'] : '';
-      $required     = $field['required'];
-      
-      $specialTypes = ['hidden','checkbox','radio','custom'];
+      $fieldOptions = $field['options'] ?? [];
+      $fieldValue   = $field['value'] ?? '';
+      $defaultValue = $field['defaultValue'] ?? '';
+      $required     = $field['required'] ? 'required' : '';
+      $placeholder  = !empty($field['placeholder']) ? sprintf('placeholder="%s"', htmlspecialchars($field['placeholder'])) : '';
 
-      // Label y grupo del input, no mostrar si es hidden para evitar espaciados no deseados
+      $specialTypes = ['hidden', 'checkbox', 'radio', 'custom'];
+
       if (!in_array($fieldType, $specialTypes)) {
-        $this->formHtml .= '<div class="mb-3">';
-        $this->formHtml .= sprintf('<label for="%s">%s%s</label>', 
-          $fieldId, 
+        $columnClass = !empty($field['column_class'])
+          ? $field['column_class']
+          : (!empty($field['full_width']) && $field['full_width'] === true
+            ? 'col-12 mb-3'
+            : 'col-12 col-md-6 col-lg-4 mb-3');
+
+        $this->formHtml .= '<div class="' . $columnClass . '">';
+        $this->formHtml .= sprintf(
+          '<label for="%s">%s%s</label>',
+          $fieldId,
           $fieldLabel,
-          $required === true ? ' <span class="text-danger">*</span>' : ''
+          $required ? ' <span class="text-danger">*</span>' : ''
         );
       }
 
       switch ($fieldType) {
         case 'select':
-          $this->formHtml .= sprintf('<select name="%s" id="%s" class="%s" %s>',
+          $this->formHtml .= sprintf(
+            '<select name="%s" id="%s" class="%s" %s>',
             $fieldName,
             $fieldId,
             $fieldClasses,
-            $required === true ? 'required' : ''
+            $required
           );
-    
-          foreach ($fieldOptions as $optionValue => $optionLabel) {
+          foreach ($fieldOptions as $key => $value) {
+            $optionValue = is_numeric($key) ? $value : $key;
+            $optionLabel = $value;
             $selected = ($optionValue === $defaultValue) ? 'selected' : '';
-            
-            $this->formHtml .= sprintf('<option value="%s" %s>%s</option>',
-              $optionValue,
+            $this->formHtml .= sprintf(
+              '<option value="%s" %s>%s</option>',
+              htmlspecialchars($optionValue),
               $selected,
-              $optionLabel
+              htmlspecialchars($optionLabel)
             );
           }
-    
           $this->formHtml .= '</select>';
           break;
-        
+
         case 'textarea':
           $this->formHtml .= sprintf(
-            '<textarea name="%s" id="%s" rows="%s" cols="%s" class="%s" %s>%s</textarea>',
+            '<textarea name="%s" id="%s" rows="%s" cols="%s" class="%s" %s %s>%s</textarea>',
             $fieldName,
             $fieldId,
             $field['rows'],
             $field['cols'],
             $fieldClasses,
-            $required === true ? 'required' : '',
-            $defaultValue
+            $required,
+            $placeholder,
+            htmlspecialchars($defaultValue)
           );
           break;
 
-        // TODO: Mejorar la UI con base a los componentes de Bootstrap 5
         case 'checkbox':
         case 'radio':
-          $checked = $field['checked'] ? 'checked' : '';
+          $checked = !empty($field['checked']) ? 'checked' : '';
           $this->formHtml .= '<div class="form-check mb-3">';
           $this->formHtml .= sprintf(
-            '<input type="%s" name="%s" id="%s" value="%s" %s class="%s">',
+            '<input type="%s" name="%s" id="%s" value="%s" %s class="%s" %s>',
             $fieldType,
             $fieldName,
             $fieldId,
             $fieldValue,
             $checked,
             $fieldClasses,
-            $required === true ? 'required' : ''
+            $required
           );
           $this->formHtml .= sprintf(
             '<label class="form-check-label" for="%s">%s</label>',
@@ -609,28 +278,30 @@ class BeeFormBuilder
         case 'url':
         case 'phone':
         case 'text':
-          $this->formHtml .= sprintf('<input type="%s" name="%s" id="%s" class="%s" value="%s" %s>',
+          $this->formHtml .= sprintf(
+            '<input type="%s" name="%s" id="%s" class="%s" value="%s" %s %s>',
             $fieldType,
             $fieldName,
             $fieldId,
             $fieldClasses,
-            $defaultValue,
-            $required === true ? 'required' : ''
+            htmlspecialchars($defaultValue),
+            $required,
+            $placeholder
           );
           break;
 
-        // TODO: Aceptar sólo algunos formatos, definirlos al crear el input
         case 'file':
-          $this->formHtml .= sprintf('<input type="file" name="%s" id="%s" class="%s" %s>',
+          $this->formHtml .= sprintf(
+            '<input type="file" name="%s" id="%s" class="%s" %s>',
             $fieldName,
             $fieldId,
             $fieldClasses,
-            $required === true ? 'required' : ''
+            $required
           );
           break;
-        
+
         case 'slider':
-          $sliderValue     = $field['defaultValue'] ?? $field['min'];
+          $sliderValue = $field['defaultValue'] ?? $field['min'];
           $this->formHtml .= sprintf(
             '<input type="range" name="%s" id="%s" min="%s" max="%s" step="%s" value="%s" class="%s" %s>',
             $fieldName,
@@ -655,43 +326,50 @@ class BeeFormBuilder
             $fieldId,
             $defaultValue,
             $fieldClasses,
-            $required === true ? 'required' : ''
+            $required
           );
           break;
 
         case 'number':
+          $defaultValue = $field['defaultValue'] ?? '';
+          $valueAttr = $defaultValue !== '' ? 'value="' . htmlspecialchars($defaultValue) . '"' : '';
+          $placeholderAttr = !empty($field['placeholder']) ? 'placeholder="' . htmlspecialchars($field['placeholder']) . '"' : '';
+
           $this->formHtml .= sprintf(
-            '<input type="number" name="%s" id="%s" value="%s" min="%s" max="%s" step="%s" class="%s">',
+            '<input type="number" name="%s" id="%s" %s min="%s" max="%s" step="%s" class="%s" %s %s>',
             $fieldName,
             $fieldId,
-            $defaultValue,
+            $valueAttr,
             $field['min'],
             $field['max'],
             $field['step'],
             $fieldClasses,
-            $required === true ? 'required' : ''
+            $required,
+            $placeholderAttr
           );
+
           break;
 
         case 'date':
+          $valueAttr = $defaultValue !== '' ? 'value="' . htmlspecialchars($defaultValue) . '"' : '';
           $this->formHtml .= sprintf(
-            '<input type="date" name="%s" id="%s" value="%s" class="%s" %s>',
+            '<input type="date" name="%s" id="%s" %s class="%s" %s>',
             $fieldName,
             $fieldId,
-            $defaultValue,
+            $valueAttr,
             $fieldClasses,
-            $required === true ? 'required' : ''
+            $required
           );
           break;
       }
 
-      // Cerrar el div abierto para campos que no son ocultos
       if (!in_array($fieldType, $specialTypes)) {
         $this->formHtml .= '</div>';
       }
     }
 
-    // Procesamiento de todos los botones anexados
+    $this->formHtml .= '</div>'; // cerrar .row
+
     foreach ($this->buttons as $button) {
       $buttonName    = $button['name'];
       $buttonType    = $button['type'];
@@ -733,7 +411,7 @@ class BeeFormBuilder
    */
   function renderForm()
   {
-    echo $this->getFormHtml();  
+    echo $this->getFormHtml();
   }
 
   /**
@@ -767,8 +445,8 @@ class BeeFormBuilder
     $functionName = sprintf('submitForm_%s', $this->formatFormName());
     $script  = "<script>";
     $script .= $addEventListener ? "document.getElementById('%s').addEventListener('submit', %s);" : "";
-    $script .= 
-    "async function %s(e) {
+    $script .=
+      "async function %s(e) {
       e.preventDefault();
       const form     = document.getElementById('%s');
       const formData = new FormData(form);
@@ -779,10 +457,11 @@ class BeeFormBuilder
       })
       .then(res => res.json())
       .catch(err => console.log(err));
-       
+
       if (res.status === 200) {
         toastr.success(res.msg, '¡Excelente!');
         form.reset();
+        form.classList.remove('was-validated');
       } else {
         toastr.error(res.msg, '¡Hubo un error!');
       }
@@ -792,14 +471,21 @@ class BeeFormBuilder
     return sprintf(
       $script,
       $this->id,
-      $functionName, 
-      $functionName, 
-      $this->id, 
-      $url, 
+      $functionName,
+      $functionName,
+      $this->id,
+      $url,
       $accessToken !== null ? sprintf(
-          'headers: { "Authorization": "Bearer %s"},',
-          $accessToken
-        ) : ''
+        'headers: { "Authorization": "Bearer %s"},',
+        $accessToken
+      ) : ''
     );
+  }
+}
+
+function agregarCamposDinamicos($form, $campos)
+{
+  foreach ($campos as $campo) {
+    $form->addField($campo);
   }
 }

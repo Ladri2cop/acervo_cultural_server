@@ -1,7 +1,8 @@
-<?php 
+<?php
+
 /**
  * Clase para crear sesiones seguras de usuarios
- */ 
+ */
 class Auth
 {
   /**
@@ -53,13 +54,13 @@ class Auth
     }
 
     $session =
-    [
-      'logged' => $this->logged,
-      'token'  => $this->token,
-      'id'     => $this->id,
-      'ssid'   => $this->ssid,
-      'user'   => $this->user
-    ];
+      [
+        'logged' => $this->logged,
+        'token'  => $this->token,
+        'id'     => $this->id,
+        'ssid'   => $this->ssid,
+        'user'   => $this->user
+      ];
 
     $_SESSION[$this->var] = $session;
     return $this;
@@ -77,17 +78,19 @@ class Auth
     $self         = new self();
     $self->logged = true;
     $session      =
-    [
-      'logged' => $self->logged,
-      'token'  => generate_token(),
-      'id'     => $user_id,
-      'ssid'   => session_id(),
-      'user'   => $user_data
-    ];
+      [
+        'logged'        => $self->logged,
+        'token'         => generate_token(),
+        'id'            => $user_id,
+        'ssid'          => session_id(),
+        'user'          => $user_data,
+        'last_activity' => time() // ⏱️ Guardamos el tiempo actual
+      ];
 
     $_SESSION[$self->var] = $session;
     return true;
   }
+
 
   /**
    * Realizar la validación de la sesión del usuario en curso
@@ -98,14 +101,27 @@ class Auth
   {
     $self = new self();
 
-    // Si no existe siquiera la variable de sesión en el sistema
     if (!isset($_SESSION[$self->var])) {
       return false;
     }
 
-    // Validar la sesión
-    return $_SESSION[$self->var]['logged'] === true && $_SESSION[$self->var]['ssid'] === session_id() && $_SESSION[$self->var]['token'] !== null;
+    $session = $_SESSION[$self->var];
+
+    // Verificar tiempo de inactividad (10 minutos)
+    if (isset($session['last_activity']) && (time() - $session['last_activity'] > 600)) {
+      self::logout();
+      Redirect::to('login');
+      return false;
+    }
+
+    // Actualizar tiempo de actividad
+    $_SESSION[$self->var]['last_activity'] = time();
+
+    return $session['logged'] === true &&
+      $session['ssid'] === session_id() &&
+      $session['token'] !== null;
   }
+
 
   /**
    * Cierra la sesión del usuario en curso
@@ -114,28 +130,21 @@ class Auth
    */
   public static function logout()
   {
-    $self    = new self();
-    $session =
-    [
-      'logged' => $self->logged,
-      'token'  => $self->token,
-      'id'     => $self->id,
-      'ssid'   => $self->ssid,
-      'user'   => $self->user
-    ];
+    // Verificar si la sesión está activa
+    if (session_status() === PHP_SESSION_ACTIVE) {
+      // Limpiar todas las variables de sesión
+      $_SESSION = [];
 
-    /**
-     * Por seguridad
-     * se destruye todo lo contenido en
-     * la sesión actual del usuario
-     * @since 1.1.4
-     */
-    $_SESSION[$self->var] = $session;
-    unset($_SESSION[$self->var]);
-    session_destroy();
+      // Eliminar todas las variables de sesión registradas
+      session_unset();
+
+      // Destruir la sesión completamente
+      session_destroy();
+    }
 
     return true;
   }
+
 
   public function __get($var)
   {

@@ -14,9 +14,9 @@ class beeController extends Controller implements ControllerInterface
     parent::__construct();
 
     // Validación de sesión de usuario, descomentar si requerida
-    if (!is_local()) {
-      die(get_bee_message(0));
-    }
+    // if (!is_local()) {
+    //   die(get_bee_message(0));
+    // }
   }
 
   function index()

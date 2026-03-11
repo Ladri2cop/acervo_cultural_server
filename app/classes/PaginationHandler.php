@@ -65,7 +65,7 @@ class PaginationHandler extends Model
 	 */
 	function setBaseQuery(string $query)
 	{
-		$this->query = $query;	
+		$this->query = $query;
 	}
 
 	/**
@@ -90,17 +90,18 @@ class PaginationHandler extends Model
 	{
 		$this->isAjax = $isAjax;
 	}
-	
+
 	/**
 	 * Establece la clase que será asignada a los botones de paginación
 	 * 
 	 * @param string $class
 	 * 
 	 */
-	function setSelector(string $selector){
+	function setSelector(string $selector)
+	{
 		$this->selector = $selector;
 	}
-	
+
 	/**
 	 * Define si deberán recortarse el número de enlaces o botones
 	 * en la paginación para reducir el ancho u overflow
@@ -235,7 +236,7 @@ class PaginationHandler extends Model
 		$htmlTag     = $this->isAjax === true ? 'button' : 'a';
 
 		// Crear el html de la paginación
-		$pagination  = '<ul class="mt-5 pagination bee-pagination-wrapper ' . $this->alignment . '">';
+		$pagination  = '<ul class="pagination bee-pagination-wrapper ' . $this->alignment . '">';
 
 		// Botón de anterior
 		$pagination .= sprintf(
@@ -317,11 +318,11 @@ class PaginationHandler extends Model
 		// Links de paginación dinámicos
 		$this->pagination  = $pagination;
 		$this->pagination .= sprintf(
-			'<small class="text-muted">Página %s de %s, mostrando %s-%s de %s resultados.</small>', 
-			$this->page, 
-			$this->pages, 
-			$this->start, 
-			$this->end, 
+			'<small class="text-muted">Página %s de %s, mostrando %s-%s de %s resultados.</small>',
+			$this->page,
+			$this->pages,
+			$this->start,
+			$this->end,
 			$this->total
 		);
 
@@ -336,14 +337,14 @@ class PaginationHandler extends Model
 	public function launch()
 	{
 		return
-		[
-			'total'      => $this->get_total_rows(),
-			'pages'      => $this->calculate_pages(),
-			'page'       => $this->current_page(),
-			'offset'     => $this->calculate_offset(),
-			'rows'       => $this->get_rows(),
-			'pagination' => $this->create_pagination()
-		];
+			[
+				'total'      => $this->get_total_rows(),
+				'pages'      => $this->calculate_pages(),
+				'page'       => $this->current_page(),
+				'offset'     => $this->calculate_offset(),
+				'rows'       => $this->get_rows(),
+				'pagination' => $this->create_pagination()
+			];
 	}
 
 	/**
@@ -365,12 +366,12 @@ class PaginationHandler extends Model
 		$self->query  = $sql;
 		$self->params = $params;
 		$self->limit  = $rpp;
-		
+
 		// Nuevas configuraciones para el paginador
 		if ($selector !== null) {
 			$self->selector = $selector;
 		}
-		
+
 		$self->isAjax = $isAjax; // Determina si será una petición ajax o no en donde se usará
 		$self->shorten = $shorten; // Será recortada o no la navegación
 
