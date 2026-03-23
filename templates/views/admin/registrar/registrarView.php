@@ -36,7 +36,7 @@
     <div class="card-header py-3">
         <label for="select-acervo" class="label">Selecciona el tipo de acervo que deseas registrar</label>
         <select name="select-acervo" id="select-acervo" class="form-select">
-            <option value="1">Acervo Acambay</option>
+            <option value="1">Acervo General</option>
             <option value="2">Acervo Toluca</option>
             <option value="3">Acervo Metepec</option>
         </select>

@@ -568,7 +568,7 @@ class adminController extends Controller implements ControllerInterface
 
     switch ($tipo) {
       case 1:
-        $campos = obtenerCamposAcervoAcambay();
+        $campos = obtenerCamposAcervoGeneral();
         break;
       case 2:
         $campos = obtenerCamposAcervoToluca();
@@ -622,25 +622,25 @@ class adminController extends Controller implements ControllerInterface
     $form = new BeeFormBuilder('nuevo-registro', 'nuevo-registro', ['needs-validation'], 'admin/post_registro', true, false);
 
     $campos = [
-      [ 'type' => 'text', 'name' => 'codigo_interno', 'label' => 'Código interno', 'id' => 'codigo_interno', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: 001-AQ-2026', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'no_inventario', 'label' => 'No. Inventario', 'id' => 'no_inventario', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: INV-1234', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'nombre_titulo_pieza', 'label' => 'Nombre/Título de la pieza', 'id' => 'nombre_titulo_pieza', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Jarrón de cerámica', 'column_class' => 'col-12 mb-3' ],
-      [ 'type' => 'text', 'name' => 'cm', 'label' => 'CM', 'id' => 'cm', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: 12.5', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'fotografia', 'label' => 'Fotografía', 'id' => 'fotografia', 'class' => 'form-control', 'required' => false, 'placeholder' => 'URL o nombre de archivo', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'autor', 'label' => 'Autor', 'id' => 'autor', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Juan Pérez', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'anio', 'label' => 'Año', 'id' => 'anio', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: 1980', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'epoca', 'label' => 'Época', 'id' => 'epoca', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Siglo XX', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'tecnica', 'label' => 'Técnica', 'id' => 'tecnica', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Acuarela', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'material', 'label' => 'Material', 'id' => 'material', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Cerámica', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'medidas', 'label' => 'Medidas', 'id' => 'medidas', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: 20x15x10 cm', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'lote', 'label' => 'Lote', 'id' => 'lote', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: L-2026-01', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'peso', 'label' => 'Peso', 'id' => 'peso', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: 2.3 kg', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'coleccion', 'label' => 'Colección', 'id' => 'coleccion', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Colección privada', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'tipo', 'label' => 'Tipo', 'id' => 'tipo', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Escultura', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'ubicacion_fisica', 'label' => 'Ubicación física', 'id' => 'ubicacion_fisica', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Sala 2, vitrina 4', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'estado_conservacion', 'label' => 'Estado de conservación', 'id' => 'estado_conservacion', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Bueno', 'column_class' => 'col-12 col-md-6 mb-3' ],
-      [ 'type' => 'text', 'name' => 'observaciones', 'label' => 'Observaciones', 'id' => 'observaciones', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Notas adicionales', 'column_class' => 'col-12 mb-3' ],
-      [ 'type' => 'textarea', 'name' => 'descripcion', 'label' => 'Descripción', 'id' => 'descripcion', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Descripción detallada de la pieza', 'rows' => 4, 'cols' => 5, 'column_class' => 'col-12 mb-3' ]
+      ['type' => 'text', 'name' => 'codigo_interno', 'label' => 'Código interno', 'id' => 'codigo_interno', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: 001-AQ-2026', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'no_inventario', 'label' => 'No. Inventario', 'id' => 'no_inventario', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: INV-1234', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'nombre_titulo_pieza', 'label' => 'Nombre/Título de la pieza', 'id' => 'nombre_titulo_pieza', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Jarrón de cerámica', 'column_class' => 'col-12 mb-3'],
+      ['type' => 'text', 'name' => 'cm', 'label' => 'CM', 'id' => 'cm', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: 12.5', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'fotografia', 'label' => 'Fotografía', 'id' => 'fotografia', 'class' => 'form-control', 'required' => false, 'placeholder' => 'URL o nombre de archivo', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'autor', 'label' => 'Autor', 'id' => 'autor', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Juan Pérez', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'anio', 'label' => 'Año', 'id' => 'anio', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: 1980', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'epoca', 'label' => 'Época', 'id' => 'epoca', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Siglo XX', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'tecnica', 'label' => 'Técnica', 'id' => 'tecnica', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Acuarela', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'material', 'label' => 'Material', 'id' => 'material', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Cerámica', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'medidas', 'label' => 'Medidas', 'id' => 'medidas', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: 20x15x10 cm', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'lote', 'label' => 'Lote', 'id' => 'lote', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: L-2026-01', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'peso', 'label' => 'Peso', 'id' => 'peso', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: 2.3 kg', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'coleccion', 'label' => 'Colección', 'id' => 'coleccion', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Colección privada', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'tipo', 'label' => 'Tipo', 'id' => 'tipo', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Escultura', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'ubicacion_fisica', 'label' => 'Ubicación física', 'id' => 'ubicacion_fisica', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Sala 2, vitrina 4', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'estado_conservacion', 'label' => 'Estado de conservación', 'id' => 'estado_conservacion', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Ej: Bueno', 'column_class' => 'col-12 col-md-6 mb-3'],
+      ['type' => 'text', 'name' => 'observaciones', 'label' => 'Observaciones', 'id' => 'observaciones', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Notas adicionales', 'column_class' => 'col-12 mb-3'],
+      ['type' => 'textarea', 'name' => 'descripcion', 'label' => 'Descripción', 'id' => 'descripcion', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Descripción detallada de la pieza', 'rows' => 4, 'cols' => 5, 'column_class' => 'col-12 mb-3']
     ];
 
 
@@ -726,7 +726,7 @@ class adminController extends Controller implements ControllerInterface
   }
 }
 
-function obtenerCamposAcervoAcambay()
+function obtenerCamposAcervoGeneral()
 {
   $campos = [
     [
@@ -753,13 +753,24 @@ function obtenerCamposAcervoAcambay()
     ],
     [
       'type' => 'text',
-      'name' => 'nombre_pieza',
+      'name' => 'nombre_titulo_pieza',
       'label' => 'Nombre de la pieza',
-      'id' => 'nombre-pieza',
+      'id' => 'nombre-titulo-pieza',
       'class' => 'form-control',
       'required' => true,
       'default_value' => '',
       'placeholder' => 'Ej. Escultura de barro',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'cm',
+      'label' => 'Centímetros (idk)', // Este campo es un misterio, pero lo dejamos por si acaso
+      'id' => 'cm',
+      'class' => 'form-control',
+      'required' => true,
+      'default_value' => '',
+      'placeholder' => 'Ej. 100',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -785,22 +796,22 @@ function obtenerCamposAcervoAcambay()
     ],
     [
       'type' => 'select',
+      'name' => 'epoca',
+      'label' => 'Época',
+      'id' => 'epoca',
+      'class' => 'form-select',
+      'required' => false,
+      'options' => ['Prehispánica', 'Colonial', 'Moderna', 'Contemporánea'],
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'select',
       'name' => 'tecnica',
       'label' => 'Técnica',
       'id' => 'tecnica',
       'class' => 'form-select',
       'required' => true,
       'options' => ['Óleo', 'Acuarela', 'Grabado', 'Mixta'],
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
-      'type' => 'select',
-      'name' => 'tipo_obra',
-      'label' => 'Tipo de obra',
-      'id' => 'tipo-obra',
-      'class' => 'form-select',
-      'required' => true,
-      'options' => ['Pintura', 'Escultura', 'Fotografía', 'Objeto'],
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -814,55 +825,39 @@ function obtenerCamposAcervoAcambay()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'select',
-      'name' => 'epoca',
-      'label' => 'Época',
-      'id' => 'epoca',
-      'class' => 'form-select',
-      'required' => false,
-      'options' => ['Prehispánica', 'Colonial', 'Moderna', 'Contemporánea'],
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
       'type' => 'number',
-      'name' => 'alto',
-      'label' => 'Alto (cm)',
-      'id' => 'alto',
+      'name' => 'medidas',
+      'label' => 'Medidas (cm)',
+      'id' => 'medidas',
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
       'min' => 0,
       'max' => 9999,
       'step' => 'any',
-      'placeholder' => '0.00',
+      'placeholder' => ' 1cm x 1cm x 1cm',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'number',
-      'name' => 'ancho',
-      'label' => 'Ancho (cm)',
-      'id' => 'ancho',
+      'type' => 'text',
+      'name' => 'lote',
+      'label' => 'Lote',
+      'id' => 'lote',
       'class' => 'form-control',
-      'required' => false,
+      'required' => true,
       'default_value' => '',
-      'min' => 0,
-      'max' => 9999,
-      'step' => 'any',
-      'placeholder' => '0.00',
+      'placeholder' => 'Ej. 100',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'number',
-      'name' => 'profundidad',
-      'label' => 'Profundidad (cm)',
-      'id' => 'profundidad',
+      'type' => 'text',
+      'name' => 'peso',
+      'label' => 'Peso (kg)',
+      'id' => 'peso',
       'class' => 'form-control',
-      'required' => false,
+      'required' => true,
       'default_value' => '',
-      'min' => 0,
-      'max' => 9999,
-      'step' => 'any',
-      'placeholder' => '0.00',
+      'placeholder' => 'Ej. 100',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -873,6 +868,16 @@ function obtenerCamposAcervoAcambay()
       'class' => 'form-select',
       'required' => false,
       'options' => ['Colección permanente', 'Colección temporal', 'Donación'],
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'select',
+      'name' => 'tipo',
+      'label' => 'Tipo de obra',
+      'id' => 'tipo',
+      'class' => 'form-select',
+      'required' => true,
+      'options' => ['Pintura', 'Escultura', 'Fotografía', 'Objeto'],
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -897,14 +902,16 @@ function obtenerCamposAcervoAcambay()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'text',
-      'name' => 'status_estado',
-      'label' => 'Estado actual',
-      'id' => 'status-estado',
+      'type' => 'textarea',
+      'name' => 'observaciones',
+      'label' => 'Observaciones',
+      'id' => 'observaciones',
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
-      'placeholder' => 'Ej. En exhibición',
+      'placeholder' => 'Observaciones sobre la pieza',
+      'rows' => 4,
+      'cols' => 5,
       'column_class' => 'col-12 mb-3'
     ],
     [
@@ -952,9 +959,9 @@ function obtenerCamposAcervoToluca()
     ],
     [
       'type' => 'text',
-      'name' => 'nombre_pieza',
-      'label' => 'Nombre de la pieza',
-      'id' => 'nombre-pieza',
+      'name' => 'nombre_titulo_pieza',
+      'label' => 'Nombre o título de la pieza',
+      'id' => 'nombre-titulo-pieza',
       'class' => 'form-control',
       'required' => true,
       'default_value' => '',
