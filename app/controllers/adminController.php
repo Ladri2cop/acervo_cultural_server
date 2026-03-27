@@ -643,7 +643,6 @@ class adminController extends Controller implements ControllerInterface
       ['type' => 'textarea', 'name' => 'descripcion', 'label' => 'Descripción', 'id' => 'descripcion', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Descripción detallada de la pieza', 'rows' => 4, 'cols' => 5, 'column_class' => 'col-12 mb-3']
     ];
 
-
     // $form->addCustomFields(insert_inputs());
     agregarCamposDinamicos($form, $campos);
     $form->addCustomFields('<div class="col-12"><hr class="my-4"></div>');
@@ -654,7 +653,6 @@ class adminController extends Controller implements ControllerInterface
         <button type="submit" class="btn btn-primary" id="submit-button">Registrar pieza</button>
       </div>
     ');
-
 
     // HTML del formulario
     $this->addToData('form', $form->getFormHtml());
@@ -676,7 +674,7 @@ class adminController extends Controller implements ControllerInterface
       'no_inventario'         => $_POST['no_inventario'] ?? '',
       'nombre_titulo_pieza'   => $_POST['nombre_titulo_pieza'] ?? '',
       'cm'                    => $_POST['cm'] ?? '',
-      'fotografia'            => $_POST['fotografia'] ?? '',
+      'fotografia'            => '', // Se actualizará si se sube archivo
       'autor'                 => $_POST['autor'] ?? '',
       'anio'                  => $_POST['anio'] ?? '',
       'epoca'                 => $_POST['epoca'] ?? '',
