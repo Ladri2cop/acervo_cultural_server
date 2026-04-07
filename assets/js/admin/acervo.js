@@ -57,7 +57,7 @@ function mostrarListaPaginada(page = 1, perPage = 10, search = "") {
   formData.append("csrf", Bee.csrf);
 
   $.ajax({
-    url: "pruebas/mockDataPaginated",
+    url: "admin/get_acervo_general",
     type: "POST",
     dataType: "json",
     data: formData,
@@ -122,7 +122,7 @@ function mostrarListaAcervo() {
   formData.append("csrf", Bee.csrf);
 
   $.ajax({
-    url: "pruebas/mockData",
+    url: "admin/get_acervo_general",
     type: "POST",
     dataType: "json",
     data: formData,
@@ -178,7 +178,7 @@ function innerListaAcervo(piezas, pagination = null) {
     fila.innerHTML = `
         <td><img src="${pieza.image}" alt="${pieza.nombre}" class="img__miniatura" onerror="this.src='https://via.placeholder.com/200x300?text=Sin+Imagen'" /></td>
         <td>${pieza.nombre}</td>
-        <td>${pieza.autor}</td>
+        <td>${pieza.ubicacion}</td>
         <td>${pieza.descripcion}</td>
         <td>${pieza.fecha}</td>
         <td>

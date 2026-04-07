@@ -722,6 +722,61 @@ class adminController extends Controller implements ControllerInterface
     }
     exit;
   }
+  
+  // Endpoint para AJAX: listado paginado de Acervo General
+  public function get_acervo_general()
+  {
+    // Parámetros de paginación y búsqueda
+    $page = isset($_POST['page']) ? (int)$_POST['page'] : 1;
+    $perPage = isset($_POST['per_page']) ? (int)$_POST['per_page'] : 10;
+    $search = isset($_POST['search']) ? trim($_POST['search']) : '';
+    $offset = ($page - 1) * $perPage;
+
+    require_once APP . 'models/acervoGeneralModel.php';
+
+    // Filtro de búsqueda simple (nombre o autor)
+    $all = AcervoGeneralModel::getAll();
+    if ($search !== '') {
+      $all = array_filter($all, function($pieza) use ($search) {
+        return stripos($pieza['nombre_titulo_pieza'], $search) !== false
+            || stripos($pieza['autor'], $search) !== false;
+      });
+      $all = array_values($all);
+    }
+
+    $total = count($all);
+    $piezas = array_slice($all, $offset, $perPage);
+
+    // Formatear datos para la tabla
+    $data = array_map(function($pieza) {
+      return [
+        'id' => $pieza['id_acervo_general'],
+        'nombre' => $pieza['nombre_titulo_pieza'],
+        'ubicacion' => $pieza['ubicacion_fisica'],
+        // 'autor' => $pieza['autor'],
+        'descripcion' => $pieza['descripcion'],
+        'fecha' => $pieza['anio'],
+        'image' => !empty($pieza['fotografia']) ? 'uploads/' . $pieza['fotografia'] : '',
+      ];
+    }, $piezas);
+
+    // Paginación
+    $pagination = [
+      'current_page' => $page,
+      'total_pages' => max(1, ceil($total / $perPage)),
+      'total' => $total,
+      'per_page' => $perPage
+    ];
+
+    header('Content-Type: application/json');
+    echo json_encode([
+      'status' => 200,
+      'data' => $data,
+      'pagination' => $pagination
+    ]);
+    exit;
+  }
+
 }
 
 function obtenerCamposAcervoGeneral()

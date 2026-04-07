@@ -142,8 +142,8 @@
               <tr>
                 <th>Imagen</th>
                 <th>Nombre</th>
-                <th>Cultura</th>
                 <th>Ubicación</th>
+                <th>Descripción</th>
                 <th>Fecha</th>
                 <th>Acción</th>
               </tr>
