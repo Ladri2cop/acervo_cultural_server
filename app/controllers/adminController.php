@@ -722,7 +722,7 @@ class adminController extends Controller implements ControllerInterface
     }
     exit;
   }
-  
+
   // Endpoint para AJAX: listado paginado de Acervo General
   public function get_acervo_general()
   {
@@ -737,9 +737,9 @@ class adminController extends Controller implements ControllerInterface
     // Filtro de búsqueda simple (nombre o autor)
     $all = AcervoGeneralModel::getAll();
     if ($search !== '') {
-      $all = array_filter($all, function($pieza) use ($search) {
+      $all = array_filter($all, function ($pieza) use ($search) {
         return stripos($pieza['nombre_titulo_pieza'], $search) !== false
-            || stripos($pieza['autor'], $search) !== false;
+          || stripos($pieza['autor'], $search) !== false;
       });
       $all = array_values($all);
     }
@@ -748,15 +748,15 @@ class adminController extends Controller implements ControllerInterface
     $piezas = array_slice($all, $offset, $perPage);
 
     // Formatear datos para la tabla
-    $data = array_map(function($pieza) {
+    $data = array_map(function ($pieza) {
       return [
+        'image' => !empty($pieza['fotografia']) ? 'uploads/' . $pieza['fotografia'] : '',
         'id' => $pieza['id_acervo_general'],
         'nombre' => $pieza['nombre_titulo_pieza'],
         'ubicacion' => $pieza['ubicacion_fisica'],
         // 'autor' => $pieza['autor'],
         'descripcion' => $pieza['descripcion'],
         'fecha' => $pieza['anio'],
-        'image' => !empty($pieza['fotografia']) ? 'uploads/' . $pieza['fotografia'] : '',
       ];
     }, $piezas);
 
@@ -777,6 +777,44 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  // Editar pieza de acervo general (AJAX)
+  public function post_acervo_general_editar()
+  {
+    $id = isset($_POST['id_acervo_general']) ? (int)$_POST['id_acervo_general'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
+    if ($id <= 0) {
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    $data = $_POST;
+    unset($data['id_acervo_general']);
+    unset($data['id']);
+    require_once APP . 'models/acervoGeneralModel.php';
+    $ok = AcervoGeneralModel::updatePieza($id, $data);
+    if ($ok) {
+      echo json_encode(['status' => 200, 'msg' => 'Pieza actualizada correctamente']);
+    } else {
+      echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
+    }
+    exit;
+  }
+
+  // Eliminar pieza de acervo general (AJAX)
+  public function post_acervo_general_eliminar()
+  {
+    $id = isset($_POST['id_acervo_general']) ? (int)$_POST['id_acervo_general'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
+    if ($id <= 0) {
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    require_once APP . 'models/acervoGeneralModel.php';
+    $ok = AcervoGeneralModel::deletePieza($id);
+    if ($ok) {
+      echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
+    } else {
+      echo json_encode(['status' => 500, 'msg' => 'Error al eliminar la pieza']);
+    }
+    exit;
+  }
 }
 
 function obtenerCamposAcervoGeneral()

@@ -176,7 +176,7 @@ function innerListaAcervo(piezas, pagination = null) {
   piezas.forEach((pieza) => {
     const fila = document.createElement("tr");
     fila.innerHTML = `
-        <td><img src="${pieza.image}" alt="${pieza.nombre}" class="img__miniatura" onerror="this.src='https://via.placeholder.com/200x300?text=Sin+Imagen'" /></td>
+        <td><img src="${pieza.image}" alt="${pieza.nombre}" class="img__miniatura" /></td>
         <td>${pieza.nombre}</td>
         <td>${pieza.ubicacion}</td>
         <td>${pieza.descripcion}</td>
@@ -187,17 +187,161 @@ function innerListaAcervo(piezas, pagination = null) {
               <i class='bx  bx-caret-down'></i> 
             </button>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item" href="#"> <i class='bx text-info bx__iconmenu bx-eye-alt'></i> Ver</a></li>
-              <li><a class="dropdown-item" href="#"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i>  Editar</a></li>
+              <li><a class="dropdown-item btn-ver" href="#" data-id="${pieza.id}"> <i class='bx text-info bx__iconmenu bx-eye-alt'></i> Ver</a></li>
+              <li><a class="dropdown-item btn-editar" href="#" data-id="${pieza.id}"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i>  Editar</a></li>
               <hr class="dropdown-divider">
-              <li><a class="dropdown-item" href="#"><i class='bx text-danger bx__iconmenu bx-trash'></i>  Eliminar</a></li>
+              <li><a class="dropdown-item btn-eliminar" href="#" data-id="${pieza.id}"><i class='bx text-danger bx__iconmenu bx-trash'></i>  Eliminar</a></li>
             </ul>
           </div>
         </td>
       `;
     tabla.appendChild(fila);
   });
+
+  // Delegación de eventos para Editar y Eliminar
+  tabla.querySelectorAll('.btn-eliminar').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = this.getAttribute('data-id');
+      if (confirm('¿Seguro que deseas eliminar esta pieza?')) {
+        eliminarPieza(id);
+      }
+    });
+  });
+
+  tabla.querySelectorAll('.btn-editar').forEach(btn => {
+    btn.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = this.getAttribute('data-id');
+      abrirModalEditarPieza(id);
+    });
+  });
 }
+
+// Abre el modal de edición y rellena los campos
+function abrirModalEditarPieza(id) {
+  // Buscar la fila correspondiente para obtener los datos actuales
+  const fila = document.querySelector(`a.btn-editar[data-id='${id}']`).closest('tr');
+  const nombre = fila.children[1].textContent;
+  const ubicacion = fila.children[2].textContent;
+  const descripcion = fila.children[3].textContent;
+  const fecha = fila.children[4].textContent;
+
+  document.getElementById('editar-id').value = id;
+  document.getElementById('editar-nombre').value = nombre;
+  document.getElementById('editar-ubicacion').value = ubicacion;
+  document.getElementById('editar-descripcion').value = descripcion;
+  document.getElementById('editar-fecha').value = fecha;
+
+  // Mostrar el modal (Bootstrap 5)
+  const modal = new bootstrap.Modal(document.getElementById('modalEditarPieza'));
+  modal.show();
+}
+
+// Manejar el envío del formulario de edición
+document.addEventListener('DOMContentLoaded', function() {
+  const formEditar = document.getElementById('formEditarPieza');
+  if (formEditar) {
+    formEditar.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const id = document.getElementById('editar-id').value;
+      const nombre = document.getElementById('editar-nombre').value;
+      const ubicacion = document.getElementById('editar-ubicacion').value;
+      const descripcion = document.getElementById('editar-descripcion').value;
+      const fecha = document.getElementById('editar-fecha').value;
+
+      let formData = new FormData();
+      formData.append('id', id);
+      formData.append('nombre_titulo_pieza', nombre);
+      formData.append('ubicacion_fisica', ubicacion);
+      formData.append('descripcion', descripcion);
+      formData.append('anio', fecha);
+      formData.append('csrf', Bee.csrf);
+
+      $.ajax({
+        url: 'admin/acervo_general_editar',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(resp) {
+          if (resp.status === 200) {
+            toastr.success(resp.msg, 'Actualizado');
+            mostrarListaPaginada();
+            // Cerrar el modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarPieza'));
+            if (modal) modal.hide();
+          } else {
+            toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
+          }
+        },
+        error: function() {
+          toastr.error('Error de red al actualizar', 'Error');
+        }
+      });
+    });
+  }
+});
+
+// Eliminar pieza por ID
+function eliminarPieza(id) {
+  let formData = new FormData();
+  formData.append('id', id);
+  formData.append('csrf', Bee.csrf);
+  $.ajax({
+    url: 'admin/acervo_general_eliminar',
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    dataType: 'json',
+    success: function(resp) {
+      if (resp.status === 200) {
+        toastr.success(resp.msg, 'Eliminado');
+        mostrarListaPaginada();
+      } else {
+        toastr.error(resp.msg || 'No se pudo eliminar', 'Error');
+      }
+    },
+    error: function() {
+      toastr.error('Error de red al eliminar', 'Error');
+    }
+  });
+}
+
+// Editar pieza por ID (básico: solo muestra un prompt para nombre, puedes mejorar con modal/formulario)
+function editarPieza(id) {
+  // Aquí podrías abrir un modal con los datos actuales, por ahora solo ejemplo con prompt
+  const nuevoNombre = prompt('Nuevo nombre para la pieza:');
+  if (!nuevoNombre) return;
+  let formData = new FormData();
+  formData.append('id', id);
+  formData.append('nombre_titulo_pieza', nuevoNombre);
+  formData.append('csrf', Bee.csrf);
+  $.ajax({
+    url: 'index.php?uri=admin/acervo_general_editar',
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    dataType: 'json',
+    success: function(resp) {
+      if (resp.status === 200) {
+        toastr.success(resp.msg, 'Actualizado');
+        mostrarListaPaginada();
+      } else {
+        toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
+      }
+    },
+    error: function() {
+      toastr.error('Error de red al actualizar', 'Error');
+    }
+  });
+}
+
 
 /**
  * Construye los controles de paginación

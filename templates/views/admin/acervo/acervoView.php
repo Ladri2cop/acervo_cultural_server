@@ -161,4 +161,41 @@
   </div>
 </div>
 
+<!-- Modal para editar pieza -->
+<div class="modal fade" id="modalEditarPieza" tabindex="-1" aria-labelledby="modalEditarPiezaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="modalEditarPiezaLabel">Editar Pieza</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formEditarPieza">
+        <div class="modal-body">
+          <input type="hidden" id="editar-id" name="id">
+          <div class="mb-3">
+            <label for="editar-nombre" class="form-label">Nombre</label>
+            <input type="text" class="form-control" id="editar-nombre" name="nombre_titulo_pieza" required>
+          </div>
+          <div class="mb-3">
+            <label for="editar-ubicacion" class="form-label">Ubicación</label>
+            <input type="text" class="form-control" id="editar-ubicacion" name="ubicacion_fisica">
+          </div>
+          <div class="mb-3">
+            <label for="editar-descripcion" class="form-label">Descripción</label>
+            <textarea class="form-control" id="editar-descripcion" name="descripcion"></textarea>
+          </div>
+          <div class="mb-3">
+            <label for="editar-fecha" class="form-label">Año</label>
+            <input type="text" class="form-control" id="editar-fecha" name="anio">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
 <?php require_once INCLUDES . 'admin/dashboardBottom.php'; ?>
