@@ -114,6 +114,7 @@ function inicializarEnvioFormulario() {
   form.addEventListener("submit", function (e) {
     e.preventDefault(); // 👈 Evita el envío tradicional
 
+    const imagenAcervo = document.getElementById("imageInput");
     const formData = new FormData(form); // 👈 Captura todos los campos y archivos
 
     fetch("admin/post_registro", {

@@ -692,15 +692,24 @@ class adminController extends Controller implements ControllerInterface
       'id_modulo'             => 5
     ];
 
-    // Validación básica
-    // if (empty($data['codigo_interno']) || empty($data['no_inventario']) || empty($data['nombre_titulo_pieza'])) {
-    //   header('Content-Type: application/json');
-    //   echo json_encode([
-    //     'status' => 400,
-    //     'msg' => 'Faltan campos obligatorios.'
-    //   ]);
-    //   exit;
-    // }
+    // Procesar imagen si se envió
+    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === 0) {
+      $tmp_name = $_FILES['fotografia']['tmp_name'];
+      $filename = $_FILES['fotografia']['name'];
+      $ext = pathinfo($filename, PATHINFO_EXTENSION);
+      $new_name = generate_filename() . '.' . $ext;
+      $upload_path = UPLOADS . $new_name;
+      if (move_uploaded_file($tmp_name, $upload_path)) {
+        $data['fotografia'] = $new_name;
+      } else {
+        header('Content-Type: application/json');
+        echo json_encode([
+          'status' => 500,
+          'msg' => 'Error al subir la imagen.'
+        ]);
+        exit;
+      }
+    }
 
     // Guardar en la base de datos usando el modelo AcervoGeneralModel
     require_once APP . 'models/acervoGeneralModel.php';
@@ -778,7 +787,7 @@ class adminController extends Controller implements ControllerInterface
   }
 
   // Editar pieza de acervo general (AJAX)
-  public function post_acervo_general_editar()
+  public function acervo_general_editar()
   {
     $id = isset($_POST['id_acervo_general']) ? (int)$_POST['id_acervo_general'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
@@ -799,7 +808,7 @@ class adminController extends Controller implements ControllerInterface
   }
 
   // Eliminar pieza de acervo general (AJAX)
-  public function post_acervo_general_eliminar()
+  public function acervo_general_eliminar()
   {
     $id = isset($_POST['id_acervo_general']) ? (int)$_POST['id_acervo_general'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
@@ -864,6 +873,7 @@ function obtenerCamposAcervoGeneral()
       'placeholder' => 'Ej. 100',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
+
     [
       'type' => 'text',
       'name' => 'autor',
