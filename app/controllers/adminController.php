@@ -696,11 +696,11 @@ class adminController extends Controller implements ControllerInterface
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === 0) {
       $tmp_name = $_FILES['fotografia']['tmp_name'];
       $filename = $_FILES['fotografia']['name'];
-      $ext = pathinfo($filename, PATHINFO_EXTENSION);
-      $new_name = generate_filename() . '.' . $ext;
-      $upload_path = UPLOADS . $new_name;
+      // $ext = pathinfo($filename, PATHINFO_EXTENSION);
+      // $new_name = generate_filename() . '.' . $ext;
+      $upload_path = UPLOADS . $filename;
       if (move_uploaded_file($tmp_name, $upload_path)) {
-        $data['fotografia'] = $new_name;
+        $data['fotografia'] = $filename;
       } else {
         header('Content-Type: application/json');
         echo json_encode([
@@ -759,7 +759,7 @@ class adminController extends Controller implements ControllerInterface
     // Formatear datos para la tabla
     $data = array_map(function ($pieza) {
       return [
-        'image' => !empty($pieza['fotografia']) ? 'uploads/' . $pieza['fotografia'] : '',
+        'image' => !empty($pieza['fotografia']) ? 'assets/uploads/' . $pieza['fotografia'] : '',
         'id' => $pieza['id_acervo_general'],
         'nombre' => $pieza['nombre_titulo_pieza'],
         'ubicacion' => $pieza['ubicacion_fisica'],
