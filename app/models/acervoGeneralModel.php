@@ -7,8 +7,31 @@ class AcervoGeneralModel extends Model
 
     public static function getById($id)
     {
-        $params = [self::$primaryKey => $id];
-        return parent::list(self::$table, $params, 1);
+        $sql = "SELECT 
+            id_acervo_general,
+            codigo_interno,
+            no_inventario,
+            nombre_titulo_pieza,
+            cm,
+            fotografia,
+            autor,
+            anio,
+            epoca,
+            tecnica,
+            material,
+            medidas,
+            lote,
+            peso,
+            coleccion,
+            tipo,
+            ubicacion_fisica,
+            estado_conservacion,
+            observaciones,
+            descripcion
+        FROM " . self::$table . " WHERE " . self::$primaryKey . " = :id LIMIT 1";
+        $params = ['id' => $id];
+        $rows = parent::query($sql, $params);
+        return $rows ? $rows : [];
     }
 
     /**

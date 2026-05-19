@@ -222,22 +222,52 @@ function innerListaAcervo(piezas, pagination = null) {
 
 // Abre el modal de edición y rellena los campos
 function abrirModalEditarPieza(id) {
-  // Buscar la fila correspondiente para obtener los datos actuales
-  const fila = document.querySelector(`a.btn-editar[data-id='${id}']`).closest('tr');
-  const nombre = fila.children[1].textContent;
-  const ubicacion = fila.children[2].textContent;
-  const descripcion = fila.children[3].textContent;
-  const fecha = fila.children[4].textContent;
+  // Petición AJAX para obtener todos los datos de la pieza
+  let formData = new FormData();
+  formData.append('id', id);
+  formData.append('csrf', Bee.csrf);
 
-  document.getElementById('editar-id').value = id;
-  document.getElementById('editar-nombre').value = nombre;
-  document.getElementById('editar-ubicacion').value = ubicacion;
-  document.getElementById('editar-descripcion').value = descripcion;
-  document.getElementById('editar-fecha').value = fecha;
+  $.ajax({
+    url: 'admin/acervo_general_get_by_id',
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    dataType: 'json',
+    success: function(resp) {
+      if (resp.status === 200 && resp.data) {
+        const pieza = resp.data;
+        $('#editar-id').val(pieza.id_acervo_general);
+        $('#editar-codigo_interno').val(pieza.codigo_interno);
+        $('#editar-no_inventario').val(pieza.no_inventario);
+        $('#editar-nombre').val(pieza.nombre_titulo_pieza);
+        $('#editar-cm').val(pieza.cm);
+        // Si tienes un campo para la imagen, puedes mostrar la miniatura aquí
+        $('#editar-autor').val(pieza.autor);
+        $('#editar-fecha').val(pieza.anio);
+        $('#editar-epoca').val(pieza.epoca);
+        $('#editar-tecnica').val(pieza.tecnica);
+        $('#editar-material').val(pieza.material);
+        $('#editar-medidas').val(pieza.medidas);
+        $('#editar-lote').val(pieza.lote);
+        $('#editar-peso').val(pieza.peso);
+        $('#editar-coleccion').val(pieza.coleccion);
+        $('#editar-tipo').val(pieza.tipo);
+        $('#editar-ubicacion').val(pieza.ubicacion_fisica);
+        $('#editar-estado_conservacion').val(pieza.estado_conservacion);
+        $('#editar-observaciones').val(pieza.observaciones);
+        $('#editar-descripcion').val(pieza.descripcion);
 
-  // Mostrar el modal (Bootstrap 5)
-  const modal = new bootstrap.Modal(document.getElementById('modalEditarPieza'));
-  modal.show();
+        const modal = new bootstrap.Modal(document.getElementById('modalEditarPieza'));
+        modal.show();
+      } else {
+        toastr.error('No se pudo obtener la información de la pieza', 'Error');
+      }
+    },
+    error: function() {
+      toastr.error('Error de red al obtener la pieza', 'Error');
+    }
+  });
 }
 
 // Manejar el envío del formulario de edición
@@ -246,18 +276,28 @@ document.addEventListener('DOMContentLoaded', function() {
   if (formEditar) {
     formEditar.addEventListener('submit', function(e) {
       e.preventDefault();
-      const id = document.getElementById('editar-id').value;
-      const nombre = document.getElementById('editar-nombre').value;
-      const ubicacion = document.getElementById('editar-ubicacion').value;
-      const descripcion = document.getElementById('editar-descripcion').value;
-      const fecha = document.getElementById('editar-fecha').value;
 
       let formData = new FormData();
-      formData.append('id', id);
-      formData.append('nombre_titulo_pieza', nombre);
-      formData.append('ubicacion_fisica', ubicacion);
-      formData.append('descripcion', descripcion);
-      formData.append('anio', fecha);
+      formData.append('id', $('#editar-id').val());
+      formData.append('codigo_interno', $('#editar-codigo_interno').val());
+      formData.append('no_inventario', $('#editar-no_inventario').val());
+      formData.append('nombre_titulo_pieza', $('#editar-nombre').val());
+      formData.append('cm', $('#editar-cm').val());
+      // Si tienes campo de imagen para edición, agrégalo aquí
+      formData.append('autor', $('#editar-autor').val());
+      formData.append('anio', $('#editar-fecha').val());
+      formData.append('epoca', $('#editar-epoca').val());
+      formData.append('tecnica', $('#editar-tecnica').val());
+      formData.append('material', $('#editar-material').val());
+      formData.append('medidas', $('#editar-medidas').val());
+      formData.append('lote', $('#editar-lote').val());
+      formData.append('peso', $('#editar-peso').val());
+      formData.append('coleccion', $('#editar-coleccion').val());
+      formData.append('tipo', $('#editar-tipo').val());
+      formData.append('ubicacion_fisica', $('#editar-ubicacion').val());
+      formData.append('estado_conservacion', $('#editar-estado_conservacion').val());
+      formData.append('observaciones', $('#editar-observaciones').val());
+      formData.append('descripcion', $('#editar-descripcion').val());
       formData.append('csrf', Bee.csrf);
 
       $.ajax({
@@ -322,7 +362,7 @@ function editarPieza(id) {
   formData.append('nombre_titulo_pieza', nuevoNombre);
   formData.append('csrf', Bee.csrf);
   $.ajax({
-    url: 'index.php?uri=admin/acervo_general_editar',
+    url: 'admin/acervo_general_editar',
     type: 'POST',
     data: formData,
     processData: false,

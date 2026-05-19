@@ -797,6 +797,7 @@ class adminController extends Controller implements ControllerInterface
     $data = $_POST;
     unset($data['id_acervo_general']);
     unset($data['id']);
+    unset($data['csrf']);
     require_once APP . 'models/acervoGeneralModel.php';
     $ok = AcervoGeneralModel::updatePieza($id, $data);
     if ($ok) {
@@ -821,6 +822,24 @@ class adminController extends Controller implements ControllerInterface
       echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al eliminar la pieza']);
+    }
+    exit;
+  }
+
+  // Obtener todos los datos de una pieza de acervo general (AJAX)
+  public function acervo_general_get_by_id()
+  {
+    $id = isset($_POST['id_acervo_general']) ? (int)$_POST['id_acervo_general'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
+    if ($id <= 0) {
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    require_once APP . 'models/acervoGeneralModel.php';
+    $pieza = AcervoGeneralModel::getById($id);
+    if ($pieza && isset($pieza[0])) {
+      echo json_encode(['status' => 200, 'data' => $pieza[0]]);
+    } else {
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
     }
     exit;
   }

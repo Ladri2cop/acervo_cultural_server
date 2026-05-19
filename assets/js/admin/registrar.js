@@ -48,7 +48,7 @@ select.addEventListener("change", function () {
       if (data.status) {
         contenedor.innerHTML = data.html;
         if (formCard) formCard.style.display = "block";
-        inicializarVistaPrevia(); // 👈 Ejecutar script para vista previa
+        inicializarVistaPrevia(); // Ejecutar script para vista previa
         inicializarEnvioFormulario();
       } else {
         contenedor.innerHTML = `<div class="alert alert-warning">${data.message}</div>`;
@@ -75,7 +75,7 @@ function inicializarVistaPrevia() {
   if (!previewImage) {
     previewImage = document.createElement("img");
     previewImage.id = "previewImage";
-    previewImage.className = "img-fluid mt-3 fade-in"; // 👈 clase animada
+    previewImage.className = "img-fluid mt-3 fade-in"; // clase animada
     previewImage.style.maxHeight = "300px";
     previewContainer.appendChild(previewImage);
   }
