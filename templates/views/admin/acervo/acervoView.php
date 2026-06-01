@@ -163,7 +163,7 @@
 
 <!-- Modal para editar pieza -->
 <div class="modal fade" id="modalEditarPieza" tabindex="-1" aria-labelledby="modalEditarPiezaLabel" aria-hidden="true">
-  <div class="modal-dialog">
+  <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="modalEditarPiezaLabel">Editar Pieza</h5>
@@ -172,73 +172,75 @@
       <form id="formEditarPieza">
         <div class="modal-body">
           <input type="hidden" id="editar-id" name="id">
-          <div class="mb-3">
-            <label for="editar-nombre" class="form-label">Nombre</label>
-            <input type="text" class="form-control" id="editar-nombre" name="nombre_titulo_pieza" required>
-          </div>
-          <div class="mb-3">
-            <label for="editar-ubicacion" class="form-label">Ubicación</label>
-            <input type="text" class="form-control" id="editar-ubicacion" name="ubicacion_fisica">
-          </div>
-          <div class="mb-3">
-            <label for="editar-descripcion" class="form-label">Descripción</label>
-            <textarea class="form-control" id="editar-descripcion" name="descripcion"></textarea>
-          </div>
-          <div class="mb-3">
-            <label for="editar-fecha" class="form-label">Año</label>
-            <input type="text" class="form-control" id="editar-fecha" name="anio">
-          </div>
-          <div class="mb-3">
-            <label for="editar-codigo_interno" class="form-label">Código Interno</label>
-            <input type="text" class="form-control" id="editar-codigo_interno" name="codigo_interno">
-          </div>
-          <div class="mb-3">
-            <label for="editar-no_inventario" class="form-label">No. Inventario</label>
-            <input type="text" class="form-control" id="editar-no_inventario" name="no_inventario">
-          </div>
-          <div class="mb-3">
-            <label for="editar-autor" class="form-label">Autor</label>
-            <input type="text" class="form-control" id="editar-autor" name="autor">
-          </div>
-          <div class="mb-3">
-            <label for="editar-epoca" class="form-label">Época</label>
-            <input type="text" class="form-control" id="editar-epoca" name="epoca">
-          </div>
-          <div class="mb-3">
-            <label for="editar-tecnica" class="form-label">Técnica</label>
-            <input type="text" class="form-control" id="editar-tecnica" name="tecnica">
-          </div>
-          <div class="mb-3">
-            <label for="editar-material" class="form-label">Material</label>
-            <input type="text" class="form-control" id="editar-material" name="material">
-          </div>
-          <div class="mb-3">
-            <label for="editar-medidas" class="form-label">Medidas</label>
-            <input type="text" class="form-control" id="editar-medidas" name="medidas">
-          </div>
-          <div class="mb-3">
-            <label for="editar-lote" class="form-label">Lote</label>
-            <input type="text" class="form-control" id="editar-lote" name="lote">
-          </div>
-          <div class="mb-3">
-            <label for="editar-peso" class="form-label">Peso</label>
-            <input type="text" class="form-control" id="editar-peso" name="peso">
-          </div>
-          <div class="mb-3">
-            <label for="editar-coleccion" class="form-label">Colección</label>
-            <input type="text" class="form-control" id="editar-coleccion" name="coleccion">
-          </div>
-          <div class="mb-3">
-            <label for="editar-tipo" class="form-label">Tipo</label>
-            <input type="text" class="form-control" id="editar-tipo" name="tipo">
-          </div>
-          <div class="mb-3">
-            <label for="editar-estado_conservacion" class="form-label">Estado de Conservación</label>
-            <input type="text" class="form-control" id="editar-estado_conservacion" name="estado_conservacion">
-          </div>
-          <div class="mb-3">
-            <label for="editar-observaciones" class="form-label">Observaciones</label>
-            <textarea class="form-control" id="editar-observaciones" name="observaciones"></textarea>
+          <div class="row">
+            <div class="mb-3 col-md-4">
+              <label for="editar-nombre" class="form-label">Nombre</label>
+              <input type="text" class="form-control" id="editar-nombre" name="nombre_titulo_pieza" required>
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-ubicacion" class="form-label">Ubicación</label>
+              <input type="text" class="form-control" id="editar-ubicacion" name="ubicacion_fisica">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-descripcion" class="form-label">Descripción</label>
+              <textarea class="form-control" id="editar-descripcion" name="descripcion"></textarea>
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-fecha" class="form-label">Año</label>
+              <input type="text" class="form-control" id="editar-fecha" name="anio">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-codigo_interno" class="form-label">Código Interno</label>
+              <input type="text" class="form-control" id="editar-codigo_interno" name="codigo_interno">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-no_inventario" class="form-label">No. Inventario</label>
+              <input type="text" class="form-control" id="editar-no_inventario" name="no_inventario">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-autor" class="form-label">Autor</label>
+              <input type="text" class="form-control" id="editar-autor" name="autor">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-epoca" class="form-label">Época</label>
+              <input type="text" class="form-control" id="editar-epoca" name="epoca">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-tecnica" class="form-label">Técnica</label>
+              <input type="text" class="form-control" id="editar-tecnica" name="tecnica">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-material" class="form-label">Material</label>
+              <input type="text" class="form-control" id="editar-material" name="material">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-medidas" class="form-label">Medidas</label>
+              <input type="text" class="form-control" id="editar-medidas" name="medidas">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-lote" class="form-label">Lote</label>
+              <input type="text" class="form-control" id="editar-lote" name="lote">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-peso" class="form-label">Peso</label>
+              <input type="text" class="form-control" id="editar-peso" name="peso">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-coleccion" class="form-label">Colección</label>
+              <input type="text" class="form-control" id="editar-coleccion" name="coleccion">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-tipo" class="form-label">Tipo</label>
+              <input type="text" class="form-control" id="editar-tipo" name="tipo">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-estado_conservacion" class="form-label">Estado de Conservación</label>
+              <input type="text" class="form-control" id="editar-estado_conservacion" name="estado_conservacion">
+            </div>
+            <div class="mb-3 col-md-4">
+              <label for="editar-observaciones" class="form-label">Observaciones</label>
+              <textarea class="form-control" id="editar-observaciones" name="observaciones"></textarea>
+            </div>
           </div>
         </div>
         <div class="modal-footer">
