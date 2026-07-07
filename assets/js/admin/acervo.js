@@ -2,6 +2,7 @@ $(document).ready(function () {
   console.log("registros.js loaded");
   // mostrarListaAcervo();
   mostrarListaPaginada();
+  inicializarVistaPreviaEdicion();
 
   // Aplica Select2 a todos los selects dentro de la barra de filtros
   $("#ubicacion, #tipo_registro, #anio, #cultura").select2({
@@ -24,6 +25,75 @@ $(document).ready(function () {
     }, 500);
   });
 });
+
+function inicializarVistaPreviaEdicion() {
+  const imageInput = document.getElementById('editar-fotografia');
+  const previewContainer = document.getElementById('editar-previewContainer');
+  const previewText = document.getElementById('editar-previewText');
+  const previewIcon = document.getElementById('editar-previewIcon');
+
+  if (!imageInput || !previewContainer || !previewText || !previewIcon) return;
+
+  let previewImage = document.getElementById('editar-previewImage');
+
+  if (!previewImage) {
+    previewImage = document.createElement('img');
+    previewImage.id = 'editar-previewImage';
+    previewImage.className = 'img-fluid mt-3 fade-in w-100';
+    previewImage.style.maxHeight = '240px';
+    previewImage.style.display = 'none';
+    previewContainer.appendChild(previewImage);
+  }
+
+  window.mostrarPreviewEdicionFotografia = function (src, nombreArchivo = '') {
+    if (!src) {
+      previewImage.src = '';
+      previewImage.style.display = 'none';
+      previewImage.classList.remove('show');
+      previewText.style.display = 'inline';
+      previewText.classList.remove('name-image_success');
+      previewIcon.style.display = 'inline';
+      previewText.innerText = 'No hay imagen seleccionada';
+      previewContainer.classList.remove('preview-reverse');
+      return;
+    }
+
+    previewImage.onload = function () {
+      previewImage.style.display = 'block';
+      previewImage.classList.add('show');
+      previewText.innerText = nombreArchivo || 'Imagen cargada';
+      previewText.classList.add('name-image_success');
+      previewIcon.style.display = 'none';
+      previewContainer.classList.add('preview-reverse');
+    };
+
+    previewImage.onerror = function () {
+      previewImage.src = '';
+      previewImage.style.display = 'none';
+      previewText.style.display = 'inline';
+      previewText.classList.remove('name-image_success');
+      previewIcon.style.display = 'inline';
+      previewText.innerText = nombreArchivo || 'No hay imagen seleccionada';
+      previewContainer.classList.remove('preview-reverse');
+    };
+
+    previewImage.src = src;
+  };
+
+  imageInput.addEventListener('change', function () {
+    const file = this.files[0];
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        window.mostrarPreviewEdicionFotografia(e.target.result, file.name);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      window.mostrarPreviewEdicionFotografia('', 'No hay imagen seleccionada');
+    }
+  });
+}
 
 function mostrarListaPaginada(page = 1, perPage = 10, search = "") {
   // Mostrar el loader y ocultar la tabla
@@ -237,6 +307,11 @@ function abrirModalEditarPieza(id) {
     success: function(resp) {
       if (resp.status === 200 && resp.data) {
         const pieza = resp.data;
+        const previewContainer = document.getElementById('editar-previewContainer');
+        const previewText = document.getElementById('editar-previewText');
+        const previewIcon = document.getElementById('editar-previewIcon');
+        const previewImage = document.getElementById('editar-previewImage');
+        const inputFotografia = document.getElementById('editar-fotografia');
         $('#editar-id').val(pieza.id_acervo_general);
         $('#editar-codigo_interno').val(pieza.codigo_interno);
         $('#editar-no_inventario').val(pieza.no_inventario);
@@ -257,6 +332,31 @@ function abrirModalEditarPieza(id) {
         $('#editar-estado_conservacion').val(pieza.estado_conservacion);
         $('#editar-observaciones').val(pieza.observaciones);
         $('#editar-descripcion').val(pieza.descripcion);
+        $('#editar-fotografia_actual').val(pieza.fotografia || '');
+
+        const fotografiaUrl = pieza.fotografia_url || (pieza.fotografia ? `assets/uploads/${pieza.fotografia}` : '');
+        if (typeof window.mostrarPreviewEdicionFotografia === 'function') {
+          window.mostrarPreviewEdicionFotografia(fotografiaUrl, pieza.fotografia || 'Imagen cargada');
+        }
+
+        if (inputFotografia) {
+          inputFotografia.value = '';
+          inputFotografia.onchange = function (event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file || !previewImage || !previewText || !previewIcon || !previewContainer) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+              previewImage.src = e.target.result;
+              previewImage.style.display = 'block';
+              previewImage.classList.add('show');
+              previewText.innerText = file.name;
+              previewText.classList.add('name-image_success');
+              previewIcon.style.display = 'none';
+              previewContainer.classList.add('preview-reverse');
+            };
+            reader.readAsDataURL(file);
+          };
+        }
 
         const modal = new bootstrap.Modal(document.getElementById('modalEditarPieza'));
         modal.show();
@@ -298,6 +398,11 @@ document.addEventListener('DOMContentLoaded', function() {
       formData.append('estado_conservacion', $('#editar-estado_conservacion').val());
       formData.append('observaciones', $('#editar-observaciones').val());
       formData.append('descripcion', $('#editar-descripcion').val());
+      const fotografiaNueva = document.getElementById('editar-fotografia').files[0];
+      if (fotografiaNueva) {
+        formData.append('fotografia', fotografiaNueva);
+      }
+      formData.append('fotografia_actual', $('#editar-fotografia_actual').val());
       formData.append('csrf', Bee.csrf);
 
       $.ajax({

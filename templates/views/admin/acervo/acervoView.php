@@ -172,6 +172,7 @@
       <form id="formEditarPieza">
         <div class="modal-body">
           <input type="hidden" id="editar-id" name="id">
+          <input type="hidden" id="editar-fotografia_actual" name="fotografia_actual">
           <div class="row">
             <div class="mb-3 col-md-4">
               <label for="editar-nombre" class="form-label">Nombre</label>
@@ -184,6 +185,14 @@
             <div class="mb-3 col-md-4">
               <label for="editar-descripcion" class="form-label">Descripción</label>
               <textarea class="form-control" id="editar-descripcion" name="descripcion"></textarea>
+            </div>
+            <div class="mb-3 col-12 col-md-4 container-preview-image">
+              <label for="editar-fotografia" class="form-label">Fotografía</label>
+              <input type="file" id="editar-fotografia" accept="image/*" class="input-file form-control" name="fotografia">
+              <div class="card shadow-sm text-center p-4 border border-secondary rounded preview-clickable preview-container-edit d-flex flex-column justify-content-center align-items-center" id="editar-previewContainer" style="min-height: 280px;">
+                <i class="bx bx-image fs-1 text-muted" id="editar-previewIcon"></i>
+                <p id="editar-previewText" class="mt-2 text-muted">No hay imagen seleccionada</p>
+              </div>
             </div>
             <div class="mb-3 col-md-4">
               <label for="editar-fecha" class="form-label">Año</label>

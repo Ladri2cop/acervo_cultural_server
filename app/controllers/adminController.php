@@ -794,11 +794,37 @@ class adminController extends Controller implements ControllerInterface
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
       exit;
     }
+    require_once APP . 'models/acervoGeneralModel.php';
+    $piezaActual = AcervoGeneralModel::getById($id);
+    $fotoActual = ($piezaActual && isset($piezaActual[0]['fotografia'])) ? $piezaActual[0]['fotografia'] : '';
+
     $data = $_POST;
     unset($data['id_acervo_general']);
     unset($data['id']);
     unset($data['csrf']);
-    require_once APP . 'models/acervoGeneralModel.php';
+    unset($data['fotografia_actual']);
+
+    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
+      $tmpName = $_FILES['fotografia']['tmp_name'];
+      $fileName = $_FILES['fotografia']['name'];
+      $newName = basename($fileName);
+
+      if (!move_uploaded_file($tmpName, UPLOADS . $newName)) {
+        echo json_encode(['status' => 500, 'msg' => 'Error al subir la nueva fotografía']);
+        exit;
+      }
+
+      $data['fotografia'] = $newName;
+
+      if (!empty($fotoActual) && is_file(UPLOADS . $fotoActual)) {
+        unlink(UPLOADS . $fotoActual);
+      }
+    } elseif (!empty($_POST['fotografia_actual'])) {
+      $data['fotografia'] = $_POST['fotografia_actual'];
+    } elseif (!empty($fotoActual)) {
+      $data['fotografia'] = $fotoActual;
+    }
+
     $ok = AcervoGeneralModel::updatePieza($id, $data);
     if ($ok) {
       echo json_encode(['status' => 200, 'msg' => 'Pieza actualizada correctamente']);
@@ -837,6 +863,7 @@ class adminController extends Controller implements ControllerInterface
     require_once APP . 'models/acervoGeneralModel.php';
     $pieza = AcervoGeneralModel::getById($id);
     if ($pieza && isset($pieza[0])) {
+      $pieza[0]['fotografia_url'] = !empty($pieza[0]['fotografia']) ? 'assets/uploads/' . $pieza[0]['fotografia'] : '';
       echo json_encode(['status' => 200, 'data' => $pieza[0]]);
     } else {
       echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
