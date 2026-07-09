@@ -571,7 +571,7 @@ class adminController extends Controller implements ControllerInterface
         $campos = obtenerCamposAcervoGeneral();
         break;
       case 2:
-        $campos = obtenerCamposAcervoToluca();
+        $campos = obtenerCamposAcervoArqueologico();
         break;
       case 3:
         $campos = obtenerCamposAcervoMetepec();
@@ -1079,7 +1079,7 @@ function obtenerCamposAcervoGeneral()
   return $campos;
 }
 
-function obtenerCamposAcervoToluca()
+function obtenerCamposAcervoArqueologico()
 {
   $campos = [
     [
