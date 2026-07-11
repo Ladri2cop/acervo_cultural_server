@@ -565,13 +565,16 @@ class adminController extends Controller implements ControllerInterface
   {
     $tipo = $_POST['tipo_acervo'] ?? '';
     $campos = [];
+    $action = 'admin/post_registro';
 
     switch ($tipo) {
       case 1:
         $campos = obtenerCamposAcervoGeneral();
+        $action = 'admin/post_registro';
         break;
       case 2:
         $campos = obtenerCamposAcervoArqueologico();
+        $action = 'admin/post_registro_arq';
         break;
       case 3:
         $campos = obtenerCamposAcervoMetepec();
@@ -588,7 +591,7 @@ class adminController extends Controller implements ControllerInterface
     }
 
     // Si hay campos, construir el formulario
-    $form = new BeeFormBuilder('nuevo-registro', 'nuevo-registro', ['needs-validation'], 'admin/post_registro', true, false);
+    $form = new BeeFormBuilder('nuevo-registro', 'nuevo-registro', ['needs-validation'], $action, true, false);
     $form->addCustomFields(insert_inputs());
     $form->addCustomFields('
       <div class="col-12 mb-4 container-preview-image">
@@ -732,6 +735,74 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  function post_registro_arq()
+  {
+    // Procesar y guardar los datos del formulario de acervoGeneral
+    $data = [
+      'codigo_interno'          => $_POST['codigo_interno'] ?? '',
+      'no_inventario_scyt'      => $_POST['no_inventario_scyt'] ?? '',
+      'no_registro_inah'        => $_POST['no_registro_inah'] ?? '',
+      'otros'                   => $_POST['otros'] ?? '',
+      'nombre_titulo_pieza'     => $_POST['nombre_titulo_pieza'] ?? '',
+      'fotografia'              => '', // Se actualizará si se sube archivo
+      'numero_pieza_por_lote'   => $_POST['numero_pieza_por_lote'] ?? '',
+      'epoca'                   => $_POST['epoca'] ?? '',
+      'procedencia'             => $_POST['procedencia'] ?? '',
+      'material'                => $_POST['material'] ?? '',
+      'medidas'                 => $_POST['medidas'] ?? '',
+      'forma'                   => $_POST['forma'] ?? '',
+      'tecnica_manufactura'     => $_POST['tecnica_manufactura'] ?? '',
+      'tecnica_decorativa'      => $_POST['tecnica_decorativa'] ?? '',
+      'coleccion'               => $_POST['coleccion'] ?? '',
+      'obtencion'               => $_POST['obtencion'] ?? '',
+      'ubicacion_fisica'        => $_POST['ubicacion_fisica'] ?? '',
+      'estado_conservacion'     => $_POST['estado_conservacion'] ?? '',
+      'observaciones'           => $_POST['observaciones'] ?? '',
+      'descripcion'             => $_POST['descripcion'] ?? '',
+      'representacion'          => $_POST['representacion'] ?? '',
+      'id_modulo'               => 3
+    ];
+
+    // Procesar imagen si se envió
+    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === 0) {
+      $tmp_name = $_FILES['fotografia']['tmp_name'];
+      $filename = $_FILES['fotografia']['name'];
+      // $ext = pathinfo($filename, PATHINFO_EXTENSION);
+      // $new_name = generate_filename() . '.' . $ext;
+      $upload_path = UPLOADS . $filename;
+      if (move_uploaded_file($tmp_name, $upload_path)) {
+        $data['fotografia'] = $filename;
+      } else {
+        header('Content-Type: application/json');
+        echo json_encode([
+          'status' => 500,
+          'msg' => 'Error al subir la imagen.'
+        ]);
+        exit;
+      }
+    }
+
+    // Guardar en la base de datos usando el modelo AcervoArqueologicoModel
+    require_once APP . 'models/acervoArqueologicoModel.php';
+    $id = AcervoArqueologicoModel::addPieza($data);
+
+    if ($id) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'msg' => 'Registro guardado correctamente',
+        'id' => $id
+      ]);
+    } else {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al guardar el registro'
+      ]);
+    }
+    exit;
+  }
+
   // Endpoint para AJAX: listado paginado de Acervo General
   public function get_acervo_general()
   {
@@ -766,6 +837,60 @@ class adminController extends Controller implements ControllerInterface
         // 'autor' => $pieza['autor'],
         'descripcion' => $pieza['descripcion'],
         'fecha' => $pieza['anio'],
+      ];
+    }, $piezas);
+
+    // Paginación
+    $pagination = [
+      'current_page' => $page,
+      'total_pages' => max(1, ceil($total / $perPage)),
+      'total' => $total,
+      'per_page' => $perPage
+    ];
+
+    header('Content-Type: application/json');
+    echo json_encode([
+      'status' => 200,
+      'data' => $data,
+      'pagination' => $pagination
+    ]);
+    exit;
+  }
+
+  // Endpoint para AJAX: listado paginado de Acervo Arqueológico
+  public function get_acervo_arq()
+  {
+    // Parámetros de paginación y búsqueda
+    $page = isset($_POST['page']) ? (int)$_POST['page'] : 1;
+    $perPage = isset($_POST['per_page']) ? (int)$_POST['per_page'] : 10;
+    $search = isset($_POST['search']) ? trim($_POST['search']) : '';
+    $offset = ($page - 1) * $perPage;
+
+    require_once APP . 'models/acervoArqueologicoModel.php';
+
+    // Filtro de búsqueda simple (nombre o autor)
+    $all = AcervoArqueologicoModel::getAll();
+    if ($search !== '') {
+      $all = array_filter($all, function ($pieza) use ($search) {
+        return stripos($pieza['nombre_titulo_pieza'], $search) !== false
+          || stripos($pieza['codigo_interno'], $search) !== false;
+      });
+      $all = array_values($all);
+    }
+
+    $total = count($all);
+    $piezas = array_slice($all, $offset, $perPage);
+
+    // Formatear datos para la tabla
+    $data = array_map(function ($pieza) {
+      return [
+        'image' => !empty($pieza['fotografia']) ? 'assets/uploads/' . $pieza['fotografia'] : '',
+        'id' => $pieza['id_acervo_arq'],
+        'nombre' => $pieza['nombre_titulo_pieza'],
+        'ubicacion' => $pieza['ubicacion_fisica'],
+        // 'autor' => $pieza['autor'],
+        'descripcion' => $pieza['descripcion'],
+        'no_registro_inah' => $pieza['no_registro_inah'],
       ];
     }, $piezas);
 
@@ -834,6 +959,54 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  // Editar pieza de acervo arqueológico (AJAX)
+  public function acervo_arq_editar()
+  {
+    $id = isset($_POST['id_acervo_arq']) ? (int)$_POST['id_acervo_arq'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
+    if ($id <= 0) {
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    require_once APP . 'models/acervoArqueologicoModel.php';
+    $piezaActual = AcervoArqueologicoModel::getById($id);
+    $fotoActual = ($piezaActual && isset($piezaActual[0]['fotografia'])) ? $piezaActual[0]['fotografia'] : '';
+
+    $data = $_POST;
+    unset($data['id_acervo_arq']);
+    unset($data['id']);
+    unset($data['csrf']);
+    unset($data['fotografia_actual']);
+
+    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
+      $tmpName = $_FILES['fotografia']['tmp_name'];
+      $fileName = $_FILES['fotografia']['name'];
+      $newName = basename($fileName);
+
+      if (!move_uploaded_file($tmpName, UPLOADS . $newName)) {
+        echo json_encode(['status' => 500, 'msg' => 'Error al subir la nueva fotografía']);
+        exit;
+      }
+
+      $data['fotografia'] = $newName;
+
+      if (!empty($fotoActual) && is_file(UPLOADS . $fotoActual)) {
+        unlink(UPLOADS . $fotoActual);
+      }
+    } elseif (!empty($_POST['fotografia_actual'])) {
+      $data['fotografia'] = $_POST['fotografia_actual'];
+    } elseif (!empty($fotoActual)) {
+      $data['fotografia'] = $fotoActual;
+    }
+
+    $ok = AcervoArqueologicoModel::updatePieza($id, $data);
+    if ($ok) {
+      echo json_encode(['status' => 200, 'msg' => 'Pieza actualizada correctamente']);
+    } else {
+      echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
+    }
+    exit;
+  }
+
   // Eliminar pieza de acervo general (AJAX)
   public function acervo_general_eliminar()
   {
@@ -852,6 +1025,24 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  // Eliminar pieza de acervo arqueológico (AJAX)
+  public function acervo_arq_eliminar()
+  {
+    $id = isset($_POST['id_acervo_arq']) ? (int)$_POST['id_acervo_arq'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
+    if ($id <= 0) {
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    require_once APP . 'models/acervoArqueologicoModel.php';
+    $ok = AcervoArqueologicoModel::deletePieza($id);
+    if ($ok) {
+      echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
+    } else {
+      echo json_encode(['status' => 500, 'msg' => 'Error al eliminar la pieza']);
+    }
+    exit;
+  }
+
   // Obtener todos los datos de una pieza de acervo general (AJAX)
   public function acervo_general_get_by_id()
   {
@@ -862,6 +1053,25 @@ class adminController extends Controller implements ControllerInterface
     }
     require_once APP . 'models/acervoGeneralModel.php';
     $pieza = AcervoGeneralModel::getById($id);
+    if ($pieza && isset($pieza[0])) {
+      $pieza[0]['fotografia_url'] = !empty($pieza[0]['fotografia']) ? 'assets/uploads/' . $pieza[0]['fotografia'] : '';
+      echo json_encode(['status' => 200, 'data' => $pieza[0]]);
+    } else {
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+    }
+    exit;
+  }
+
+  // Obtener todos los datos de una pieza de acervo arqueológico (AJAX)
+  public function acervo_arq_get_by_id()
+  {
+    $id = isset($_POST['id_acervo_arq']) ? (int)$_POST['id_acervo_arq'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
+    if ($id <= 0) {
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    require_once APP . 'models/acervoArqueologicoModel.php';
+    $pieza = AcervoArqueologicoModel::getById($id);
     if ($pieza && isset($pieza[0])) {
       $pieza[0]['fotografia_url'] = !empty($pieza[0]['fotografia']) ? 'assets/uploads/' . $pieza[0]['fotografia'] : '';
       echo json_encode(['status' => 200, 'data' => $pieza[0]]);
@@ -1095,13 +1305,35 @@ function obtenerCamposAcervoArqueologico()
     ],
     [
       'type' => 'text',
-      'name' => 'no_inventario',
-      'label' => 'Número de inventario',
-      'id' => 'no-inventario',
+      'name' => 'no_inventario_scyt',
+      'label' => 'Número de inventario SCYT',
+      'id' => 'no-inventario-scyt',
+      'class' => 'form-control',
+      'required' => true,
+      'default_value' => '',
+      'placeholder' => 'Ej. CI-001',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'no_registro_inah',
+      'label' => 'Número de registro INAH',
+      'id' => 'no-registro-inah',
       'class' => 'form-control',
       'required' => true,
       'default_value' => '',
       'placeholder' => 'Ej. INV-2025-001',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'otros',
+      'label' => 'Otros',
+      'id' => 'otros',
+      'class' => 'form-control',
+      'required' => true,
+      'default_value' => '',
+      'placeholder' => 'Ej. Escultura de barro',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -1116,13 +1348,14 @@ function obtenerCamposAcervoArqueologico()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'select',
-      'name' => 'material',
-      'label' => 'Material',
-      'id' => 'material',
-      'class' => 'form-select',
+      'type' => 'text',
+      'name' => 'numero_pieza_por_lote',
+      'label' => 'Número de pieza por lote',
+      'id' => 'numero-pieza-por-lote',
+      'class' => 'form-control',
       'required' => true,
-      'options' => ['Madera', 'Metal', 'Cerámica', 'Textil'],
+      'default_value' => '',
+      'placeholder' => 'Ej. Escultura de barro',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -1136,55 +1369,93 @@ function obtenerCamposAcervoArqueologico()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'number',
-      'name' => 'alto',
-      'label' => 'Alto (cm)',
-      'id' => 'alto',
+      'type' => 'text',
+      'name' => 'procedencia',
+      'label' => 'Procedencia',
+      'id' => 'procedencia',
       'class' => 'form-control',
-      'required' => false,
+      'required' => true,
       'default_value' => '',
-      'min' => 0,
-      'max' => 9999,
-      'step' => 'any',
-      'placeholder' => '0.00',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
-      'type' => 'number',
-      'name' => 'ancho',
-      'label' => 'Ancho (cm)',
-      'id' => 'ancho',
-      'class' => 'form-control',
-      'required' => false,
-      'default_value' => '',
-      'min' => 0,
-      'max' => 9999,
-      'step' => 'any',
-      'placeholder' => '0.00',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
-      'type' => 'number',
-      'name' => 'profundidad',
-      'label' => 'Profundidad (cm)',
-      'id' => 'profundidad',
-      'class' => 'form-control',
-      'required' => false,
-      'default_value' => '',
-      'min' => 0,
-      'max' => 9999,
-      'step' => 'any',
-      'placeholder' => '0.00',
+      'placeholder' => 'Ej. Escultura de barro',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
       'type' => 'select',
+      'name' => 'Material',
+      'label' => 'Material',
+      'id' => 'material',
+      'class' => 'form-select',
+      'required' => false,
+      'options' => ['Madera', 'Metal', 'Cerámica', 'Textil'],
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'number',
+      'name' => 'medidas',
+      'label' => 'Medidas (cm)',
+      'id' => 'medidas',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'min' => 0,
+      'max' => 9999,
+      'step' => 'any',
+      'placeholder' => ' 1cm x 1cm x 1cm',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'forma',
+      'label' => 'Forma',
+      'id' => 'forma',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Ej. Escultura de barro',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'tecnica_manufactura',
+      'label' => 'Técnica de manufactura',
+      'id' => 'tecnica-manufactura',
+      'class' => 'form-control',
+      'required' => true,
+      'default_value' => '',
+      'placeholder' => 'Ej. Escultura de barro',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'tecnica_decorativa',
+      'label' => 'Técnica decorativa',
+      'id' => 'tecnica-decorativa',
+      'class' => 'form-control',
+      'required' => true,
+      'default_value' => '',
+      'placeholder' => 'Ej. Escultura de barro',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
       'name' => 'coleccion',
       'label' => 'Colección',
       'id' => 'coleccion',
-      'class' => 'form-select',
-      'required' => false,
-      'options' => ['Colección permanente', 'Colección temporal', 'Donación'],
+      'class' => 'form-control',
+      'required' => true,
+      'default_value' => '',
+      'placeholder' => 'Ej. Escultura de barro',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'obtencion',
+      'label' => 'Obtención',
+      'id' => 'obtencion',
+      'class' => 'form-control',
+      'required' => true,
+      'default_value' => '',
+      'placeholder' => 'Ej. Escultura de barro',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -1209,15 +1480,17 @@ function obtenerCamposAcervoArqueologico()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'text',
-      'name' => 'status_estado',
-      'label' => 'Estado actual',
-      'id' => 'status-estado',
+      'type' => 'textarea',
+      'name' => 'observaciones',
+      'label' => 'Observaciones',
+      'id' => 'observaciones',
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
-      'placeholder' => 'Ej. En exhibición',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+      'placeholder' => 'Descripción detallada de la pieza',
+      'rows' => 4,
+      'cols' => 5,
+      'column_class' => 'col-12 mb-3'
     ],
     [
       'type' => 'textarea',
@@ -1228,6 +1501,19 @@ function obtenerCamposAcervoArqueologico()
       'required' => false,
       'default_value' => '',
       'placeholder' => 'Descripción detallada de la pieza',
+      'rows' => 4,
+      'cols' => 5,
+      'column_class' => 'col-12 mb-3'
+    ],
+    [
+      'type' => 'textarea',
+      'name' => 'representacion',
+      'label' => 'Representación',
+      'id' => 'representacion',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Representación detallada de la pieza',
       'rows' => 4,
       'cols' => 5,
       'column_class' => 'col-12 mb-3'

@@ -116,8 +116,9 @@ function inicializarEnvioFormulario() {
 
     const imagenAcervo = document.getElementById("imageInput");
     const formData = new FormData(form); // 👈 Captura todos los campos y archivos
+    const endpoint = form.getAttribute("action") || "admin/post_registro";
 
-    fetch("admin/post_registro", {
+    fetch(endpoint, {
       method: "POST",
       body: formData,
     })
@@ -125,8 +126,8 @@ function inicializarEnvioFormulario() {
       .then((data) => {
         if (data.status === 200) {
           // ✅ Mostrar mensaje sin redirigir
-          toastr.success("Producto registrado con éxito.", "EXCELENTE");
-          console.log("Datos recibidos:", data.data);
+          toastr.success(data.msg || "Registro guardado con éxito.", "EXCELENTE");
+          console.log("Datos recibidos:", data);
           form.reset();
           const previewImage = document.getElementById("previewImage");
           const previewText = document.getElementById("previewText");
@@ -147,7 +148,7 @@ function inicializarEnvioFormulario() {
             previewContainer.classList.remove("preview-reverse"); // 👈 reinicia vista previa
         } else {
           toastr.error(
-            data.message || "Error al registrar el producto.",
+            data.msg || data.message || "Error al registrar el registro.",
             "ERROR"
           );
           console.error("Error en datos recibidos:", data);
