@@ -577,7 +577,8 @@ class adminController extends Controller implements ControllerInterface
         $action = 'admin/post_registro_arq';
         break;
       case 3:
-        $campos = obtenerCamposAcervoMetepec();
+        $campos = obtenerCamposAcervoNumismatica();
+        $action = 'admin/post_registro_num';
         break;
     }
 
@@ -803,6 +804,67 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  function post_registro_numismatica()
+  {
+    // Procesar y guardar los datos del formulario de acervoNumismatica
+    $data = [
+      'codigo_interno'        => $_POST['codigo_interno'] ?? '',
+      'no_inventario'         => $_POST['no_inventario'] ?? '',
+      'fotografia'            => '', // Se actualizará si se sube archivo
+      'tipo_obra'             => $_POST['tipo_obra'] ?? '',
+      'ensayador'             => $_POST['ensayador'] ?? '',
+      'denominacion'          => $_POST['denominacion'] ?? '',
+      'material'              => $_POST['material'] ?? '',
+      'fecha_epoca'           => $_POST['fecha_epoca'] ?? '',
+      'dimensiones'           => $_POST['dimensiones'] ?? '',
+      'ubicacion_fisica'      => $_POST['ubicacion_fisica'] ?? '',
+      'estado_conservacion'   => $_POST['estado_conservacion'] ?? '',
+      'observaciones'         => $_POST['observaciones'] ?? '',
+      'descripcion_cara_a'    => $_POST['descripcion_cara_a'] ?? '',
+      'descripcion_cara_b'    => $_POST['descripcion_cara_b'] ?? '',
+      'id_modulo'             => 4
+    ];
+
+    // Procesar imagen si se envió
+    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === 0) {
+      $tmp_name = $_FILES['fotografia']['tmp_name'];
+      $filename = $_FILES['fotografia']['name'];
+      // $ext = pathinfo($filename, PATHINFO_EXTENSION);
+      // $new_name = generate_filename() . '.' . $ext;
+      $upload_path = UPLOADS . $filename;
+      if (move_uploaded_file($tmp_name, $upload_path)) {
+        $data['fotografia'] = $filename;
+      } else {
+        header('Content-Type: application/json');
+        echo json_encode([
+          'status' => 500,
+          'msg' => 'Error al subir la imagen.'
+        ]);
+        exit;
+      }
+    }
+
+    // Guardar en la base de datos usando el modelo AcervoNumismaticaModel
+    require_once APP . 'models/acervoNumismaticaModel.php';
+    $id = AcervoNumismaticaModel::addPieza($data);
+
+    if ($id) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'msg' => 'Registro guardado correctamente',
+        'id' => $id
+      ]);
+    } else {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al guardar el registro'
+      ]);
+    }
+    exit;
+  }
+
   // Endpoint para AJAX: listado paginado de Acervo General
   public function get_acervo_general()
   {
@@ -892,6 +954,60 @@ class adminController extends Controller implements ControllerInterface
         'descripcion' => $pieza['descripcion'],
         'fecha' => $pieza['no_registro_inah'],
         'no_registro_inah' => $pieza['no_registro_inah'],
+      ];
+    }, $piezas);
+
+    // Paginación
+    $pagination = [
+      'current_page' => $page,
+      'total_pages' => max(1, ceil($total / $perPage)),
+      'total' => $total,
+      'per_page' => $perPage
+    ];
+
+    header('Content-Type: application/json');
+    echo json_encode([
+      'status' => 200,
+      'data' => $data,
+      'pagination' => $pagination
+    ]);
+    exit;
+  }
+
+  // Endpoint para AJAX: listado paginado de Acervo Numismática
+  public function get_acervo_numismatica()
+  {
+    // Parámetros de paginación y búsqueda
+    $page = isset($_POST['page']) ? (int)$_POST['page'] : 1;
+    $perPage = isset($_POST['per_page']) ? (int)$_POST['per_page'] : 10;
+    $search = isset($_POST['search']) ? trim($_POST['search']) : '';
+    $offset = ($page - 1) * $perPage;
+
+    require_once APP . 'models/acervoNumismaticaModel.php';
+
+    // Filtro de búsqueda simple (nombre o autor)
+    $all = AcervoNumismaticaModel::getAll();
+    if ($search !== '') {
+      $all = array_filter($all, function ($pieza) use ($search) {
+        return stripos($pieza['nombre_titulo_pieza'], $search) !== false
+          || stripos($pieza['autor'], $search) !== false;
+      });
+      $all = array_values($all);
+    }
+
+    $total = count($all);
+    $piezas = array_slice($all, $offset, $perPage);
+
+    // Formatear datos para la tabla
+    $data = array_map(function ($pieza) {
+      return [
+        'image' => !empty($pieza['fotografia']) ? 'assets/uploads/' . $pieza['fotografia'] : '',
+        'id' => $pieza['id_acervo_numismatica'],
+        'codigo_interno' => $pieza['codigo_interno'],
+        'ubicacion' => $pieza['ubicacion_fisica'],
+        // 'autor' => $pieza['autor'],
+        'material' => $pieza['material'],
+        'fecha' => $pieza['fecha_epoca'],
       ];
     }, $piezas);
 
@@ -1008,6 +1124,54 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  // Editar pieza de acervo numismático (AJAX)
+  public function acervo_numismatica_editar()
+  {
+    $id = isset($_POST['id_acervo_numismatica']) ? (int)$_POST['id_acervo_numismatica'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
+    if ($id <= 0) {
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    require_once APP . 'models/acervoNumismaticaModel.php';
+    $piezaActual = AcervoNumismaticaModel::getById($id);
+    $fotoActual = ($piezaActual && isset($piezaActual[0]['fotografia'])) ? $piezaActual[0]['fotografia'] : '';
+
+    $data = $_POST;
+    unset($data['id_acervo_numismatica']);
+    unset($data['id']);
+    unset($data['csrf']);
+    unset($data['fotografia_actual']);
+
+    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
+      $tmpName = $_FILES['fotografia']['tmp_name'];
+      $fileName = $_FILES['fotografia']['name'];
+      $newName = basename($fileName);
+
+      if (!move_uploaded_file($tmpName, UPLOADS . $newName)) {
+        echo json_encode(['status' => 500, 'msg' => 'Error al subir la nueva fotografía']);
+        exit;
+      }
+
+      $data['fotografia'] = $newName;
+
+      if (!empty($fotoActual) && is_file(UPLOADS . $fotoActual)) {
+        unlink(UPLOADS . $fotoActual);
+      }
+    } elseif (!empty($_POST['fotografia_actual'])) {
+      $data['fotografia'] = $_POST['fotografia_actual'];
+    } elseif (!empty($fotoActual)) {
+      $data['fotografia'] = $fotoActual;
+    }
+
+    $ok = AcervoNumismaticaModel::updatePieza($id, $data);
+    if ($ok) {
+      echo json_encode(['status' => 200, 'msg' => 'Pieza actualizada correctamente']);
+    } else {
+      echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
+    }
+    exit;
+  }
+
   // Eliminar pieza de acervo general (AJAX)
   public function acervo_general_eliminar()
   {
@@ -1036,6 +1200,24 @@ class adminController extends Controller implements ControllerInterface
     }
     require_once APP . 'models/acervoArqueologicoModel.php';
     $ok = AcervoArqueologicoModel::deletePieza($id);
+    if ($ok) {
+      echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
+    } else {
+      echo json_encode(['status' => 500, 'msg' => 'Error al eliminar la pieza']);
+    }
+    exit;
+  }
+
+  // Eliminar pieza de acervo general (AJAX)
+  public function acervo_numismatica_eliminar()
+  {
+    $id = isset($_POST['id_acervo_numismatica']) ? (int)$_POST['id_acervo_numismatica'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
+    if ($id <= 0) {
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    require_once APP . 'models/acervoNumismaticaModel.php';
+    $ok = AcervoNumismaticaModel::deletePieza($id);
     if ($ok) {
       echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
     } else {
@@ -1081,6 +1263,26 @@ class adminController extends Controller implements ControllerInterface
     }
     exit;
   }
+
+  // Obtener todos los datos de una pieza de acervo numismática (AJAX)
+  public function acervo_numismatica_get_by_id()
+  {
+    $id = isset($_POST['id_acervo_numismatica']) ? (int)$_POST['id_acervo_numismatica'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
+    if ($id <= 0) {
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    require_once APP . 'models/acervoNumismaticaModel.php';
+    $pieza = AcervoNumismaticaModel::getById($id);
+    if ($pieza && isset($pieza[0])) {
+      $pieza[0]['fotografia_url'] = !empty($pieza[0]['fotografia']) ? 'assets/uploads/' . $pieza[0]['fotografia'] : '';
+      echo json_encode(['status' => 200, 'data' => $pieza[0]]);
+    } else {
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+    }
+    exit;
+  }
+
 }
 
 function obtenerCamposAcervoGeneral()
@@ -1524,7 +1726,7 @@ function obtenerCamposAcervoArqueologico()
   return $campos;
 }
 
-function obtenerCamposAcervoMetepec()
+function obtenerCamposAcervoNumismatica()
 {
   $campos = [
     [
@@ -1550,48 +1752,6 @@ function obtenerCamposAcervoMetepec()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'text',
-      'name' => 'nombre_pieza',
-      'label' => 'Nombre de la pieza',
-      'id' => 'nombre-pieza',
-      'class' => 'form-control',
-      'required' => true,
-      'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
-      'type' => 'text',
-      'name' => 'autor',
-      'label' => 'Autor',
-      'id' => 'autor',
-      'class' => 'form-control',
-      'required' => false,
-      'default_value' => '',
-      'placeholder' => 'Ej. Anónimo',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
-      'type' => 'date',
-      'name' => 'anio',
-      'label' => 'Año',
-      'id' => 'anio',
-      'class' => 'form-control',
-      'required' => false,
-      'default_value' => '1970-01-01',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
-      'type' => 'select',
-      'name' => 'tecnica',
-      'label' => 'Técnica',
-      'id' => 'tecnica',
-      'class' => 'form-select',
-      'required' => true,
-      'options' => ['Óleo', 'Acuarela', 'Grabado', 'Mixta'],
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
       'type' => 'select',
       'name' => 'tipo_obra',
       'label' => 'Tipo de obra',
@@ -1599,6 +1759,28 @@ function obtenerCamposAcervoMetepec()
       'class' => 'form-select',
       'required' => true,
       'options' => ['Pintura', 'Escultura', 'Fotografía', 'Objeto'],
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'ensayador',
+      'label' => 'Ensayador',
+      'id' => 'ensayador',
+      'class' => 'form-control',
+      'required' => true,
+      'default_value' => '',
+      'placeholder' => 'Ej. INV-2025-001',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'denominacion',
+      'label' => 'Denominación',
+      'id' => 'denominacion',
+      'class' => 'form-control',
+      'required' => true,
+      'default_value' => '',
+      'placeholder' => 'Ej. INV-2025-001',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -1613,9 +1795,9 @@ function obtenerCamposAcervoMetepec()
     ],
     [
       'type' => 'select',
-      'name' => 'epoca',
+      'name' => 'fecha_epoca',
       'label' => 'Época',
-      'id' => 'epoca',
+      'id' => 'fecha-epoca',
       'class' => 'form-select',
       'required' => false,
       'options' => ['Prehispánica', 'Colonial', 'Moderna', 'Contemporánea'],
@@ -1623,9 +1805,9 @@ function obtenerCamposAcervoMetepec()
     ],
     [
       'type' => 'number',
-      'name' => 'alto',
-      'label' => 'Alto (cm)',
-      'id' => 'alto',
+      'name' => 'dimensiones',
+      'label' => 'Dimensiones (cm)',
+      'id' => 'dimensiones',
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
@@ -1636,42 +1818,64 @@ function obtenerCamposAcervoMetepec()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'number',
-      'name' => 'ancho',
-      'label' => 'Ancho (cm)',
-      'id' => 'ancho',
+      'type' => 'text',
+      'name' => 'ubicacion_fisica',
+      'label' => 'Ubicación física',
+      'id' => 'ubicacion-fisica',
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
-      'min' => 0,
-      'max' => 9999,
-      'step' => 'any',
-      'placeholder' => '0.00',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
-      'type' => 'number',
-      'name' => 'profundidad',
-      'label' => 'Profundidad (cm)',
-      'id' => 'profundidad',
-      'class' => 'form-control',
-      'required' => false,
-      'default_value' => '',
-      'min' => 0,
-      'max' => 9999,
-      'step' => 'any',
-      'placeholder' => '0.00',
+      'placeholder' => 'Ej. Sala 3, vitrina 5',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
       'type' => 'select',
-      'name' => 'coleccion',
-      'label' => 'Colección',
-      'id' => 'coleccion',
+      'name' => 'estado_conservacion',
+      'label' => 'Estado de conservación',
+      'id' => 'estado-conservacion',
       'class' => 'form-select',
       'required' => false,
-      'options' => ['Colección permanente', 'Colección temporal', 'Donación'],
+      'options' => ['Excelente', 'Bueno', 'Regular', 'Dañado'],
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'textarea',
+      'name' => 'observaciones',
+      'label' => 'Observaciones',
+      'id' => 'observaciones',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => '',
+      'rows' => 4,
+      'cols' => 5,
       'column_class' => 'col-12 mb-3'
+    ],
+    [
+      'type' => 'textarea',
+      'name' => 'descripcion_cara_a',
+      'label' => "Descripción de la cara A",
+      'id' => "descripcion-cara-a",
+      "class" => "form-control",
+      "required" => false,
+      "default_value" => "",
+      "placeholder" => "",
+      "rows" => 4,
+      "cols" => 5,
+      "column_class" => "col-12 mb-3"
+    ],
+    [
+        "type" => "textarea",
+        "name" => "descripcion_cara_b",
+        "label" => "Descripción de la cara B",
+        "id" => "descripcion-cara-b",
+        "class" => "form-control",
+        "required" => false,
+        "default_value" => "",
+        "placeholder" => "",
+        "rows" => 4,
+        "cols" => 5,
+        "column_class" => "col-12 mb-3"
     ]
   ];
 
