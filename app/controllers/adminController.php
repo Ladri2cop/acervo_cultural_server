@@ -890,6 +890,7 @@ class adminController extends Controller implements ControllerInterface
         'ubicacion' => $pieza['ubicacion_fisica'],
         // 'autor' => $pieza['autor'],
         'descripcion' => $pieza['descripcion'],
+        'fecha' => $pieza['no_registro_inah'],
         'no_registro_inah' => $pieza['no_registro_inah'],
       ];
     }, $piezas);

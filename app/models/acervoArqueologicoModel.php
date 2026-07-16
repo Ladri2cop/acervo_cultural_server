@@ -61,7 +61,7 @@ class AcervoArqueologicoModel extends Model
     {
         $haystack = [self::$primaryKey => $id];
         $data['updated_at'] = now();
-        return parent::update(self::$table, $data, $haystack);
+        return parent::update(self::$table, $haystack, $data);
     }
 
     public static function deletePieza($id)
@@ -69,7 +69,7 @@ class AcervoArqueologicoModel extends Model
         $haystack = [self::$primaryKey => $id];
         $data = ['status' => 0];
         $data['updated_at'] = now();
-        return parent::update(self::$table, $data, $haystack);
+        return parent::update(self::$table, $haystack, $data);
     }
 
     /**

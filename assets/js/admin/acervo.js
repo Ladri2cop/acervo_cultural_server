@@ -1,8 +1,22 @@
 $(document).ready(function () {
   console.log("registros.js loaded");
-  // mostrarListaAcervo();
-  mostrarListaPaginada();
   inicializarVistaPreviaEdicion();
+  mostrarEstadoInicialAcervo();
+
+  let searchTimeout;
+  let perPageTimeout;
+
+  $('#tipo_registro').on('change', function () {
+    const tipoAcervo = $(this).val();
+    if (!tipoAcervo) {
+      mostrarEstadoInicialAcervo();
+      return;
+    }
+
+    const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
+    const searchTerm = $('#buscar-registro').val() || '';
+    mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
+  });
 
   // Aplica Select2 a todos los selects dentro de la barra de filtros
   $("#ubicacion, #tipo_registro, #anio, #cultura").select2({
@@ -13,39 +27,109 @@ $(document).ready(function () {
   });
 
   // Funcionalidad de búsqueda con debounce
-  let searchTimeout;
   $("#buscar-registro").on("input", function () {
     clearTimeout(searchTimeout);
     const searchTerm = $(this).val();
+    const tipoAcervo = $("#tipo_registro").val();
     
+    if (!tipoAcervo) {
+      return;
+    }
+
     // Esperar 500ms después de que el usuario deje de escribir
     searchTimeout = setTimeout(function () {
       console.log("Buscando:", searchTerm);
-      mostrarListaPaginada(1, 10, searchTerm); // Reiniciar a página 1 con el término de búsqueda
+      const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
+      mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo); // Reiniciar a página 1 con el término de búsqueda
     }, 500);
+  });
+
+  $("#numeroRegistros").on("change", function () {
+    const tipoAcervo = $("#tipo_registro").val();
+    if (!tipoAcervo) {
+      return;
+    }
+
+    clearTimeout(perPageTimeout);
+    perPageTimeout = setTimeout(function () {
+      const perPage = parseInt($("#numeroRegistros").val(), 10) || 10;
+      const searchTerm = $("#buscar-registro").val() || '';
+      mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
+    }, 100);
   });
 });
 
+function mostrarEstadoInicialAcervo() {
+  const loader = document.getElementById("loader-tabla");
+  const tabla = document.getElementById("tabla-acervo");
+  const tablaPiezas = document.getElementById("tabla-piezas");
+  const paginacion = document.getElementById("paginacion-container");
+
+  if (loader) loader.style.display = "none";
+  if (tabla) tabla.style.display = "table";
+  if (paginacion) paginacion.style.opacity = "1";
+
+  if (tablaPiezas) {
+    tablaPiezas.innerHTML = `
+      <tr>
+        <td colspan="6" class="text-center py-4">
+          <i class='bx bx-filter-alt bx-lg text-muted'></i>
+          <p class="text-muted mt-2">Selecciona un tipo de acervo para cargar los registros</p>
+        </td>
+      </tr>
+    `;
+  }
+}
+
+function obtenerConfiguracionAcervo(tipoAcervo) {
+  if (tipoAcervo === 'arqueologico') {
+    return {
+      listUrl: 'admin/get_acervo_arq',
+      deleteUrl: 'admin/acervo_arq_eliminar',
+      getByIdUrl: 'admin/acervo_arq_get_by_id',
+      editUrl: 'admin/acervo_arq_editar',
+      idField: 'id_acervo_arq',
+      dateField: 'no_registro_inah',
+      tipo: 'arqueologico',
+    };
+  }
+
+  return {
+    listUrl: 'admin/get_acervo_general',
+    deleteUrl: 'admin/acervo_general_eliminar',
+    getByIdUrl: 'admin/acervo_general_get_by_id',
+    editUrl: 'admin/acervo_general_editar',
+    idField: 'id_acervo_general',
+    dateField: 'fecha',
+    tipo: 'general',
+  };
+}
+
 function inicializarVistaPreviaEdicion() {
-  const imageInput = document.getElementById('editar-fotografia');
-  const previewContainer = document.getElementById('editar-previewContainer');
-  const previewText = document.getElementById('editar-previewText');
-  const previewIcon = document.getElementById('editar-previewIcon');
+  inicializarVistaPreviaEdicionPorPrefijo('editar');
+  inicializarVistaPreviaEdicionPorPrefijo('editar-arq');
+}
+
+function inicializarVistaPreviaEdicionPorPrefijo(prefijo) {
+  const imageInput = document.getElementById(`${prefijo}-fotografia`);
+  const previewContainer = document.getElementById(`${prefijo}-previewContainer`);
+  const previewText = document.getElementById(`${prefijo}-previewText`);
+  const previewIcon = document.getElementById(`${prefijo}-previewIcon`);
 
   if (!imageInput || !previewContainer || !previewText || !previewIcon) return;
 
-  let previewImage = document.getElementById('editar-previewImage');
+  let previewImage = document.getElementById(`${prefijo}-previewImage`);
 
   if (!previewImage) {
     previewImage = document.createElement('img');
-    previewImage.id = 'editar-previewImage';
+    previewImage.id = `${prefijo}-previewImage`;
     previewImage.className = 'img-fluid mt-3 fade-in w-100';
     previewImage.style.maxHeight = '240px';
     previewImage.style.display = 'none';
     previewContainer.appendChild(previewImage);
   }
 
-  window.mostrarPreviewEdicionFotografia = function (src, nombreArchivo = '') {
+  const mostrarPreview = function (src, nombreArchivo = '') {
     if (!src) {
       previewImage.src = '';
       previewImage.style.display = 'none';
@@ -80,22 +164,38 @@ function inicializarVistaPreviaEdicion() {
     previewImage.src = src;
   };
 
+  if (prefijo === 'editar') {
+    window.mostrarPreviewEdicionFotografia = mostrarPreview;
+  }
+
+  if (prefijo === 'editar-arq') {
+    window.mostrarPreviewEdicionFotografiaArq = mostrarPreview;
+  }
+
   imageInput.addEventListener('change', function () {
     const file = this.files[0];
 
     if (file) {
       const reader = new FileReader();
       reader.onload = function (e) {
-        window.mostrarPreviewEdicionFotografia(e.target.result, file.name);
+        mostrarPreview(e.target.result, file.name);
       };
       reader.readAsDataURL(file);
     } else {
-      window.mostrarPreviewEdicionFotografia('', 'No hay imagen seleccionada');
+      mostrarPreview('', 'No hay imagen seleccionada');
     }
   });
 }
 
-function mostrarListaPaginada(page = 1, perPage = 10, search = "") {
+function mostrarListaPaginada(page = 1, perPage = 10, search = "", tipoAcervo = null) {
+  const tipoSeleccionado = tipoAcervo || $('#tipo_registro').val();
+  if (!tipoSeleccionado) {
+    mostrarEstadoInicialAcervo();
+    return;
+  }
+
+  const config = obtenerConfiguracionAcervo(tipoSeleccionado);
+
   // Mostrar el loader y ocultar la tabla
   const loader = document.getElementById("loader-tabla");
   const tabla = document.getElementById("tabla-acervo");
@@ -127,7 +227,7 @@ function mostrarListaPaginada(page = 1, perPage = 10, search = "") {
   formData.append("csrf", Bee.csrf);
 
   $.ajax({
-    url: "admin/get_acervo_general",
+    url: config.listUrl,
     type: "POST",
     dataType: "json",
     data: formData,
@@ -173,8 +273,8 @@ function mostrarListaPaginada(page = 1, perPage = 10, search = "") {
           toastr.info(`No se encontraron resultados para "${search}"`, "Sin resultados");
         }
         
-        innerListaAcervo(piezas, pagination);
-        construirPaginacion(pagination, search);
+        innerListaAcervo(piezas, pagination, config);
+        construirPaginacion(pagination, search, tipoSeleccionado);
       } else {
         console.log(dataresponse);
         toastr.warning("No se pudieron cargar los datos", "Atención");
@@ -218,8 +318,9 @@ function mostrarListaAcervo() {
   });
 }
 
-function innerListaAcervo(piezas, pagination = null) {
+function innerListaAcervo(piezas, pagination = null, config = null) {
   const tabla = document.getElementById("tabla-piezas");
+  const tipoAcervo = config ? config.tipo : ($('#tipo_registro').val() || 'general');
   
   // Limpiar tabla antes de agregar nuevos datos
   tabla.innerHTML = "";
@@ -245,12 +346,14 @@ function innerListaAcervo(piezas, pagination = null) {
 
   piezas.forEach((pieza) => {
     const fila = document.createElement("tr");
+    const fechaPieza = pieza.fecha || pieza.no_registro_inah || '';
+    const tieneEdicion = true;
     fila.innerHTML = `
         <td><img src="${pieza.image}" alt="${pieza.nombre}" class="img__miniatura" /></td>
         <td>${pieza.nombre}</td>
         <td>${pieza.ubicacion}</td>
         <td>${pieza.descripcion}</td>
-        <td>${pieza.fecha}</td>
+        <td>${fechaPieza}</td>
         <td>
           <div class="dropdown">
             <button class="btn btn__actions btn-sm btn-outline-primary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -258,7 +361,7 @@ function innerListaAcervo(piezas, pagination = null) {
             </button>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item btn-ver" href="#" data-id="${pieza.id}"> <i class='bx text-info bx__iconmenu bx-eye-alt'></i> Ver</a></li>
-              <li><a class="dropdown-item btn-editar" href="#" data-id="${pieza.id}"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i>  Editar</a></li>
+              ${tieneEdicion ? `<li><a class="dropdown-item btn-editar" href="#" data-id="${pieza.id}"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i>  Editar</a></li>` : ''}
               <hr class="dropdown-divider">
               <li><a class="dropdown-item btn-eliminar" href="#" data-id="${pieza.id}"><i class='bx text-danger bx__iconmenu bx-trash'></i>  Eliminar</a></li>
             </ul>
@@ -275,30 +378,39 @@ function innerListaAcervo(piezas, pagination = null) {
       e.stopPropagation();
       const id = this.getAttribute('data-id');
       if (confirm('¿Seguro que deseas eliminar esta pieza?')) {
-        eliminarPieza(id);
+        eliminarPieza(id, tipoAcervo);
       }
     });
   });
 
-  tabla.querySelectorAll('.btn-editar').forEach(btn => {
-    btn.addEventListener('click', function(e) {
-      e.preventDefault();
-      e.stopPropagation();
-      const id = this.getAttribute('data-id');
-      abrirModalEditarPieza(id);
+  if (tipoAcervo === 'general') {
+    tabla.querySelectorAll('.btn-editar').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = this.getAttribute('data-id');
+        abrirModalEditarPieza(id, 'general');
+      });
     });
-  });
+  } else if (tipoAcervo === 'arqueologico') {
+    tabla.querySelectorAll('.btn-editar').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = this.getAttribute('data-id');
+        abrirModalEditarPiezaArq(id);
+      });
+    });
+  }
 }
 
-// Abre el modal de edición y rellena los campos
-function abrirModalEditarPieza(id) {
-  // Petición AJAX para obtener todos los datos de la pieza
+function abrirModalEditarPiezaArq(id) {
   let formData = new FormData();
   formData.append('id', id);
   formData.append('csrf', Bee.csrf);
 
   $.ajax({
-    url: 'admin/acervo_general_get_by_id',
+    url: 'admin/acervo_arq_get_by_id',
     type: 'POST',
     data: formData,
     processData: false,
@@ -307,17 +419,115 @@ function abrirModalEditarPieza(id) {
     success: function(resp) {
       if (resp.status === 200 && resp.data) {
         const pieza = resp.data;
-        const previewContainer = document.getElementById('editar-previewContainer');
-        const previewText = document.getElementById('editar-previewText');
-        const previewIcon = document.getElementById('editar-previewIcon');
-        const previewImage = document.getElementById('editar-previewImage');
-        const inputFotografia = document.getElementById('editar-fotografia');
+
+        $('#editar-arq-id').val(pieza.id_acervo_arq || pieza.id || '');
+        $('#editar-arq-codigo_interno').val(pieza.codigo_interno || '');
+        $('#editar-arq-no_inventario_scyt').val(pieza.no_inventario_scyt || '');
+        $('#editar-arq-no_registro_inah').val(pieza.no_registro_inah || '');
+        $('#editar-arq-otros').val(pieza.otros || '');
+        $('#editar-arq-nombre_titulo_pieza').val(pieza.nombre_titulo_pieza || '');
+        $('#editar-arq-numero_pieza_por_lote').val(pieza.numero_pieza_por_lote || '');
+        $('#editar-arq-epoca').val(pieza.epoca || '');
+        $('#editar-arq-procedencia').val(pieza.procedencia || '');
+        $('#editar-arq-material').val(pieza.material || '');
+        $('#editar-arq-medidas').val(pieza.medidas || '');
+        $('#editar-arq-forma').val(pieza.forma || '');
+        $('#editar-arq-tecnica_manufactura').val(pieza.tecnica_manufactura || '');
+        $('#editar-arq-tecnica_decorativa').val(pieza.tecnica_decorativa || '');
+        $('#editar-arq-coleccion').val(pieza.coleccion || '');
+        $('#editar-arq-obtencion').val(pieza.obtencion || '');
+        $('#editar-arq-ubicacion_fisica').val(pieza.ubicacion_fisica || '');
+        $('#editar-arq-estado_conservacion').val(pieza.estado_conservacion || '');
+        $('#editar-arq-observaciones').val(pieza.observaciones || '');
+        $('#editar-arq-descripcion').val(pieza.descripcion || '');
+        $('#editar-arq-representacion').val(pieza.representacion || '');
+        $('#editar-arq-fotografia_actual').val(pieza.fotografia || '');
+
+        const fotografiaUrlArq = pieza.fotografia_url || (pieza.fotografia ? `assets/uploads/${pieza.fotografia}` : '');
+        if (typeof window.mostrarPreviewEdicionFotografiaArq === 'function') {
+          window.mostrarPreviewEdicionFotografiaArq(fotografiaUrlArq, pieza.fotografia || 'Imagen cargada');
+        }
+
+        const inputFotografiaArq = document.getElementById('editar-arq-fotografia');
+        if (inputFotografiaArq) {
+          inputFotografiaArq.value = '';
+        }
+
+        const modalArq = new bootstrap.Modal(document.getElementById('modalEditarPiezaArq'));
+        modalArq.show();
+      } else {
+        toastr.error('No se pudo obtener la información de la pieza arqueológica', 'Error');
+      }
+    },
+    error: function() {
+      toastr.error('Error de red al obtener la pieza arqueológica', 'Error');
+    }
+  });
+}
+
+// Abre el modal de edición y rellena los campos
+function abrirModalEditarPieza(id, tipoAcervo = 'general') {
+  // Petición AJAX para obtener todos los datos de la pieza
+  let formData = new FormData();
+  formData.append('id', id);
+  formData.append('csrf', Bee.csrf);
+
+  const config = obtenerConfiguracionAcervo(tipoAcervo);
+
+  $.ajax({
+    url: config.getByIdUrl,
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    dataType: 'json',
+    success: function(resp) {
+      if (resp.status === 200 && resp.data) {
+        const pieza = resp.data;
+        if (tipoAcervo === 'arqueologico') {
+          $('#editar-arq-id').val(pieza.id_acervo_arq);
+          $('#editar-arq-codigo_interno').val(pieza.codigo_interno);
+          $('#editar-arq-no_inventario_scyt').val(pieza.no_inventario_scyt);
+          $('#editar-arq-no_registro_inah').val(pieza.no_registro_inah);
+          $('#editar-arq-otros').val(pieza.otros);
+          $('#editar-arq-nombre_titulo_pieza').val(pieza.nombre_titulo_pieza);
+          $('#editar-arq-numero_pieza_por_lote').val(pieza.numero_pieza_por_lote);
+          $('#editar-arq-epoca').val(pieza.epoca);
+          $('#editar-arq-procedencia').val(pieza.procedencia);
+          $('#editar-arq-material').val(pieza.material);
+          $('#editar-arq-medidas').val(pieza.medidas);
+          $('#editar-arq-forma').val(pieza.forma);
+          $('#editar-arq-tecnica_manufactura').val(pieza.tecnica_manufactura);
+          $('#editar-arq-tecnica_decorativa').val(pieza.tecnica_decorativa);
+          $('#editar-arq-coleccion').val(pieza.coleccion);
+          $('#editar-arq-obtencion').val(pieza.obtencion);
+          $('#editar-arq-ubicacion_fisica').val(pieza.ubicacion_fisica);
+          $('#editar-arq-estado_conservacion').val(pieza.estado_conservacion);
+          $('#editar-arq-observaciones').val(pieza.observaciones);
+          $('#editar-arq-descripcion').val(pieza.descripcion);
+          $('#editar-arq-representacion').val(pieza.representacion);
+          $('#editar-arq-fotografia_actual').val(pieza.fotografia || '');
+
+          const fotografiaUrlArq = pieza.fotografia_url || (pieza.fotografia ? `assets/uploads/${pieza.fotografia}` : '');
+          if (typeof window.mostrarPreviewEdicionFotografiaArq === 'function') {
+            window.mostrarPreviewEdicionFotografiaArq(fotografiaUrlArq, pieza.fotografia || 'Imagen cargada');
+          }
+
+          const inputFotografiaArq = document.getElementById('editar-arq-fotografia');
+          if (inputFotografiaArq) {
+            inputFotografiaArq.value = '';
+          }
+
+          const modalArq = new bootstrap.Modal(document.getElementById('modalEditarPiezaArq'));
+          modalArq.show();
+          return;
+        }
+
         $('#editar-id').val(pieza.id_acervo_general);
         $('#editar-codigo_interno').val(pieza.codigo_interno);
         $('#editar-no_inventario').val(pieza.no_inventario);
         $('#editar-nombre').val(pieza.nombre_titulo_pieza);
         $('#editar-cm').val(pieza.cm);
-        // Si tienes un campo para la imagen, puedes mostrar la miniatura aquí
         $('#editar-autor').val(pieza.autor);
         $('#editar-fecha').val(pieza.anio);
         $('#editar-epoca').val(pieza.epoca);
@@ -339,23 +549,9 @@ function abrirModalEditarPieza(id) {
           window.mostrarPreviewEdicionFotografia(fotografiaUrl, pieza.fotografia || 'Imagen cargada');
         }
 
+        const inputFotografia = document.getElementById('editar-fotografia');
         if (inputFotografia) {
           inputFotografia.value = '';
-          inputFotografia.onchange = function (event) {
-            const file = event.target.files && event.target.files[0];
-            if (!file || !previewImage || !previewText || !previewIcon || !previewContainer) return;
-            const reader = new FileReader();
-            reader.onload = function (e) {
-              previewImage.src = e.target.result;
-              previewImage.style.display = 'block';
-              previewImage.classList.add('show');
-              previewText.innerText = file.name;
-              previewText.classList.add('name-image_success');
-              previewIcon.style.display = 'none';
-              previewContainer.classList.add('preview-reverse');
-            };
-            reader.readAsDataURL(file);
-          };
         }
 
         const modal = new bootstrap.Modal(document.getElementById('modalEditarPieza'));
@@ -415,9 +611,73 @@ document.addEventListener('DOMContentLoaded', function() {
         success: function(resp) {
           if (resp.status === 200) {
             toastr.success(resp.msg, 'Actualizado');
-            mostrarListaPaginada();
+            const tipoAcervo = $('#tipo_registro').val() || 'general';
+            const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
+            const searchTerm = $('#buscar-registro').val() || '';
+            mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
             // Cerrar el modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarPieza'));
+            if (modal) modal.hide();
+          } else {
+            toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
+          }
+        },
+        error: function() {
+          toastr.error('Error de red al actualizar', 'Error');
+        }
+      });
+    });
+  }
+
+  const formEditarArq = document.getElementById('formEditarPiezaArq');
+  if (formEditarArq) {
+    formEditarArq.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      let formData = new FormData();
+      formData.append('id', $('#editar-arq-id').val());
+      formData.append('codigo_interno', $('#editar-arq-codigo_interno').val());
+      formData.append('no_inventario_scyt', $('#editar-arq-no_inventario_scyt').val());
+      formData.append('no_registro_inah', $('#editar-arq-no_registro_inah').val());
+      formData.append('otros', $('#editar-arq-otros').val());
+      formData.append('nombre_titulo_pieza', $('#editar-arq-nombre_titulo_pieza').val());
+      formData.append('numero_pieza_por_lote', $('#editar-arq-numero_pieza_por_lote').val());
+      formData.append('epoca', $('#editar-arq-epoca').val());
+      formData.append('procedencia', $('#editar-arq-procedencia').val());
+      formData.append('material', $('#editar-arq-material').val());
+      formData.append('medidas', $('#editar-arq-medidas').val());
+      formData.append('forma', $('#editar-arq-forma').val());
+      formData.append('tecnica_manufactura', $('#editar-arq-tecnica_manufactura').val());
+      formData.append('tecnica_decorativa', $('#editar-arq-tecnica_decorativa').val());
+      formData.append('coleccion', $('#editar-arq-coleccion').val());
+      formData.append('obtencion', $('#editar-arq-obtencion').val());
+      formData.append('ubicacion_fisica', $('#editar-arq-ubicacion_fisica').val());
+      formData.append('estado_conservacion', $('#editar-arq-estado_conservacion').val());
+      formData.append('observaciones', $('#editar-arq-observaciones').val());
+      formData.append('descripcion', $('#editar-arq-descripcion').val());
+      formData.append('representacion', $('#editar-arq-representacion').val());
+      const fotografiaNuevaArq = document.getElementById('editar-arq-fotografia').files[0];
+      if (fotografiaNuevaArq) {
+        formData.append('fotografia', fotografiaNuevaArq);
+      }
+      formData.append('fotografia_actual', $('#editar-arq-fotografia_actual').val());
+      formData.append('csrf', Bee.csrf);
+
+      $.ajax({
+        url: 'admin/acervo_arq_editar',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(resp) {
+          if (resp.status === 200) {
+            toastr.success(resp.msg, 'Actualizado');
+            const tipoAcervo = $('#tipo_registro').val() || 'arqueologico';
+            const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
+            const searchTerm = $('#buscar-registro').val() || '';
+            mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarPiezaArq'));
             if (modal) modal.hide();
           } else {
             toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
@@ -433,11 +693,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // Eliminar pieza por ID
 function eliminarPieza(id) {
+  const tipoAcervo = $('#tipo_registro').val() || 'general';
+  const config = obtenerConfiguracionAcervo(tipoAcervo);
   let formData = new FormData();
   formData.append('id', id);
   formData.append('csrf', Bee.csrf);
   $.ajax({
-    url: 'admin/acervo_general_eliminar',
+    url: config.deleteUrl,
     type: 'POST',
     data: formData,
     processData: false,
@@ -446,7 +708,9 @@ function eliminarPieza(id) {
     success: function(resp) {
       if (resp.status === 200) {
         toastr.success(resp.msg, 'Eliminado');
-        mostrarListaPaginada();
+        const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
+        const searchTerm = $('#buscar-registro').val() || '';
+        mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
       } else {
         toastr.error(resp.msg || 'No se pudo eliminar', 'Error');
       }
@@ -476,7 +740,10 @@ function editarPieza(id) {
     success: function(resp) {
       if (resp.status === 200) {
         toastr.success(resp.msg, 'Actualizado');
-        mostrarListaPaginada();
+        const tipoAcervo = $('#tipo_registro').val() || 'general';
+        const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
+        const searchTerm = $('#buscar-registro').val() || '';
+        mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
       } else {
         toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
       }
@@ -502,6 +769,7 @@ function construirPaginacion(pagination, search = "") {
   }
 
   const { current_page, total_pages, total, per_page } = pagination;
+  const tipoAcervo = $('#tipo_registro').val() || 'general';
   
   // Limpiar paginación anterior
   contenedorPaginacion.innerHTML = "";
@@ -543,7 +811,7 @@ function construirPaginacion(pagination, search = "") {
   if (current_page > 1) {
     liPrev.querySelector("a").addEventListener("click", (e) => {
       e.preventDefault();
-      mostrarListaPaginada(current_page - 1, per_page, search);
+      mostrarListaPaginada(current_page - 1, per_page, search, tipoAcervo);
     });
   }
   ul.appendChild(liPrev);
@@ -573,7 +841,7 @@ function construirPaginacion(pagination, search = "") {
 
   // Páginas del rango
   for (let i = startPage; i <= endPage; i++) {
-    const li = crearBotonPagina(i, current_page, per_page, search);
+    const li = crearBotonPagina(i, current_page, per_page, search, tipoAcervo);
     ul.appendChild(li);
   }
 
@@ -586,7 +854,7 @@ function construirPaginacion(pagination, search = "") {
       ul.appendChild(liDots);
     }
     
-    const li = crearBotonPagina(total_pages, current_page, per_page, search);
+    const li = crearBotonPagina(total_pages, current_page, per_page, search, tipoAcervo);
     ul.appendChild(li);
   }
 
@@ -601,7 +869,7 @@ function construirPaginacion(pagination, search = "") {
   if (current_page < total_pages) {
     liNext.querySelector("a").addEventListener("click", (e) => {
       e.preventDefault();
-      mostrarListaPaginada(current_page + 1, per_page, search);
+      mostrarListaPaginada(current_page + 1, per_page, search, tipoAcervo);
     });
   }
   ul.appendChild(liNext);
@@ -618,7 +886,7 @@ function construirPaginacion(pagination, search = "") {
  * @param {string} search - Término de búsqueda
  * @returns {HTMLElement} - Elemento li con el botón
  */
-function crearBotonPagina(pageNum, currentPage, perPage, search = "") {
+function crearBotonPagina(pageNum, currentPage, perPage, search = "", tipoAcervo = null) {
   const li = document.createElement("li");
   li.className = `page-item ${pageNum === currentPage ? "active" : ""}`;
   
@@ -632,7 +900,7 @@ function crearBotonPagina(pageNum, currentPage, perPage, search = "") {
   } else {
     a.addEventListener("click", (e) => {
       e.preventDefault();
-      mostrarListaPaginada(pageNum, perPage, search);
+      mostrarListaPaginada(pageNum, perPage, search, tipoAcervo || $('#tipo_registro').val() || 'general');
     });
   }
   
