@@ -594,4 +594,377 @@
   </div>
 </div>
 
+<!-- Modal para ver detalles de la pieza -->
+<div class="modal fade" id="modalVerPieza" tabindex="-1" aria-labelledby="modalVerPiezaLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header bg-light">
+        <h5 class="modal-title fw-bold text-primary" id="modalVerPiezaLabel">
+          <i class="bx bx-show me-2"></i>Ver Detalles de la Pieza
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body p-4">
+
+        <!-- VISTA: ACERVO GENERAL -->
+        <div id="ver-seccion-general" style="display: none;">
+          <!-- Fotografía a todo lo ancho arriba -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Fotografía de la Pieza</label>
+              <div class="card shadow-sm text-center p-3 border rounded d-flex flex-column justify-content-center align-items-center bg-light" style="min-height: 220px;">
+                <img id="ver-gen-imagen" src="" alt="Fotografía" class="img-fluid rounded" style="max-height: 260px; object-fit: contain; display: none;">
+                <div id="ver-gen-no-imagen" class="text-muted p-4">
+                  <i class="bx bx-image fs-1 d-block mb-1"></i>
+                  <span>No hay imagen seleccionada</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información General e Identificación -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-info-circle me-1"></i>Información General e Identificación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Código Interno</label>
+              <div class="form-control bg-light" id="ver-gen-codigo_interno">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">No. Inventario</label>
+              <div class="form-control bg-light" id="ver-gen-no_inventario">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Nombre / Título de la Pieza</label>
+              <div class="form-control bg-light" id="ver-gen-nombre">-</div>
+            </div>
+          </div>
+
+          <!-- Autoría y Cronología -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-user me-1"></i>Autoría y Cronología
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Autor</label>
+              <div class="form-control bg-light" id="ver-gen-autor">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Año</label>
+              <div class="form-control bg-light" id="ver-gen-anio">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Época</label>
+              <div class="form-control bg-light" id="ver-gen-epoca">-</div>
+            </div>
+          </div>
+
+          <!-- Características Físicas y Clasificación -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-cube me-1"></i>Características Físicas y Clasificación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Técnica</label>
+              <div class="form-control bg-light" id="ver-gen-tecnica">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Material</label>
+              <div class="form-control bg-light" id="ver-gen-material">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Medidas</label>
+              <div class="form-control bg-light" id="ver-gen-medidas">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Lote</label>
+              <div class="form-control bg-light" id="ver-gen-lote">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Peso</label>
+              <div class="form-control bg-light" id="ver-gen-peso">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Colección</label>
+              <div class="form-control bg-light" id="ver-gen-coleccion">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Tipo</label>
+              <div class="form-control bg-light" id="ver-gen-tipo">-</div>
+            </div>
+          </div>
+
+          <!-- Ubicación y Estado de Conservación -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-map-pin me-1"></i>Ubicación y Estado de Conservación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Ubicación Física</label>
+              <div class="form-control bg-light" id="ver-gen-ubicacion_fisica">-</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Estado de Conservación</label>
+              <div class="form-control bg-light" id="ver-gen-estado_conservacion">-</div>
+            </div>
+          </div>
+
+          <!-- Detalles y Observaciones -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-detail me-1"></i>Detalles y Observaciones
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Descripción</label>
+              <div class="form-control bg-light" id="ver-gen-descripcion" style="min-height: 80px; white-space: pre-wrap;">-</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Observaciones</label>
+              <div class="form-control bg-light" id="ver-gen-observaciones" style="min-height: 80px; white-space: pre-wrap;">-</div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- VISTA: ACERVO ARQUEOLÓGICO -->
+        <div id="ver-seccion-arq" style="display: none;">
+          <!-- Fotografía a todo lo ancho arriba -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Fotografía de la Pieza Arqueológica</label>
+              <div class="card shadow-sm text-center p-3 border rounded d-flex flex-column justify-content-center align-items-center bg-light" style="min-height: 220px;">
+                <img id="ver-arq-imagen" src="" alt="Fotografía Arqueológica" class="img-fluid rounded" style="max-height: 260px; object-fit: contain; display: none;">
+                <div id="ver-arq-no-imagen" class="text-muted p-4">
+                  <i class="bx bx-image fs-1 d-block mb-1"></i>
+                  <span>No hay imagen seleccionada</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información General y Registros -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-info-circle me-1"></i>Información General y Registros
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Código Interno</label>
+              <div class="form-control bg-light" id="ver-arq-codigo_interno">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">No. Inventario SCYT</label>
+              <div class="form-control bg-light" id="ver-arq-no_inventario_scyt">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">No. Registro INAH</label>
+              <div class="form-control bg-light" id="ver-arq-no_registro_inah">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Otros Registros</label>
+              <div class="form-control bg-light" id="ver-arq-otros">-</div>
+            </div>
+            <div class="col-md-8">
+              <label class="form-label fw-semibold">Nombre / Título de la Pieza</label>
+              <div class="form-control bg-light" id="ver-arq-nombre_titulo_pieza">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Pieza por Lote</label>
+              <div class="form-control bg-light" id="ver-arq-numero_pieza_por_lote">-</div>
+            </div>
+          </div>
+
+          <!-- Origen y Cronología -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-world me-1"></i>Origen y Cronología
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Época</label>
+              <div class="form-control bg-light" id="ver-arq-epoca">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Procedencia</label>
+              <div class="form-control bg-light" id="ver-arq-procedencia">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Forma de Obtención</label>
+              <div class="form-control bg-light" id="ver-arq-obtencion">-</div>
+            </div>
+          </div>
+
+          <!-- Características Físicas y Técnicas -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-cube me-1"></i>Características Físicas y Técnicas
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Material</label>
+              <div class="form-control bg-light" id="ver-arq-material">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Medidas</label>
+              <div class="form-control bg-light" id="ver-arq-medidas">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Forma</label>
+              <div class="form-control bg-light" id="ver-arq-forma">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Técnica de Manufactura</label>
+              <div class="form-control bg-light" id="ver-arq-tecnica_manufactura">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Técnica Decorativa</label>
+              <div class="form-control bg-light" id="ver-arq-tecnica_decorativa">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Colección</label>
+              <div class="form-control bg-light" id="ver-arq-coleccion">-</div>
+            </div>
+          </div>
+
+          <!-- Ubicación y Estado de Conservación -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-map-pin me-1"></i>Ubicación y Estado de Conservación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Ubicación Física</label>
+              <div class="form-control bg-light" id="ver-arq-ubicacion_fisica">-</div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Estado de Conservación</label>
+              <div class="form-control bg-light" id="ver-arq-estado_conservacion">-</div>
+            </div>
+          </div>
+
+          <!-- Detalles, Representación y Observaciones -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-detail me-1"></i>Descripción y Observaciones
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Descripción</label>
+              <div class="form-control bg-light" id="ver-arq-descripcion" style="min-height: 80px; white-space: pre-wrap;">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Representación</label>
+              <div class="form-control bg-light" id="ver-arq-representacion" style="min-height: 80px; white-space: pre-wrap;">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Observaciones</label>
+              <div class="form-control bg-light" id="ver-arq-observaciones" style="min-height: 80px; white-space: pre-wrap;">-</div>
+            </div>
+          </div>
+        </div>
+
+
+        <!-- VISTA: ACERVO NUMISMÁTICO -->
+        <div id="ver-seccion-num" style="display: none;">
+          <!-- Fotografía a todo lo ancho arriba -->
+          <div class="row mb-4">
+            <div class="col-12">
+              <label class="form-label fw-semibold">Fotografía de la Pieza Numismática</label>
+              <div class="card shadow-sm text-center p-3 border rounded d-flex flex-column justify-content-center align-items-center bg-light" style="min-height: 220px;">
+                <img id="ver-num-imagen" src="" alt="Fotografía Numismática" class="img-fluid rounded" style="max-height: 260px; object-fit: contain; display: none;">
+                <div id="ver-num-no-imagen" class="text-muted p-4">
+                  <i class="bx bx-image fs-1 d-block mb-1"></i>
+                  <span>No hay imagen seleccionada</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información General y Clasificación -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-info-circle me-1"></i>Información General y Clasificación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Código Interno</label>
+              <div class="form-control bg-light" id="ver-num-codigo_interno">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Número de Inventario</label>
+              <div class="form-control bg-light" id="ver-num-no_inventario">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Tipo de Obra</label>
+              <div class="form-control bg-light" id="ver-num-tipo_obra">-</div>
+            </div>
+          </div>
+
+          <!-- Origen y Especificaciones -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-coin me-1"></i>Origen y Especificaciones
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Ensayador</label>
+              <div class="form-control bg-light" id="ver-num-ensayador">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Denominación</label>
+              <div class="form-control bg-light" id="ver-num-denominacion">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Material</label>
+              <div class="form-control bg-light" id="ver-num-material">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Época</label>
+              <div class="form-control bg-light" id="ver-num-fecha_epoca">-</div>
+            </div>
+          </div>
+
+          <!-- Dimensiones, Ubicación y Estado -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-map-pin me-1"></i>Dimensiones, Ubicación y Conservación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Dimensiones (cm)</label>
+              <div class="form-control bg-light" id="ver-num-dimensiones">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Ubicación Física</label>
+              <div class="form-control bg-light" id="ver-num-ubicacion_fisica">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Estado de Conservación</label>
+              <div class="form-control bg-light" id="ver-num-estado_conservacion">-</div>
+            </div>
+          </div>
+
+          <!-- Descripciones y Observaciones -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-detail me-1"></i>Descripciones y Observaciones
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Descripción Cara A</label>
+              <div class="form-control bg-light" id="ver-num-descripcion_cara_a" style="min-height: 80px; white-space: pre-wrap;">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Descripción Cara B</label>
+              <div class="form-control bg-light" id="ver-num-descripcion_cara_b" style="min-height: 80px; white-space: pre-wrap;">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Observaciones</label>
+              <div class="form-control bg-light" id="ver-num-observaciones" style="min-height: 80px; white-space: pre-wrap;">-</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer bg-light">
+        <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">
+          <i class="bx bx-x me-1"></i>Cerrar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <?php require_once INCLUDES . 'admin/dashboardBottom.php'; ?>

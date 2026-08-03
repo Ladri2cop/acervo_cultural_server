@@ -32,7 +32,7 @@ $(document).ready(function () {
     clearTimeout(searchTimeout);
     const searchTerm = $(this).val();
     const tipoAcervo = $("#tipo_registro").val();
-    
+
     if (!tipoAcervo) {
       return;
     }
@@ -218,7 +218,7 @@ function mostrarListaPaginada(page = 1, perPage = 10, search = "", tipoAcervo = 
   const loader = document.getElementById("loader-tabla");
   const tabla = document.getElementById("tabla-acervo");
   const paginacion = document.getElementById("paginacion-container");
-  
+
   if (loader) {
     loader.style.display = "block";
   }
@@ -288,12 +288,12 @@ function mostrarListaPaginada(page = 1, perPage = 10, search = "", tipoAcervo = 
         console.log(dataresponse);
         const piezas = dataresponse.data;
         const pagination = dataresponse.pagination;
-        
+
         // Mostrar mensaje si no hay resultados
         if (piezas.length === 0 && search) {
           toastr.info(`No se encontraron resultados para "${search}"`, "Sin resultados");
         }
-        
+
         innerListaAcervo(piezas, pagination, config);
         construirPaginacion(pagination, search, tipoSeleccionado);
       } else {
@@ -342,7 +342,7 @@ function mostrarListaAcervo() {
 function innerListaAcervo(piezas, pagination = null, config = null) {
   const tabla = document.getElementById("tabla-piezas");
   const tipoAcervo = config ? config.tipo : ($('#tipo_registro').val() || 'general');
-  
+
   // Limpiar tabla antes de agregar nuevos datos
   tabla.innerHTML = "";
 
@@ -381,10 +381,10 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
               <i class='bx  bx-caret-down'></i> 
             </button>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item btn-ver" href="#" data-id="${pieza.id}"> <i class='bx text-info bx__iconmenu bx-eye-alt'></i> Ver</a></li>
-              ${tieneEdicion ? `<li><a class="dropdown-item btn-editar" href="#" data-id="${pieza.id}"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i>  Editar</a></li>` : ''}
+              <li><a class="dropdown-item btn-ver" href="javascript:void(0);" data-id="${pieza.id}" data-tipo="${tipoAcervo}"> <i class='bx text-info bx__iconmenu bx-eye-alt'></i> Ver</a></li>
+              ${tieneEdicion ? `<li><a class="dropdown-item btn-editar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i>  Editar</a></li>` : ''}
               <hr class="dropdown-divider">
-              <li><a class="dropdown-item btn-eliminar" href="#" data-id="${pieza.id}"><i class='bx text-danger bx__iconmenu bx-trash'></i>  Eliminar</a></li>
+              <li><a class="dropdown-item btn-eliminar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-danger bx__iconmenu bx-trash'></i>  Eliminar</a></li>
             </ul>
           </div>
         </td>
@@ -392,9 +392,19 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
     tabla.appendChild(fila);
   });
 
-  // Delegación de eventos para Editar y Eliminar
+  // Delegación de eventos para Ver, Editar y Eliminar
+  tabla.querySelectorAll('.btn-ver').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = this.getAttribute('data-id');
+      const tipo = this.getAttribute('data-tipo') || tipoAcervo;
+      abrirModalVerPieza(id, tipo);
+    });
+  });
+
   tabla.querySelectorAll('.btn-eliminar').forEach(btn => {
-    btn.addEventListener('click', function(e) {
+    btn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
       const id = this.getAttribute('data-id');
@@ -406,7 +416,7 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
 
   if (tipoAcervo === 'general') {
     tabla.querySelectorAll('.btn-editar').forEach(btn => {
-      btn.addEventListener('click', function(e) {
+      btn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         const id = this.getAttribute('data-id');
@@ -415,7 +425,7 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
     });
   } else if (tipoAcervo === 'arqueologico') {
     tabla.querySelectorAll('.btn-editar').forEach(btn => {
-      btn.addEventListener('click', function(e) {
+      btn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         const id = this.getAttribute('data-id');
@@ -424,7 +434,7 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
     });
   } else if (tipoAcervo === 'numismatica') {
     tabla.querySelectorAll('.btn-editar').forEach(btn => {
-      btn.addEventListener('click', function(e) {
+      btn.addEventListener('click', function (e) {
         e.preventDefault();
         e.stopPropagation();
         const id = this.getAttribute('data-id');
@@ -446,7 +456,7 @@ function abrirModalEditarPiezaNum(id) {
     processData: false,
     contentType: false,
     dataType: 'json',
-    success: function(resp) {
+    success: function (resp) {
       if (resp.status === 200 && resp.data) {
         const pieza = resp.data;
 
@@ -482,7 +492,7 @@ function abrirModalEditarPiezaNum(id) {
         toastr.error('No se pudo obtener la información de la pieza numismática', 'Error');
       }
     },
-    error: function() {
+    error: function () {
       toastr.error('Error de red al obtener la pieza numismática', 'Error');
     }
   });
@@ -500,7 +510,7 @@ function abrirModalEditarPiezaArq(id) {
     processData: false,
     contentType: false,
     dataType: 'json',
-    success: function(resp) {
+    success: function (resp) {
       if (resp.status === 200 && resp.data) {
         const pieza = resp.data;
 
@@ -543,8 +553,152 @@ function abrirModalEditarPiezaArq(id) {
         toastr.error('No se pudo obtener la información de la pieza arqueológica', 'Error');
       }
     },
-    error: function() {
+    error: function () {
       toastr.error('Error de red al obtener la pieza arqueológica', 'Error');
+    }
+  });
+}
+
+// Abre el modal de visualización de detalles (Solo Lectura)
+function abrirModalVerPieza(id, tipoAcervo = 'general') {
+  let formData = new FormData();
+  formData.append('id', id);
+  formData.append('csrf', Bee.csrf);
+
+  const config = obtenerConfiguracionAcervo(tipoAcervo);
+
+  $.ajax({
+    url: config.getByIdUrl,
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    dataType: 'json',
+    success: function (resp) {
+      if (resp.status === 200 && resp.data) {
+        const pieza = resp.data;
+
+        // Ocultar todas las secciones
+        $('#ver-seccion-general, #ver-seccion-arq, #ver-seccion-num').hide();
+
+        const imgUrl = pieza.fotografia_url || (pieza.fotografia ? `assets/uploads/${pieza.fotografia}` : '');
+
+        if (tipoAcervo === 'arqueologico') {
+          $('#modalVerPiezaLabel').html('<i class="bx bx-show me-2"></i>Ver Pieza Arqueológica');
+
+          if (imgUrl) {
+            $('#ver-arq-imagen').attr('src', imgUrl).show();
+            $('#ver-arq-no-imagen').hide();
+          } else {
+            $('#ver-arq-imagen').attr('src', '').hide();
+            $('#ver-arq-no-imagen').show();
+          }
+
+          $('#ver-arq-codigo_interno').text(pieza.codigo_interno || '-');
+          $('#ver-arq-no_inventario_scyt').text(pieza.no_inventario_scyt || '-');
+          $('#ver-arq-no_registro_inah').text(pieza.no_registro_inah || '-');
+          $('#ver-arq-otros').text(pieza.otros || '-');
+          $('#ver-arq-nombre_titulo_pieza').text(pieza.nombre_titulo_pieza || '-');
+          $('#ver-arq-numero_pieza_por_lote').text(pieza.numero_pieza_por_lote || '-');
+
+          $('#ver-arq-epoca').text(pieza.epoca || '-');
+          $('#ver-arq-procedencia').text(pieza.procedencia || '-');
+          $('#ver-arq-obtencion').text(pieza.obtencion || '-');
+
+          $('#ver-arq-material').text(pieza.material || '-');
+          $('#ver-arq-medidas').text(pieza.medidas || '-');
+          $('#ver-arq-forma').text(pieza.forma || '-');
+          $('#ver-arq-tecnica_manufactura').text(pieza.tecnica_manufactura || '-');
+          $('#ver-arq-tecnica_decorativa').text(pieza.tecnica_decorativa || '-');
+          $('#ver-arq-coleccion').text(pieza.coleccion || '-');
+
+          $('#ver-arq-ubicacion_fisica').text(pieza.ubicacion_fisica || '-');
+          $('#ver-arq-estado_conservacion').text(pieza.estado_conservacion || '-');
+
+          $('#ver-arq-descripcion').text(pieza.descripcion || '-');
+          $('#ver-arq-representacion').text(pieza.representacion || '-');
+          $('#ver-arq-observaciones').text(pieza.observaciones || '-');
+
+          $('#ver-seccion-arq').show();
+
+        } else if (tipoAcervo === 'numismatica') {
+          $('#modalVerPiezaLabel').html('<i class="bx bx-show me-2"></i>Ver Pieza Numismática');
+
+          if (imgUrl) {
+            $('#ver-num-imagen').attr('src', imgUrl).show();
+            $('#ver-num-no-imagen').hide();
+          } else {
+            $('#ver-num-imagen').attr('src', '').hide();
+            $('#ver-num-no-imagen').show();
+          }
+
+          $('#ver-num-codigo_interno').text(pieza.codigo_interno || '-');
+          $('#ver-num-no_inventario').text(pieza.no_inventario || '-');
+          $('#ver-num-tipo_obra').text(pieza.tipo_obra || '-');
+
+          $('#ver-num-ensayador').text(pieza.ensayador || '-');
+          $('#ver-num-denominacion').text(pieza.denominacion || '-');
+          $('#ver-num-material').text(pieza.material || '-');
+          $('#ver-num-fecha_epoca').text(pieza.fecha_epoca || '-');
+
+          $('#ver-num-dimensiones').text(pieza.dimensiones || '-');
+          $('#ver-num-ubicacion_fisica').text(pieza.ubicacion_fisica || '-');
+          $('#ver-num-estado_conservacion').text(pieza.estado_conservacion || '-');
+
+          $('#ver-num-descripcion_cara_a').text(pieza.descripcion_cara_a || '-');
+          $('#ver-num-descripcion_cara_b').text(pieza.descripcion_cara_b || '-');
+          $('#ver-num-observaciones').text(pieza.observaciones || '-');
+
+          $('#ver-seccion-num').show();
+
+        } else {
+          // General
+          $('#modalVerPiezaLabel').html('<i class="bx bx-show me-2"></i>Ver Pieza de Acervo General');
+
+          if (imgUrl) {
+            $('#ver-gen-imagen').attr('src', imgUrl).show();
+            $('#ver-gen-no-imagen').hide();
+          } else {
+            $('#ver-gen-imagen').attr('src', '').hide();
+            $('#ver-gen-no-imagen').show();
+          }
+
+          $('#ver-gen-codigo_interno').text(pieza.codigo_interno || '-');
+          $('#ver-gen-no_inventario').text(pieza.no_inventario || '-');
+          $('#ver-gen-nombre').text(pieza.nombre_titulo_pieza || pieza.nombre || '-');
+
+          $('#ver-gen-autor').text(pieza.autor || '-');
+          $('#ver-gen-anio').text(pieza.anio || '-');
+          $('#ver-gen-epoca').text(pieza.epoca || '-');
+
+          $('#ver-gen-tecnica').text(pieza.tecnica || '-');
+          $('#ver-gen-material').text(pieza.material || '-');
+          $('#ver-gen-medidas').text(pieza.medidas || '-');
+          $('#ver-gen-lote').text(pieza.lote || '-');
+          $('#ver-gen-peso').text(pieza.peso || '-');
+          $('#ver-gen-coleccion').text(pieza.coleccion || '-');
+          $('#ver-gen-tipo').text(pieza.tipo || '-');
+
+          $('#ver-gen-ubicacion_fisica').text(pieza.ubicacion_fisica || '-');
+          $('#ver-gen-estado_conservacion').text(pieza.estado_conservacion || '-');
+
+          $('#ver-gen-descripcion').text(pieza.descripcion || '-');
+          $('#ver-gen-observaciones').text(pieza.observaciones || '-');
+
+          $('#ver-seccion-general').show();
+        }
+
+        const modalVerEl = document.getElementById('modalVerPieza');
+        if (modalVerEl) {
+          const modalVer = bootstrap.Modal.getOrCreateInstance(modalVerEl);
+          modalVer.show();
+        }
+      } else {
+        toastr.error('No se pudo obtener la información de la pieza', 'Error');
+      }
+    },
+    error: function () {
+      toastr.error('Error de red al consultar la pieza', 'Error');
     }
   });
 }
@@ -565,7 +719,7 @@ function abrirModalEditarPieza(id, tipoAcervo = 'general') {
     processData: false,
     contentType: false,
     dataType: 'json',
-    success: function(resp) {
+    success: function (resp) {
       if (resp.status === 200 && resp.data) {
         const pieza = resp.data;
         if (tipoAcervo === 'arqueologico') {
@@ -644,17 +798,28 @@ function abrirModalEditarPieza(id, tipoAcervo = 'general') {
         toastr.error('No se pudo obtener la información de la pieza', 'Error');
       }
     },
-    error: function() {
+    error: function () {
       toastr.error('Error de red al obtener la pieza', 'Error');
     }
   });
 }
 
-// Manejar el envío del formulario de edición
-document.addEventListener('DOMContentLoaded', function() {
+// Manejar el envío del formulario de edición y eventos globales
+document.addEventListener('DOMContentLoaded', function () {
+  // Delegación de evento click para el botón Ver
+  $(document).on('click', '.btn-ver', function (e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const id = $(this).attr('data-id');
+    const tipoAcervo = $('#tipo_registro').val() || 'general';
+    if (id) {
+      abrirModalVerPieza(id, tipoAcervo);
+    }
+  });
+
   const formEditar = document.getElementById('formEditarPieza');
   if (formEditar) {
-    formEditar.addEventListener('submit', function(e) {
+    formEditar.addEventListener('submit', function (e) {
       e.preventDefault();
 
       let formData = new FormData();
@@ -691,7 +856,7 @@ document.addEventListener('DOMContentLoaded', function() {
         processData: false,
         contentType: false,
         dataType: 'json',
-        success: function(resp) {
+        success: function (resp) {
           if (resp.status === 200) {
             toastr.success(resp.msg, 'Actualizado');
             const tipoAcervo = $('#tipo_registro').val() || 'general';
@@ -705,7 +870,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
           }
         },
-        error: function() {
+        error: function () {
           toastr.error('Error de red al actualizar', 'Error');
         }
       });
@@ -714,7 +879,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const formEditarArq = document.getElementById('formEditarPiezaArq');
   if (formEditarArq) {
-    formEditarArq.addEventListener('submit', function(e) {
+    formEditarArq.addEventListener('submit', function (e) {
       e.preventDefault();
 
       let formData = new FormData();
@@ -753,7 +918,7 @@ document.addEventListener('DOMContentLoaded', function() {
         processData: false,
         contentType: false,
         dataType: 'json',
-        success: function(resp) {
+        success: function (resp) {
           if (resp.status === 200) {
             toastr.success(resp.msg, 'Actualizado');
             const tipoAcervo = $('#tipo_registro').val() || 'arqueologico';
@@ -766,7 +931,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
           }
         },
-        error: function() {
+        error: function () {
           toastr.error('Error de red al actualizar', 'Error');
         }
       });
@@ -775,7 +940,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const formEditarNum = document.getElementById('formEditarPiezaNum');
   if (formEditarNum) {
-    formEditarNum.addEventListener('submit', function(e) {
+    formEditarNum.addEventListener('submit', function (e) {
       e.preventDefault();
 
       let formData = new FormData();
@@ -807,7 +972,7 @@ document.addEventListener('DOMContentLoaded', function() {
         processData: false,
         contentType: false,
         dataType: 'json',
-        success: function(resp) {
+        success: function (resp) {
           if (resp.status === 200) {
             toastr.success(resp.msg, 'Actualizado');
             const tipoAcervo = $('#tipo_registro').val() || 'numismatica';
@@ -820,7 +985,7 @@ document.addEventListener('DOMContentLoaded', function() {
             toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
           }
         },
-        error: function() {
+        error: function () {
           toastr.error('Error de red al actualizar', 'Error');
         }
       });
@@ -842,7 +1007,7 @@ function eliminarPieza(id) {
     processData: false,
     contentType: false,
     dataType: 'json',
-    success: function(resp) {
+    success: function (resp) {
       if (resp.status === 200) {
         toastr.success(resp.msg, 'Eliminado');
         const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
@@ -852,7 +1017,7 @@ function eliminarPieza(id) {
         toastr.error(resp.msg || 'No se pudo eliminar', 'Error');
       }
     },
-    error: function() {
+    error: function () {
       toastr.error('Error de red al eliminar', 'Error');
     }
   });
@@ -873,7 +1038,7 @@ function editarPieza(id) {
     processData: false,
     contentType: false,
     dataType: 'json',
-    success: function(resp) {
+    success: function (resp) {
       if (resp.status === 200) {
         toastr.success(resp.msg, 'Actualizado');
         const tipoAcervo = $('#tipo_registro').val() || 'general';
@@ -884,7 +1049,7 @@ function editarPieza(id) {
         toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
       }
     },
-    error: function() {
+    error: function () {
       toastr.error('Error de red al actualizar', 'Error');
     }
   });
@@ -898,7 +1063,7 @@ function editarPieza(id) {
  */
 function construirPaginacion(pagination, search = "") {
   const contenedorPaginacion = document.getElementById("paginacion-container");
-  
+
   if (!contenedorPaginacion) {
     console.warn("No se encontró el contenedor de paginación con id 'paginacion-container'");
     return;
@@ -906,7 +1071,7 @@ function construirPaginacion(pagination, search = "") {
 
   const { current_page, total_pages, total, per_page } = pagination;
   const tipoAcervo = $('#tipo_registro').val() || 'general';
-  
+
   // Limpiar paginación anterior
   contenedorPaginacion.innerHTML = "";
 
@@ -918,7 +1083,7 @@ function construirPaginacion(pagination, search = "") {
   // Crear estructura de paginación
   const nav = document.createElement("nav");
   nav.setAttribute("aria-label", "Navegación de páginas");
-  
+
   const ul = document.createElement("ul");
   ul.className = "pagination justify-content-center";
 
@@ -928,19 +1093,19 @@ function construirPaginacion(pagination, search = "") {
   const mostrandoDesde = ((current_page - 1) * per_page) + 1;
   const mostrandoHasta = Math.min(current_page * per_page, total);
   info.innerHTML = `Mostrando ${mostrandoDesde} - ${mostrandoHasta} de ${total} registro${total !== 1 ? 's' : ''}`;
-  
+
   // Agregar indicador de búsqueda si existe
   if (search) {
     info.innerHTML += ` <span class="badge bg-info ms-2">Filtrando: "${search}"</span>`;
   }
-  
+
   contenedorPaginacion.appendChild(info);
 
   // Botón anterior
   const liPrev = document.createElement("li");
   liPrev.className = `page-item ${current_page === 1 ? "disabled" : ""}`;
   liPrev.innerHTML = `
-    <a class="page-link" href="#" ${current_page === 1 ? 'tabindex="-1"' : ""}>
+    <a class="page-link" href="javascript:void(0);" ${current_page === 1 ? 'tabindex="-1"' : ""}>
       <i class='bx bx-chevron-left'></i> Anterior
     </a>
   `;
@@ -966,7 +1131,7 @@ function construirPaginacion(pagination, search = "") {
   if (startPage > 1) {
     const li = crearBotonPagina(1, current_page, per_page, search);
     ul.appendChild(li);
-    
+
     if (startPage > 2) {
       const liDots = document.createElement("li");
       liDots.className = "page-item disabled";
@@ -989,7 +1154,7 @@ function construirPaginacion(pagination, search = "") {
       liDots.innerHTML = '<span class="page-link">...</span>';
       ul.appendChild(liDots);
     }
-    
+
     const li = crearBotonPagina(total_pages, current_page, per_page, search, tipoAcervo);
     ul.appendChild(li);
   }
@@ -998,7 +1163,7 @@ function construirPaginacion(pagination, search = "") {
   const liNext = document.createElement("li");
   liNext.className = `page-item ${current_page === total_pages ? "disabled" : ""}`;
   liNext.innerHTML = `
-    <a class="page-link" href="#" ${current_page === total_pages ? 'tabindex="-1"' : ""}>
+    <a class="page-link" href="javascript:void(0);" ${current_page === total_pages ? 'tabindex="-1"' : ""}>
       Siguiente <i class='bx bx-chevron-right'></i>
     </a>
   `;
@@ -1020,12 +1185,12 @@ function construirPaginacion(pagination, search = "") {
 function crearBotonPagina(pageNum, currentPage, perPage, search = "", tipoAcervo = null) {
   const li = document.createElement("li");
   li.className = `page-item ${pageNum === currentPage ? "active" : ""}`;
-  
+
   const a = document.createElement("a");
   a.className = "page-link";
-  a.href = "#";
+  a.href = "javascript:void(0);";
   a.textContent = pageNum;
-  
+
   if (pageNum === currentPage) {
     a.setAttribute("aria-current", "page");
   } else {
@@ -1034,7 +1199,7 @@ function crearBotonPagina(pageNum, currentPage, perPage, search = "", tipoAcervo
       mostrarListaPaginada(pageNum, perPage, search, tipoAcervo || $('#tipo_registro').val() || 'general');
     });
   }
-  
+
   li.appendChild(a);
   return li;
 }
@@ -1045,28 +1210,28 @@ function cargarAniosDinamicos() {
     type: 'POST',
     dataType: 'json',
     data: { csrf: Bee.csrf },
-    success: function(resp) {
+    success: function (resp) {
       if (resp.status === 200 && resp.data) {
         const selectAnio = $('#anio');
         if (selectAnio.length) {
           const selectedVal = selectAnio.val();
           selectAnio.html('<option value="" hidden>Seleccione...</option>');
-          
+
           resp.data.forEach(anio => {
             selectAnio.append(`<option value="${anio}">${anio}</option>`);
           });
-          
+
           if (selectedVal) {
             selectAnio.val(selectedVal);
           }
-          
+
           if (selectAnio.hasClass('select2-hidden-accessible')) {
             selectAnio.trigger('change.select2');
           }
         }
       }
     },
-    error: function() {
+    error: function () {
       console.error('Error al cargar la lista dinámica de años');
     }
   });
