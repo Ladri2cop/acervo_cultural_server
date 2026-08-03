@@ -37,6 +37,7 @@
               <option value="" hidden>Seleccione...</option>
               <option value="general">Acervo General</option>
               <option value="arqueologico">Acervo Arqueológico</option>
+              <option value="numismatica">Acervo Numismático</option>
             </select>
           </div>
         </div>
@@ -53,10 +54,7 @@
           <div class="card-body">
             <select name="anio" id="anio" class="form-select">
               <option value="" hidden>Seleccione...</option>
-              <option value="1852">1852</option>
-              <option value="1853">1853</option>
-              <option value="1854">1854</option>
-              <option value="1855">1855</option>F
+             
             </select>
           </div>
         </div>
@@ -159,206 +157,437 @@
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalEditarPiezaLabel">Editar Pieza</h5>
+        <h5 class="modal-title fw-bold" id="modalEditarPiezaLabel">
+          <i class="bx bx-edit me-2"></i>Editar Pieza de Acervo General
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
       <form id="formEditarPieza">
-        <div class="modal-body">
+        <div class="modal-body p-4">
           <input type="hidden" id="editar-id" name="id">
           <input type="hidden" id="editar-fotografia_actual" name="fotografia_actual">
-          <div class="row">
-            <div class="mb-3 col-md-4">
-              <label for="editar-nombre" class="form-label">Nombre</label>
-              <input type="text" class="form-control" id="editar-nombre" name="nombre_titulo_pieza" required>
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-ubicacion" class="form-label">Ubicación</label>
-              <input type="text" class="form-control" id="editar-ubicacion" name="ubicacion_fisica">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-descripcion" class="form-label">Descripción</label>
-              <textarea class="form-control" id="editar-descripcion" name="descripcion"></textarea>
-            </div>
-            <div class="mb-3 col-12 col-md-4 container-preview-image">
-              <label for="editar-fotografia" class="form-label">Fotografía</label>
-              <input type="file" id="editar-fotografia" accept="image/*" class="input-file form-control" name="fotografia">
-              <div class="card shadow-sm text-center p-4 border border-secondary rounded preview-clickable preview-container-edit d-flex flex-column justify-content-center align-items-center" id="editar-previewContainer" style="min-height: 280px;">
+          <input type="hidden" id="editar-cm" name="cm">
+
+          <!-- Fotografía a todo lo ancho arriba -->
+          <div class="row mb-4">
+            <div class="col-12 container-preview-image">
+              <label for="editar-fotografia" class="form-label fw-semibold">Fotografía de la Pieza</label>
+              <input type="file" id="editar-fotografia" accept="image/*" class="input-file form-control mb-2" name="fotografia">
+              <div class="card shadow-sm text-center p-3 border rounded preview-clickable preview-container-edit d-flex flex-column justify-content-center align-items-center bg-light" id="editar-previewContainer" style="min-height: 220px; border-style: dashed !important;">
                 <i class="bx bx-image fs-1 text-muted" id="editar-previewIcon"></i>
-                <p id="editar-previewText" class="mt-2 text-muted">No hay imagen seleccionada</p>
+                <p id="editar-previewText" class="mt-2 text-muted mb-0">No hay imagen seleccionada</p>
               </div>
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-fecha" class="form-label">Año</label>
-              <input type="text" class="form-control" id="editar-fecha" name="anio">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-codigo_interno" class="form-label">Código Interno</label>
+          </div>
+
+          <!-- Información General e Identificación -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-info-circle me-1"></i>Información General e Identificación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="editar-codigo_interno" class="form-label fw-semibold">Código Interno</label>
               <input type="text" class="form-control" id="editar-codigo_interno" name="codigo_interno">
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-no_inventario" class="form-label">No. Inventario</label>
+            <div class="col-md-4">
+              <label for="editar-no_inventario" class="form-label fw-semibold">No. Inventario</label>
               <input type="text" class="form-control" id="editar-no_inventario" name="no_inventario">
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-autor" class="form-label">Autor</label>
-              <input type="text" class="form-control" id="editar-autor" name="autor">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-epoca" class="form-label">Época</label>
-              <input type="text" class="form-control" id="editar-epoca" name="epoca">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-tecnica" class="form-label">Técnica</label>
-              <input type="text" class="form-control" id="editar-tecnica" name="tecnica">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-material" class="form-label">Material</label>
-              <input type="text" class="form-control" id="editar-material" name="material">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-medidas" class="form-label">Medidas</label>
-              <input type="text" class="form-control" id="editar-medidas" name="medidas">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-lote" class="form-label">Lote</label>
-              <input type="text" class="form-control" id="editar-lote" name="lote">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-peso" class="form-label">Peso</label>
-              <input type="text" class="form-control" id="editar-peso" name="peso">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-coleccion" class="form-label">Colección</label>
-              <input type="text" class="form-control" id="editar-coleccion" name="coleccion">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-tipo" class="form-label">Tipo</label>
-              <input type="text" class="form-control" id="editar-tipo" name="tipo">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-estado_conservacion" class="form-label">Estado de Conservación</label>
-              <input type="text" class="form-control" id="editar-estado_conservacion" name="estado_conservacion">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-observaciones" class="form-label">Observaciones</label>
-              <textarea class="form-control" id="editar-observaciones" name="observaciones"></textarea>
+            <div class="col-md-4">
+              <label for="editar-nombre" class="form-label fw-semibold">Nombre / Título de la Pieza</label>
+              <input type="text" class="form-control" id="editar-nombre" name="nombre_titulo_pieza" required>
             </div>
           </div>
+
+          <!-- Autoría y Cronología -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-user me-1"></i>Autoría y Cronología
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="editar-autor" class="form-label fw-semibold">Autor</label>
+              <input type="text" class="form-control" id="editar-autor" name="autor">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-fecha" class="form-label fw-semibold">Año</label>
+              <input type="text" class="form-control" id="editar-fecha" name="anio">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-epoca" class="form-label fw-semibold">Época</label>
+              <input type="text" class="form-control" id="editar-epoca" name="epoca">
+            </div>
+          </div>
+
+          <!-- Características Físicas y Clasificación -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-cube me-1"></i>Características Físicas y Clasificación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="editar-tecnica" class="form-label fw-semibold">Técnica</label>
+              <input type="text" class="form-control" id="editar-tecnica" name="tecnica">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-material" class="form-label fw-semibold">Material</label>
+              <input type="text" class="form-control" id="editar-material" name="material">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-medidas" class="form-label fw-semibold">Medidas</label>
+              <input type="text" class="form-control" id="editar-medidas" name="medidas">
+            </div>
+            <div class="col-md-3">
+              <label for="editar-lote" class="form-label fw-semibold">Lote</label>
+              <input type="text" class="form-control" id="editar-lote" name="lote">
+            </div>
+            <div class="col-md-3">
+              <label for="editar-peso" class="form-label fw-semibold">Peso</label>
+              <input type="text" class="form-control" id="editar-peso" name="peso">
+            </div>
+            <div class="col-md-3">
+              <label for="editar-coleccion" class="form-label fw-semibold">Colección</label>
+              <input type="text" class="form-control" id="editar-coleccion" name="coleccion">
+            </div>
+            <div class="col-md-3">
+              <label for="editar-tipo" class="form-label fw-semibold">Tipo</label>
+              <input type="text" class="form-control" id="editar-tipo" name="tipo">
+            </div>
+          </div>
+
+          <!-- Ubicación y Estado de Conservación -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-map-pin me-1"></i>Ubicación y Estado de Conservación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label for="editar-ubicacion" class="form-label fw-semibold">Ubicación Física</label>
+              <input type="text" class="form-control" id="editar-ubicacion" name="ubicacion_fisica">
+            </div>
+            <div class="col-md-6">
+              <label for="editar-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
+              <input type="text" class="form-control" id="editar-estado_conservacion" name="estado_conservacion">
+            </div>
+          </div>
+
+          <!-- Detalle y Observaciones -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-detail me-1"></i>Detalles y Observaciones
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-6">
+              <label for="editar-descripcion" class="form-label fw-semibold">Descripción</label>
+              <textarea class="form-control" id="editar-descripcion" name="descripcion" rows="3"></textarea>
+            </div>
+            <div class="col-md-6">
+              <label for="editar-observaciones" class="form-label fw-semibold">Observaciones</label>
+              <textarea class="form-control" id="editar-observaciones" name="observaciones" rows="3"></textarea>
+            </div>
+          </div>
+
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bx bx-x me-1"></i>Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bx bx-save me-1"></i>Guardar cambios
+          </button>
         </div>
       </form>
     </div>
   </div>
-  </div>
+</div>
+
 <!-- Modal para editar pieza de acervo arqueológico -->
 <div class="modal fade" id="modalEditarPiezaArq" tabindex="-1" aria-labelledby="modalEditarPiezaArqLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="modalEditarPiezaArqLabel">Editar Pieza Arqueológica</h5>
+        <h5 class="modal-title fw-bold" id="modalEditarPiezaArqLabel">
+          <i class="bx bx-edit me-2"></i>Editar Pieza Arqueológica
+        </h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
       <form id="formEditarPiezaArq">
-        <div class="modal-body">
+        <div class="modal-body p-4">
           <input type="hidden" id="editar-arq-id" name="id">
           <input type="hidden" id="editar-arq-fotografia_actual" name="fotografia_actual">
-          <div class="row">
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-codigo_interno" class="form-label">Código Interno</label>
-              <input type="text" class="form-control" id="editar-arq-codigo_interno" name="codigo_interno">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-no_inventario_scyt" class="form-label">No. Inventario SCYT</label>
-              <input type="text" class="form-control" id="editar-arq-no_inventario_scyt" name="no_inventario_scyt">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-no_registro_inah" class="form-label">No. Registro INAH</label>
-              <input type="text" class="form-control" id="editar-arq-no_registro_inah" name="no_registro_inah">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-otros" class="form-label">Otros</label>
-              <input type="text" class="form-control" id="editar-arq-otros" name="otros">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-nombre_titulo_pieza" class="form-label">Nombre/Título</label>
-              <input type="text" class="form-control" id="editar-arq-nombre_titulo_pieza" name="nombre_titulo_pieza">
-            </div>
-            <div class="mb-3 col-12 col-md-4 container-preview-image">
-              <label for="editar-arq-fotografia" class="form-label">Fotografía</label>
-              <input type="file" id="editar-arq-fotografia" accept="image/*" class="input-file form-control" name="fotografia">
-              <div class="card shadow-sm text-center p-4 border border-secondary rounded preview-clickable preview-container-edit d-flex flex-column justify-content-center align-items-center" id="editar-arq-previewContainer" style="min-height: 280px;">
+
+          <!-- Fotografía a todo lo ancho arriba -->
+          <div class="row mb-4">
+            <div class="col-12 container-preview-image">
+              <label for="editar-arq-fotografia" class="form-label fw-semibold">Fotografía de la Pieza Arqueológica</label>
+              <input type="file" id="editar-arq-fotografia" accept="image/*" class="input-file form-control mb-2" name="fotografia">
+              <div class="card shadow-sm text-center p-3 border rounded preview-clickable preview-container-edit d-flex flex-column justify-content-center align-items-center bg-light" id="editar-arq-previewContainer" style="min-height: 220px; border-style: dashed !important;">
                 <i class="bx bx-image fs-1 text-muted" id="editar-arq-previewIcon"></i>
-                <p id="editar-arq-previewText" class="mt-2 text-muted">No hay imagen seleccionada</p>
+                <p id="editar-arq-previewText" class="mt-2 text-muted mb-0">No hay imagen seleccionada</p>
               </div>
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-numero_pieza_por_lote" class="form-label">Número Pieza por Lote</label>
+          </div>
+
+          <!-- Información General y Registros -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-info-circle me-1"></i>Información General y Registros
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <label for="editar-arq-codigo_interno" class="form-label fw-semibold">Código Interno</label>
+              <input type="text" class="form-control" id="editar-arq-codigo_interno" name="codigo_interno">
+            </div>
+            <div class="col-md-3">
+              <label for="editar-arq-no_inventario_scyt" class="form-label fw-semibold">No. Inventario SCYT</label>
+              <input type="text" class="form-control" id="editar-arq-no_inventario_scyt" name="no_inventario_scyt">
+            </div>
+            <div class="col-md-3">
+              <label for="editar-arq-no_registro_inah" class="form-label fw-semibold">No. Registro INAH</label>
+              <input type="text" class="form-control" id="editar-arq-no_registro_inah" name="no_registro_inah">
+            </div>
+            <div class="col-md-3">
+              <label for="editar-arq-otros" class="form-label fw-semibold">Otros Registros</label>
+              <input type="text" class="form-control" id="editar-arq-otros" name="otros">
+            </div>
+            <div class="col-md-8">
+              <label for="editar-arq-nombre_titulo_pieza" class="form-label fw-semibold">Nombre / Título de la Pieza</label>
+              <input type="text" class="form-control" id="editar-arq-nombre_titulo_pieza" name="nombre_titulo_pieza">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-arq-numero_pieza_por_lote" class="form-label fw-semibold">Pieza por Lote</label>
               <input type="text" class="form-control" id="editar-arq-numero_pieza_por_lote" name="numero_pieza_por_lote">
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-epoca" class="form-label">Época</label>
+          </div>
+
+          <!-- Origen y Cronología -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-world me-1"></i>Origen y Cronología
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="editar-arq-epoca" class="form-label fw-semibold">Época</label>
               <input type="text" class="form-control" id="editar-arq-epoca" name="epoca">
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-procedencia" class="form-label">Procedencia</label>
+            <div class="col-md-4">
+              <label for="editar-arq-procedencia" class="form-label fw-semibold">Procedencia</label>
               <input type="text" class="form-control" id="editar-arq-procedencia" name="procedencia">
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-material" class="form-label">Material</label>
-              <input type="text" class="form-control" id="editar-arq-material" name="material">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-medidas" class="form-label">Medidas</label>
-              <input type="text" class="form-control" id="editar-arq-medidas" name="medidas">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-forma" class="form-label">Forma</label>
-              <input type="text" class="form-control" id="editar-arq-forma" name="forma">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-tecnica_manufactura" class="form-label">Técnica de Manufactura</label>
-              <input type="text" class="form-control" id="editar-arq-tecnica_manufactura" name="tecnica_manufactura">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-tecnica_decorativa" class="form-label">Técnica Decorativa</label>
-              <input type="text" class="form-control" id="editar-arq-tecnica_decorativa" name="tecnica_decorativa">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-coleccion" class="form-label">Colección</label>
-              <input type="text" class="form-control" id="editar-arq-coleccion" name="coleccion">
-            </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-obtencion" class="form-label">Obtención</label>
+            <div class="col-md-4">
+              <label for="editar-arq-obtencion" class="form-label fw-semibold">Forma de Obtención</label>
               <input type="text" class="form-control" id="editar-arq-obtencion" name="obtencion">
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-ubicacion_fisica" class="form-label">Ubicación Física</label>
-              <input type="text" class="form-control" id="editar-arq-ubicacion_fisica" name="ubicacion_fisica">
+          </div>
+
+          <!-- Características Físicas y Técnicas -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-cube me-1"></i>Características Físicas y Técnicas
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="editar-arq-material" class="form-label fw-semibold">Material</label>
+              <input type="text" class="form-control" id="editar-arq-material" name="material">
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-estado_conservacion" class="form-label">Estado de Conservación</label>
-              <input type="text" class="form-control" id="editar-arq-estado_conservacion" name="estado_conservacion">
+            <div class="col-md-4">
+              <label for="editar-arq-medidas" class="form-label fw-semibold">Medidas</label>
+              <input type="text" class="form-control" id="editar-arq-medidas" name="medidas">
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-observaciones" class="form-label">Observaciones</label>
-              <textarea class="form-control" id="editar-arq-observaciones" name="observaciones"></textarea>
+            <div class="col-md-4">
+              <label for="editar-arq-forma" class="form-label fw-semibold">Forma</label>
+              <input type="text" class="form-control" id="editar-arq-forma" name="forma">
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-descripcion" class="form-label">Descripción</label>
-              <textarea class="form-control" id="editar-arq-descripcion" name="descripcion"></textarea>
+            <div class="col-md-4">
+              <label for="editar-arq-tecnica_manufactura" class="form-label fw-semibold">Técnica de Manufactura</label>
+              <input type="text" class="form-control" id="editar-arq-tecnica_manufactura" name="tecnica_manufactura">
             </div>
-            <div class="mb-3 col-md-4">
-              <label for="editar-arq-representacion" class="form-label">Representación</label>
-              <textarea class="form-control" id="editar-arq-representacion" name="representacion"></textarea>
+            <div class="col-md-4">
+              <label for="editar-arq-tecnica_decorativa" class="form-label fw-semibold">Técnica Decorativa</label>
+              <input type="text" class="form-control" id="editar-arq-tecnica_decorativa" name="tecnica_decorativa">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-arq-coleccion" class="form-label fw-semibold">Colección</label>
+              <input type="text" class="form-control" id="editar-arq-coleccion" name="coleccion">
             </div>
           </div>
+
+          <!-- Ubicación y Estado de Conservación -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-map-pin me-1"></i>Ubicación y Estado de Conservación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-6">
+              <label for="editar-arq-ubicacion_fisica" class="form-label fw-semibold">Ubicación Física</label>
+              <input type="text" class="form-control" id="editar-arq-ubicacion_fisica" name="ubicacion_fisica">
+            </div>
+            <div class="col-md-6">
+              <label for="editar-arq-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
+              <input type="text" class="form-control" id="editar-arq-estado_conservacion" name="estado_conservacion">
+            </div>
+          </div>
+
+          <!-- Detalles, Representación y Observaciones -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-detail me-1"></i>Descripción y Observaciones
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="editar-arq-descripcion" class="form-label fw-semibold">Descripción</label>
+              <textarea class="form-control" id="editar-arq-descripcion" name="descripcion" rows="3"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label for="editar-arq-representacion" class="form-label fw-semibold">Representación</label>
+              <textarea class="form-control" id="editar-arq-representacion" name="representacion" rows="3"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label for="editar-arq-observaciones" class="form-label fw-semibold">Observaciones</label>
+              <textarea class="form-control" id="editar-arq-observaciones" name="observaciones" rows="3"></textarea>
+            </div>
+          </div>
+
         </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-          <button type="submit" class="btn btn-primary">Guardar cambios</button>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bx bx-x me-1"></i>Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bx bx-save me-1"></i>Guardar cambios
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para editar pieza de acervo numismático -->
+<div class="modal fade" id="modalEditarPiezaNum" tabindex="-1" aria-labelledby="modalEditarPiezaNumLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modalEditarPiezaNumLabel">
+          <i class="bx bx-edit me-2"></i>Editar Pieza Numismática
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <form id="formEditarPiezaNum">
+        <div class="modal-body p-4">
+          <input type="hidden" id="editar-num-id" name="id">
+          <input type="hidden" id="editar-num-fotografia_actual" name="fotografia_actual">
+
+          <!-- Fotografía a todo lo ancho arriba -->
+          <div class="row mb-4">
+            <div class="col-12 container-preview-image">
+              <label for="editar-num-fotografia" class="form-label fw-semibold">Fotografía de la Pieza Numismática</label>
+              <input type="file" id="editar-num-fotografia" accept="image/*" class="input-file form-control mb-2" name="fotografia">
+              <div class="card shadow-sm text-center p-3 border rounded preview-clickable preview-container-edit d-flex flex-column justify-content-center align-items-center bg-light" id="editar-num-previewContainer" style="min-height: 220px; border-style: dashed !important;">
+                <i class="bx bx-image fs-1 text-muted" id="editar-num-previewIcon"></i>
+                <p id="editar-num-previewText" class="mt-2 text-muted mb-0">No hay imagen seleccionada</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Información General y Clasificación -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-info-circle me-1"></i>Información General y Clasificación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="editar-num-codigo_interno" class="form-label fw-semibold">Código Interno</label>
+              <input type="text" class="form-control" id="editar-num-codigo_interno" name="codigo_interno">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-num-no_inventario" class="form-label fw-semibold">Número de Inventario</label>
+              <input type="text" class="form-control" id="editar-num-no_inventario" name="no_inventario">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-num-tipo_obra" class="form-label fw-semibold">Tipo de Obra</label>
+              <select class="form-select" id="editar-num-tipo_obra" name="tipo_obra">
+                <option value="Pintura">Pintura</option>
+                <option value="Escultura">Escultura</option>
+                <option value="Fotografía">Fotografía</option>
+                <option value="Objeto">Objeto</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Origen y Especificaciones -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-coin me-1"></i>Origen y Especificaciones
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-3">
+              <label for="editar-num-ensayador" class="form-label fw-semibold">Ensayador</label>
+              <input type="text" class="form-control" id="editar-num-ensayador" name="ensayador">
+            </div>
+            <div class="col-md-3">
+              <label for="editar-num-denominacion" class="form-label fw-semibold">Denominación</label>
+              <input type="text" class="form-control" id="editar-num-denominacion" name="denominacion">
+            </div>
+            <div class="col-md-3">
+              <label for="editar-num-material" class="form-label fw-semibold">Material</label>
+              <select class="form-select" id="editar-num-material" name="material">
+                <option value="Madera">Madera</option>
+                <option value="Metal">Metal</option>
+                <option value="Cerámica">Cerámica</option>
+                <option value="Textil">Textil</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label for="editar-num-fecha_epoca" class="form-label fw-semibold">Época</label>
+              <select class="form-select" id="editar-num-fecha_epoca" name="fecha_epoca">
+                <option value="Prehispánica">Prehispánica</option>
+                <option value="Colonial">Colonial</option>
+                <option value="Moderna">Moderna</option>
+                <option value="Contemporánea">Contemporánea</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Dimensiones, Ubicación y Estado -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-map-pin me-1"></i>Dimensiones, Ubicación y Conservación
+          </h6>
+          <div class="row g-3 mb-4">
+            <div class="col-md-4">
+              <label for="editar-num-dimensiones" class="form-label fw-semibold">Dimensiones (cm)</label>
+              <input type="text" class="form-control" id="editar-num-dimensiones" name="dimensiones">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-num-ubicacion_fisica" class="form-label fw-semibold">Ubicación Física</label>
+              <input type="text" class="form-control" id="editar-num-ubicacion_fisica" name="ubicacion_fisica">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-num-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
+              <select class="form-select" id="editar-num-estado_conservacion" name="estado_conservacion">
+                <option value="Excelente">Excelente</option>
+                <option value="Bueno">Bueno</option>
+                <option value="Regular">Regular</option>
+                <option value="Dañado">Dañado</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Descripciones y Observaciones -->
+          <h6 class="text-primary fw-bold mb-3 border-bottom pb-2">
+            <i class="bx bx-detail me-1"></i>Descripciones y Observaciones
+          </h6>
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label for="editar-num-descripcion_cara_a" class="form-label fw-semibold">Descripción Cara A</label>
+              <textarea class="form-control" id="editar-num-descripcion_cara_a" name="descripcion_cara_a" rows="3"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label for="editar-num-descripcion_cara_b" class="form-label fw-semibold">Descripción Cara B</label>
+              <textarea class="form-control" id="editar-num-descripcion_cara_b" name="descripcion_cara_b" rows="3"></textarea>
+            </div>
+            <div class="col-md-4">
+              <label for="editar-num-observaciones" class="form-label fw-semibold">Observaciones</label>
+              <textarea class="form-control" id="editar-num-observaciones" name="observaciones" rows="3"></textarea>
+            </div>
+          </div>
+
+        </div>
+        <div class="modal-footer bg-light">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+            <i class="bx bx-x me-1"></i>Cancelar
+          </button>
+          <button type="submit" class="btn btn-primary">
+            <i class="bx bx-save me-1"></i>Guardar cambios
+          </button>
         </div>
       </form>
     </div>

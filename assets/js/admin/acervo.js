@@ -2,12 +2,13 @@ $(document).ready(function () {
   console.log("registros.js loaded");
   inicializarVistaPreviaEdicion();
   mostrarEstadoInicialAcervo();
+  cargarAniosDinamicos();
 
   let searchTimeout;
   let perPageTimeout;
 
-  $('#tipo_registro').on('change', function () {
-    const tipoAcervo = $(this).val();
+  $('#tipo_registro, #ubicacion, #anio, #cultura').on('change', function () {
+    const tipoAcervo = $('#tipo_registro').val();
     if (!tipoAcervo) {
       mostrarEstadoInicialAcervo();
       return;
@@ -94,6 +95,18 @@ function obtenerConfiguracionAcervo(tipoAcervo) {
     };
   }
 
+  if (tipoAcervo === 'numismatica') {
+    return {
+      listUrl: 'admin/get_acervo_numismatica',
+      deleteUrl: 'admin/acervo_numismatica_eliminar',
+      getByIdUrl: 'admin/acervo_numismatica_get_by_id',
+      editUrl: 'admin/acervo_numismatica_editar',
+      idField: 'id_acervo_numismatica',
+      dateField: 'fecha',
+      tipo: 'numismatica',
+    };
+  }
+
   return {
     listUrl: 'admin/get_acervo_general',
     deleteUrl: 'admin/acervo_general_eliminar',
@@ -108,6 +121,7 @@ function obtenerConfiguracionAcervo(tipoAcervo) {
 function inicializarVistaPreviaEdicion() {
   inicializarVistaPreviaEdicionPorPrefijo('editar');
   inicializarVistaPreviaEdicionPorPrefijo('editar-arq');
+  inicializarVistaPreviaEdicionPorPrefijo('editar-num');
 }
 
 function inicializarVistaPreviaEdicionPorPrefijo(prefijo) {
@@ -172,6 +186,10 @@ function inicializarVistaPreviaEdicionPorPrefijo(prefijo) {
     window.mostrarPreviewEdicionFotografiaArq = mostrarPreview;
   }
 
+  if (prefijo === 'editar-num') {
+    window.mostrarPreviewEdicionFotografiaNum = mostrarPreview;
+  }
+
   imageInput.addEventListener('change', function () {
     const file = this.files[0];
 
@@ -224,6 +242,9 @@ function mostrarListaPaginada(page = 1, perPage = 10, search = "", tipoAcervo = 
   formData.append("page", page);
   formData.append("per_page", perPage);
   formData.append("search", search);
+  formData.append("ubicacion", $('#ubicacion').val() || '');
+  formData.append("anio", $('#anio').val() || '');
+  formData.append("cultura", $('#cultura').val() || '');
   formData.append("csrf", Bee.csrf);
 
   $.ajax({
@@ -401,7 +422,70 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
         abrirModalEditarPiezaArq(id);
       });
     });
+  } else if (tipoAcervo === 'numismatica') {
+    tabla.querySelectorAll('.btn-editar').forEach(btn => {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = this.getAttribute('data-id');
+        abrirModalEditarPiezaNum(id);
+      });
+    });
   }
+}
+
+function abrirModalEditarPiezaNum(id) {
+  let formData = new FormData();
+  formData.append('id', id);
+  formData.append('csrf', Bee.csrf);
+
+  $.ajax({
+    url: 'admin/acervo_numismatica_get_by_id',
+    type: 'POST',
+    data: formData,
+    processData: false,
+    contentType: false,
+    dataType: 'json',
+    success: function(resp) {
+      if (resp.status === 200 && resp.data) {
+        const pieza = resp.data;
+
+        $('#editar-num-id').val(pieza.id_acervo_numismatica || pieza.id || '');
+        $('#editar-num-codigo_interno').val(pieza.codigo_interno || '');
+        $('#editar-num-no_inventario').val(pieza.no_inventario || '');
+        $('#editar-num-tipo_obra').val(pieza.tipo_obra || '');
+        $('#editar-num-ensayador').val(pieza.ensayador || '');
+        $('#editar-num-denominacion').val(pieza.denominacion || '');
+        $('#editar-num-material').val(pieza.material || '');
+        $('#editar-num-fecha_epoca').val(pieza.fecha_epoca || '');
+        $('#editar-num-dimensiones').val(pieza.dimensiones || '');
+        $('#editar-num-ubicacion_fisica').val(pieza.ubicacion_fisica || '');
+        $('#editar-num-estado_conservacion').val(pieza.estado_conservacion || '');
+        $('#editar-num-observaciones').val(pieza.observaciones || '');
+        $('#editar-num-descripcion_cara_a').val(pieza.descripcion_cara_a || '');
+        $('#editar-num-descripcion_cara_b').val(pieza.descripcion_cara_b || '');
+        $('#editar-num-fotografia_actual').val(pieza.fotografia || '');
+
+        const fotografiaUrlNum = pieza.fotografia_url || (pieza.fotografia ? `assets/uploads/${pieza.fotografia}` : '');
+        if (typeof window.mostrarPreviewEdicionFotografiaNum === 'function') {
+          window.mostrarPreviewEdicionFotografiaNum(fotografiaUrlNum, pieza.fotografia || 'Imagen cargada');
+        }
+
+        const inputFotografiaNum = document.getElementById('editar-num-fotografia');
+        if (inputFotografiaNum) {
+          inputFotografiaNum.value = '';
+        }
+
+        const modalNum = new bootstrap.Modal(document.getElementById('modalEditarPiezaNum'));
+        modalNum.show();
+      } else {
+        toastr.error('No se pudo obtener la información de la pieza numismática', 'Error');
+      }
+    },
+    error: function() {
+      toastr.error('Error de red al obtener la pieza numismática', 'Error');
+    }
+  });
 }
 
 function abrirModalEditarPiezaArq(id) {
@@ -579,7 +663,6 @@ document.addEventListener('DOMContentLoaded', function() {
       formData.append('no_inventario', $('#editar-no_inventario').val());
       formData.append('nombre_titulo_pieza', $('#editar-nombre').val());
       formData.append('cm', $('#editar-cm').val());
-      // Si tienes campo de imagen para edición, agrégalo aquí
       formData.append('autor', $('#editar-autor').val());
       formData.append('anio', $('#editar-fecha').val());
       formData.append('epoca', $('#editar-epoca').val());
@@ -689,6 +772,60 @@ document.addEventListener('DOMContentLoaded', function() {
       });
     });
   }
+
+  const formEditarNum = document.getElementById('formEditarPiezaNum');
+  if (formEditarNum) {
+    formEditarNum.addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      let formData = new FormData();
+      formData.append('id', $('#editar-num-id').val());
+      formData.append('codigo_interno', $('#editar-num-codigo_interno').val());
+      formData.append('no_inventario', $('#editar-num-no_inventario').val());
+      formData.append('tipo_obra', $('#editar-num-tipo_obra').val());
+      formData.append('ensayador', $('#editar-num-ensayador').val());
+      formData.append('denominacion', $('#editar-num-denominacion').val());
+      formData.append('material', $('#editar-num-material').val());
+      formData.append('fecha_epoca', $('#editar-num-fecha_epoca').val());
+      formData.append('dimensiones', $('#editar-num-dimensiones').val());
+      formData.append('ubicacion_fisica', $('#editar-num-ubicacion_fisica').val());
+      formData.append('estado_conservacion', $('#editar-num-estado_conservacion').val());
+      formData.append('observaciones', $('#editar-num-observaciones').val());
+      formData.append('descripcion_cara_a', $('#editar-num-descripcion_cara_a').val());
+      formData.append('descripcion_cara_b', $('#editar-num-descripcion_cara_b').val());
+      const fotografiaNuevaNum = document.getElementById('editar-num-fotografia').files[0];
+      if (fotografiaNuevaNum) {
+        formData.append('fotografia', fotografiaNuevaNum);
+      }
+      formData.append('fotografia_actual', $('#editar-num-fotografia_actual').val());
+      formData.append('csrf', Bee.csrf);
+
+      $.ajax({
+        url: 'admin/acervo_numismatica_editar',
+        type: 'POST',
+        data: formData,
+        processData: false,
+        contentType: false,
+        dataType: 'json',
+        success: function(resp) {
+          if (resp.status === 200) {
+            toastr.success(resp.msg, 'Actualizado');
+            const tipoAcervo = $('#tipo_registro').val() || 'numismatica';
+            const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
+            const searchTerm = $('#buscar-registro').val() || '';
+            mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
+            const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarPiezaNum'));
+            if (modal) modal.hide();
+          } else {
+            toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
+          }
+        },
+        error: function() {
+          toastr.error('Error de red al actualizar', 'Error');
+        }
+      });
+    });
+  }
 });
 
 // Eliminar pieza por ID
@@ -723,7 +860,6 @@ function eliminarPieza(id) {
 
 // Editar pieza por ID (básico: solo muestra un prompt para nombre, puedes mejorar con modal/formulario)
 function editarPieza(id) {
-  // Aquí podrías abrir un modal con los datos actuales, por ahora solo ejemplo con prompt
   const nuevoNombre = prompt('Nuevo nombre para la pieza:');
   if (!nuevoNombre) return;
   let formData = new FormData();
@@ -880,11 +1016,6 @@ function construirPaginacion(pagination, search = "") {
 
 /**
  * Crea un botón de página individual
- * @param {number} pageNum - Número de página
- * @param {number} currentPage - Página actual
- * @param {number} perPage - Registros por página
- * @param {string} search - Término de búsqueda
- * @returns {HTMLElement} - Elemento li con el botón
  */
 function crearBotonPagina(pageNum, currentPage, perPage, search = "", tipoAcervo = null) {
   const li = document.createElement("li");
@@ -906,4 +1037,37 @@ function crearBotonPagina(pageNum, currentPage, perPage, search = "", tipoAcervo
   
   li.appendChild(a);
   return li;
+}
+
+function cargarAniosDinamicos() {
+  $.ajax({
+    url: 'admin/get_todos_anios',
+    type: 'POST',
+    dataType: 'json',
+    data: { csrf: Bee.csrf },
+    success: function(resp) {
+      if (resp.status === 200 && resp.data) {
+        const selectAnio = $('#anio');
+        if (selectAnio.length) {
+          const selectedVal = selectAnio.val();
+          selectAnio.html('<option value="" hidden>Seleccione...</option>');
+          
+          resp.data.forEach(anio => {
+            selectAnio.append(`<option value="${anio}">${anio}</option>`);
+          });
+          
+          if (selectedVal) {
+            selectAnio.val(selectedVal);
+          }
+          
+          if (selectAnio.hasClass('select2-hidden-accessible')) {
+            selectAnio.trigger('change.select2');
+          }
+        }
+      }
+    },
+    error: function() {
+      console.error('Error al cargar la lista dinámica de años');
+    }
+  });
 }

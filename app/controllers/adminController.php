@@ -232,28 +232,7 @@ class adminController extends Controller implements ControllerInterface
   ////////////////////////////////////////////////////
   function acervo()
   {
-    // Formulario para agregar nuevo registro
-    // $form = new BeeFormBuilder('agregar-producto', 'agregar-producto', ['needs-validation'], 'admin/post_productos', true, true);
-
-    // // Inputs
-    // $form->addCustomFields(insert_inputs());
-    // $form->addTextField('nombre', 'Nombre del producto', ['form-control'], 'product-name', true);
-    // $form->addTextField('sku', 'SKU o número de rastreo', ['form-control'], 'product-sku');
-    // $form->addTextareaField('descripcion', 'Descripción del producto', 4, 5, ['form-control'], 'product-description');
-    // $form->addNumberField('precio', 'Precio principal', 1, 999999999, 'any', null, ['form-control'], 'product-price', true);
-    // $form->addNumberField('precio_comparacion', 'Precio de comparación', 1, 999999999, 'any', null, ['form-control'], 'product-compare-price');
-
-    // $form->addFileField('imagen', 'Imagen principal del producto', ['form-control'], 'product-imagen', true);
-
-    // $form->addCustomFields('<hr>');
-
-    // $form->addCheckboxField('rastrear_stock', 'Seguimiento de stock', 'true', ['form-check-input'], 'trackStock', false);
-    // $form->addNumberField('stock', 'Unidades disponibles', 1, 999999999, 1, null, ['form-control'], 'stock', false);
-
-    // $form->addButton('submit', 'submit', 'Agregar producto', ['btn btn-success'], 'submit-button');
-
     $this->setTitle('Acervo');
-    // $this->addToData('form', $form->getFormHtml());
     $this->addToData('acervo', acervoModel::all_paginated());
     $this->addToData('slug', 'acervo');
     $this->setView('acervo/acervo');
@@ -376,28 +355,7 @@ class adminController extends Controller implements ControllerInterface
   ////////////////////////////////////////////////////
   function catalogos()
   {
-    // Formulario para agregar nuevo registro
-    // $form = new BeeFormBuilder('nuevo-registro', 'nuevo-registro', ['needs-validation'], 'admin/post_catalogos', true, false);
-
-    // // Inputs
-    // $form->addCustomFields(insert_inputs());
-    // $form->addTextField('nombre', 'Nombre la pieza', ['form-control'], 'product-name', true);
-    // $form->addTextField('sku', 'Número de inventario', ['form-control'], 'product-sku', true);
-    // $form->addTextareaField('descripcion', 'Descripción de la pieza', 4, 5, ['form-control'], 'product-description');
-    // $form->addNumberField('precio', 'Precio principal', 1, 999999999, 'any', null, ['form-control'], 'product-price', true);
-    // $form->addNumberField('precio_comparacion', 'Precio de comparación', 1, 999999999, 'any', null, ['form-control'], 'product-compare-price');
-
-    // $form->addFileField('imagen', 'Imagen principal del producto', ['form-control'], 'product-imagen', true);
-
-    // $form->addCustomFields('<hr>');
-
-    // $form->addCheckboxField('rastrear_stock', 'Seguimiento de stock', 'true', ['form-check-input'], 'trackStock', false);
-    // $form->addNumberField('stock', 'Unidades disponibles', 1, 999999999, 1, null, ['form-control'], 'stock', false);
-
-    // $form->addButton('submit', 'submit', 'Registrar pieza', ['btn btn__add'], 'submit-button');
-
     $this->setTitle('Catálogos');
-    // $this->addToData('form', $form->getFormHtml());
     $this->addToData('catalogos', acervoModel::all_paginated());
     $this->addToData('slug', 'catalogos');
     $this->setView('catalogos/catalogos');
@@ -462,7 +420,7 @@ class adminController extends Controller implements ControllerInterface
         $errors++;
       }
 
-      // Procesar imagen
+      // Processar imagen
       $tmp_name = $imagen['tmp_name'];
       $filename = $imagen['name'];
       $type     = $imagen['type'];
@@ -533,34 +491,6 @@ class adminController extends Controller implements ControllerInterface
   ////////////////////////////////////////////////////
   ////////////////////////////////////////////////////
   ////////////////////////////////////////////////////
-  // function registrar()
-  // {
-  //   $form = new BeeFormBuilder('nuevo-registro', 'nuevo-registro', ['needs-validation'], 'admin/post_catalogos', true, false);
-
-  //   // Inputs
-  //   $form->addCustomFields(insert_inputs());
-  //   $form->addTextField('nombre', 'Nombre de la pieza', ['form-control'], 'product-name', true, '', 'Ej. Vasija prehispánica');
-  //   $form->addTextField('sku', 'Número de inventario', ['form-control'], 'product-sku', true, '', 'Ej. 0001');
-  //   $form->addTextareaField('descripcion', 'Descripción de la pieza', 4, 5, ['form-control'], 'product-description', true, '', 'Descripción detallada de la pieza');
-  //   $form->addNumberField('precio', 'Precio principal', 1, 999999999, 'any', null, ['form-control'], 'product-price', true, '0.00');
-  //   $form->addNumberField('precio_comparacion', 'Precio de comparación', 1, 999999999, 'any', '', ['form-control'], 'product-compare-price', true, '0.00');
-
-  //   $form->addFileField('imagen', 'Imagen principal del producto', ['form-control'], 'product-imagen', true);
-
-  //   $form->addCustomFields('<hr>');
-
-  //   $form->addCheckboxField('rastrear_stock', 'Seguimiento de stock', 'true', ['form-check-input'], 'trackStock', false);
-  //   $form->addNumberField('unidades_disponibles', 'Unidades disponibles', 1, 999999999, 'any', null, ['form-control'], 'stock', false, '0');
-
-  //   $form->addButton('submit', 'submit', 'Registrar pieza', ['btn btn__add'], 'submit-button');
-
-  //   $this->addToData('form', $form->getFormHtml());
-  //   $this->setTitle('Registrar Acervo');
-  //   $this->setView('registrar/registrar');
-  //   $this->render();
-  // }
-  // Función para insertar inputs personalizados
-
   public function get_formulario_tipo()
   {
     $tipo = $_POST['tipo_acervo'] ?? '';
@@ -578,7 +508,7 @@ class adminController extends Controller implements ControllerInterface
         break;
       case 3:
         $campos = obtenerCamposAcervoNumismatica();
-        $action = 'admin/post_registro_num';
+        $action = 'admin/post_registro_numismatica';
         break;
     }
 
@@ -647,7 +577,6 @@ class adminController extends Controller implements ControllerInterface
       ['type' => 'textarea', 'name' => 'descripcion', 'label' => 'Descripción', 'id' => 'descripcion', 'class' => 'form-control', 'required' => false, 'placeholder' => 'Descripción detallada de la pieza', 'rows' => 4, 'cols' => 5, 'column_class' => 'col-12 mb-3']
     ];
 
-    // $form->addCustomFields(insert_inputs());
     agregarCamposDinamicos($form, $campos);
     $form->addCustomFields('<div class="col-12"><hr class="my-4"></div>');
 
@@ -700,8 +629,6 @@ class adminController extends Controller implements ControllerInterface
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === 0) {
       $tmp_name = $_FILES['fotografia']['tmp_name'];
       $filename = $_FILES['fotografia']['name'];
-      // $ext = pathinfo($filename, PATHINFO_EXTENSION);
-      // $new_name = generate_filename() . '.' . $ext;
       $upload_path = UPLOADS . $filename;
       if (move_uploaded_file($tmp_name, $upload_path)) {
         $data['fotografia'] = $filename;
@@ -764,12 +691,10 @@ class adminController extends Controller implements ControllerInterface
       'id_modulo'               => 3
     ];
 
-    // Procesar imagen si se envió
+    // Processar imagen si se envió
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === 0) {
       $tmp_name = $_FILES['fotografia']['tmp_name'];
       $filename = $_FILES['fotografia']['name'];
-      // $ext = pathinfo($filename, PATHINFO_EXTENSION);
-      // $new_name = generate_filename() . '.' . $ext;
       $upload_path = UPLOADS . $filename;
       if (move_uploaded_file($tmp_name, $upload_path)) {
         $data['fotografia'] = $filename;
@@ -829,8 +754,6 @@ class adminController extends Controller implements ControllerInterface
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === 0) {
       $tmp_name = $_FILES['fotografia']['tmp_name'];
       $filename = $_FILES['fotografia']['name'];
-      // $ext = pathinfo($filename, PATHINFO_EXTENSION);
-      // $new_name = generate_filename() . '.' . $ext;
       $upload_path = UPLOADS . $filename;
       if (move_uploaded_file($tmp_name, $upload_path)) {
         $data['fotografia'] = $filename;
@@ -866,6 +789,99 @@ class adminController extends Controller implements ControllerInterface
   }
 
   // Endpoint para AJAX: listado paginado de Acervo General
+  private function filtrarAcervoPorPropiedades(array $all)
+  {
+    // Filtro por Ubicación
+    $ubicacionId = isset($_POST['ubicacion']) ? trim($_POST['ubicacion']) : '';
+    if ($ubicacionId !== '') {
+      $mapUbi = [
+        '1' => 'Acambay',
+        '2' => 'Tenancingo',
+        '3' => 'Toluca',
+        '4' => 'Zinacantepec'
+      ];
+      $ubiText = $mapUbi[$ubicacionId] ?? '';
+      if ($ubiText !== '') {
+        $all = array_filter($all, function ($pieza) use ($ubiText) {
+          $camposBuscar = ['ubicacion_fisica', 'nombre_titulo_pieza', 'descripcion', 'procedencia', 'coleccion', 'observaciones', 'codigo_interno'];
+          foreach ($camposBuscar as $campo) {
+            if (isset($pieza[$campo]) && stripos($pieza[$campo], $ubiText) !== false) {
+              return true;
+            }
+          }
+          return false;
+        });
+        $all = array_values($all);
+      }
+    }
+
+    // Filtro por Año
+    $anioVal = isset($_POST['anio']) ? trim($_POST['anio']) : '';
+    if ($anioVal !== '') {
+      $all = array_filter($all, function ($pieza) use ($anioVal) {
+        $camposBuscar = ['anio', 'fecha_epoca', 'epoca', 'no_registro_inah', 'descripcion', 'observaciones', 'nombre_titulo_pieza'];
+        foreach ($camposBuscar as $campo) {
+          if (isset($pieza[$campo]) && stripos($pieza[$campo], $anioVal) !== false) {
+            return true;
+          }
+        }
+        return false;
+      });
+      $all = array_values($all);
+    }
+
+    // Filtro por Cultura
+    $culturaId = isset($_POST['cultura']) ? trim($_POST['cultura']) : '';
+    if ($culturaId !== '') {
+      $mapCult = [
+        '2' => 'Mexica',
+        '3' => 'Teotihuaca',
+        '4' => 'Tolteca',
+        '5' => 'Chichimeca',
+        '6' => 'Otomi',
+        '7' => 'Matlatzinca',
+        '8' => 'Mazahua',
+        '9' => 'Purhepecha',
+        '10' => 'Tlaxcalteca',
+        '11' => 'Nahuatl',
+        '12' => 'Mazateco',
+        '13' => 'Mixteco',
+        '14' => 'Zapoteco',
+        '15' => 'Totonaca',
+        '16' => 'Huasteco',
+        '17' => 'Maya'
+      ];
+      $cultText = $mapCult[$culturaId] ?? '';
+      if ($cultText !== '') {
+        $all = array_filter($all, function ($pieza) use ($cultText) {
+          $camposBuscar = ['descripcion', 'representacion', 'observaciones', 'nombre_titulo_pieza', 'procedencia', 'coleccion', 'material', 'tecnica'];
+          foreach ($camposBuscar as $campo) {
+            if (isset($pieza[$campo])) {
+              $texto = $pieza[$campo];
+              $textoSinAcentos = str_ireplace(['á', 'é', 'í', 'ó', 'ú', 'Á', 'É', 'Í', 'Ó', 'Ú'], ['a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u'], $texto);
+              $cultSinAcentos = str_ireplace(['á', 'é', 'í', 'ó', 'ú', 'Á', 'É', 'Í', 'Ó', 'Ú'], ['a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u'], $cultText);
+              
+              $raiz = rtrim($cultSinAcentos, 's');
+              if (substr($raiz, -1) === 'e') {
+                $raizVal = substr($raiz, 0, -1);
+              } else {
+                $raizVal = $raiz;
+              }
+              
+              if (stripos($textoSinAcentos, $raizVal) !== false) {
+                return true;
+              }
+            }
+          }
+          return false;
+        });
+        $all = array_values($all);
+      }
+    }
+
+    return $all;
+  }
+
   public function get_acervo_general()
   {
     // Parámetros de paginación y búsqueda
@@ -885,6 +901,7 @@ class adminController extends Controller implements ControllerInterface
       });
       $all = array_values($all);
     }
+    $all = $this->filtrarAcervoPorPropiedades($all);
 
     $total = count($all);
     $piezas = array_slice($all, $offset, $perPage);
@@ -939,6 +956,7 @@ class adminController extends Controller implements ControllerInterface
       });
       $all = array_values($all);
     }
+    $all = $this->filtrarAcervoPorPropiedades($all);
 
     $total = count($all);
     $piezas = array_slice($all, $offset, $perPage);
@@ -989,11 +1007,13 @@ class adminController extends Controller implements ControllerInterface
     $all = AcervoNumismaticaModel::getAll();
     if ($search !== '') {
       $all = array_filter($all, function ($pieza) use ($search) {
-        return stripos($pieza['nombre_titulo_pieza'], $search) !== false
-          || stripos($pieza['autor'], $search) !== false;
+        return (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
+          || (isset($pieza['denominacion']) && stripos($pieza['denominacion'], $search) !== false)
+          || (isset($pieza['ensayador']) && stripos($pieza['ensayador'], $search) !== false);
       });
       $all = array_values($all);
     }
+    $all = $this->filtrarAcervoPorPropiedades($all);
 
     $total = count($all);
     $piezas = array_slice($all, $offset, $perPage);
@@ -1003,10 +1023,10 @@ class adminController extends Controller implements ControllerInterface
       return [
         'image' => !empty($pieza['fotografia']) ? 'assets/uploads/' . $pieza['fotografia'] : '',
         'id' => $pieza['id_acervo_numismatica'],
-        'codigo_interno' => $pieza['codigo_interno'],
+        'nombre' => $pieza['codigo_interno'],
         'ubicacion' => $pieza['ubicacion_fisica'],
         // 'autor' => $pieza['autor'],
-        'material' => $pieza['material'],
+        'descripcion' => $pieza['material'],
         'fecha' => $pieza['fecha_epoca'],
       ];
     }, $piezas);
@@ -1283,6 +1303,60 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+    // Obtener lista dinámica de años y épocas registrados en todas las colecciones
+  public function get_todos_anios()
+  {
+    try {
+      $db = Db::connect();
+      
+      // Consultar de acervo_general (columna 'anio')
+      $aniosGeneral = $db->query("SELECT DISTINCT anio FROM acervo_general WHERE anio IS NOT NULL AND anio != ''")->fetchAll(PDO::FETCH_COLUMN);
+      
+      // Consultar de acervo_arqueologico (columna 'epoca')
+      $aniosArq = $db->query("SELECT DISTINCT epoca FROM acervo_arqueologico WHERE epoca IS NOT NULL AND epoca != ''")->fetchAll(PDO::FETCH_COLUMN);
+      
+      // Consultar de acervo_numismatica (columna 'fecha_epoca')
+      $aniosNum = $db->query("SELECT DISTINCT fecha_epoca FROM acervo_numismatica WHERE fecha_epoca IS NOT NULL AND fecha_epoca != ''")->fetchAll(PDO::FETCH_COLUMN);
+      
+      $todos = array_merge($aniosGeneral, $aniosArq, $aniosNum);
+      
+      $todosClean = [];
+      foreach ($todos as $val) {
+        $val = trim($val);
+        if ($val !== '' && stripos($val, 'sin ') === false && stripos($val, 'no ') === false && stripos($val, 's/a') === false && stripos($val, 's/f') === false && stripos($val, 'sin dato') === false) {
+          $todosClean[] = $val;
+        }
+      }
+      
+      $todosClean = array_unique($todosClean);
+      
+      // Ordenar: numéricos primero (cronológicamente), luego textos (ej: épocas)
+      usort($todosClean, function($a, $b) {
+        $aIsNum = is_numeric($a);
+        $bIsNum = is_numeric($b);
+        if ($aIsNum && $bIsNum) {
+          return (int)$a - (int)$b;
+        }
+        if ($aIsNum) return -1;
+        if ($bIsNum) return 1;
+        return strcasecmp($a, $b);
+      });
+      
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'data' => array_values($todosClean)
+      ]);
+     } catch (Exception $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => $e->getMessage()
+      ]);
+    }
+    exit;
+  }
+
 }
 
 function obtenerCamposAcervoGeneral()
@@ -1324,7 +1398,7 @@ function obtenerCamposAcervoGeneral()
     [
       'type' => 'text',
       'name' => 'cm',
-      'label' => 'Centímetros (idk)', // Este campo es un misterio, pero lo dejamos por si acaso
+      'label' => 'Centímetros (idk)',
       'id' => 'cm',
       'class' => 'form-control',
       'required' => true,
@@ -1856,13 +1930,13 @@ function obtenerCamposAcervoNumismatica()
       'name' => 'descripcion_cara_a',
       'label' => "Descripción de la cara A",
       'id' => "descripcion-cara-a",
-      "class" => "form-control",
-      "required" => false,
-      "default_value" => "",
-      "placeholder" => "",
-      "rows" => 4,
-      "cols" => 5,
-      "column_class" => "col-12 mb-3"
+      'class' => "form-control",
+      'required' => false,
+      'default_value' => "",
+      'placeholder' => "",
+      'rows' => 4,
+      'cols' => 5,
+      'column_class' => "col-12 mb-3"
     ],
     [
         "type" => "textarea",
