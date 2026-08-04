@@ -77,8 +77,7 @@ class AcervoGeneralModel extends Model
      */
     public static function getAll($limit = null, $offset = null)
     {
-        // $sql = "SELECT * FROM " . self::$table . " WHERE status = 1 ORDER BY id_acervo_general DESC LIMIT 100";
-        $sql = "SELECT id_acervo_general, nombre_titulo_pieza, fotografia, ubicacion_fisica, anio, descripcion FROM " . self::$table . " WHERE status = 1 ORDER BY id_acervo_general DESC";
+        $sql = "SELECT * FROM " . self::$table . " WHERE status = 1 ORDER BY id_acervo_general DESC";
         $params = [];
         if ($limit !== null && $offset !== null) {
             $sql .= " LIMIT :offset, :limit";

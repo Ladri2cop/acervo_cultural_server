@@ -80,8 +80,7 @@ class AcervoArqueologicoModel extends Model
      */
     public static function getAll($limit = null, $offset = null)
     {
-        // $sql = "SELECT * FROM " . self::$table . " WHERE status = 1 ORDER BY id_acervo_arq DESC LIMIT 100";
-        $sql = "SELECT id_acervo_arq, nombre_titulo_pieza, fotografia, ubicacion_fisica, descripcion FROM " . self::$table . " WHERE status = 1 ORDER BY id_acervo_arq DESC";
+        $sql = "SELECT * FROM " . self::$table . " WHERE status = 1 ORDER BY id_acervo_arq DESC";
         $params = [];
         if ($limit !== null && $offset !== null) {
             $sql .= " LIMIT :offset, :limit";

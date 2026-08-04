@@ -365,26 +365,66 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
     return;
   }
 
+  // Actualizar encabezados de la tabla dinámicamente según el tipo de acervo
+  const headerTabla = document.querySelector("#tabla-acervo thead");
+  if (headerTabla) {
+    if (tipoAcervo === 'arqueologico') {
+      headerTabla.innerHTML = `
+        <tr>
+          <th>Imagen</th>
+          <th>Nombre</th>
+          <th>Código Interno</th>
+          <th>No. INAH</th>
+          <th>Descripción</th>
+          <th>Acción</th>
+        </tr>
+      `;
+    } else if (tipoAcervo === 'numismatica') {
+      headerTabla.innerHTML = `
+        <tr>
+          <th>Imagen</th>
+          <th>Denominación</th>
+          <th>Código Interno</th>
+          <th>Ubicación Física</th>
+          <th>Material</th>
+          <th>Acción</th>
+        </tr>
+      `;
+    } else {
+      headerTabla.innerHTML = `
+        <tr>
+          <th>Imagen</th>
+          <th>Nombre</th>
+          <th>Código Interno</th>
+          <th>Autor</th>
+          <th>Descripción</th>
+          <th>Acción</th>
+        </tr>
+      `;
+    }
+  }
+
   piezas.forEach((pieza) => {
     const fila = document.createElement("tr");
-    const fechaPieza = pieza.fecha || pieza.no_registro_inah || '';
+    const codigoTxt = pieza.codigo_interno || '-';
+    const autorTxt = pieza.autor || '-';
     const tieneEdicion = true;
     fila.innerHTML = `
         <td><img src="${pieza.image}" alt="${pieza.nombre}" class="img__miniatura" /></td>
-        <td>${pieza.nombre}</td>
-        <td>${pieza.ubicacion}</td>
-        <td>${pieza.descripcion}</td>
-        <td>${fechaPieza}</td>
+        <td>${pieza.nombre || '-'}</td>
+        <td>${codigoTxt}</td>
+        <td>${autorTxt}</td>
+        <td>${pieza.descripcion || '-'}</td>
         <td>
           <div class="dropdown">
             <button class="btn btn__actions btn-sm btn-outline-primary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-              <i class='bx  bx-caret-down'></i> 
+              <i class='bx bx-caret-down'></i> 
             </button>
             <ul class="dropdown-menu">
               <li><a class="dropdown-item btn-ver" href="javascript:void(0);" data-id="${pieza.id}" data-tipo="${tipoAcervo}"> <i class='bx text-info bx__iconmenu bx-eye-alt'></i> Ver</a></li>
-              ${tieneEdicion ? `<li><a class="dropdown-item btn-editar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i>  Editar</a></li>` : ''}
+              ${tieneEdicion ? `<li><a class="dropdown-item btn-editar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i> Editar</a></li>` : ''}
               <hr class="dropdown-divider">
-              <li><a class="dropdown-item btn-eliminar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-danger bx__iconmenu bx-trash'></i>  Eliminar</a></li>
+              <li><a class="dropdown-item btn-eliminar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-danger bx__iconmenu bx-trash'></i> Eliminar</a></li>
             </ul>
           </div>
         </td>

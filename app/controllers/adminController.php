@@ -892,12 +892,15 @@ class adminController extends Controller implements ControllerInterface
 
     require_once APP . 'models/acervoGeneralModel.php';
 
-    // Filtro de búsqueda simple (nombre o autor)
+    // Filtro de búsqueda (nombre, código interno, autor, descripción u observaciones)
     $all = AcervoGeneralModel::getAll();
     if ($search !== '') {
       $all = array_filter($all, function ($pieza) use ($search) {
-        return stripos($pieza['nombre_titulo_pieza'], $search) !== false
-          || stripos($pieza['autor'], $search) !== false;
+        return (isset($pieza['nombre_titulo_pieza']) && stripos($pieza['nombre_titulo_pieza'], $search) !== false)
+          || (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
+          || (isset($pieza['autor']) && stripos($pieza['autor'], $search) !== false)
+          || (isset($pieza['descripcion']) && stripos($pieza['descripcion'], $search) !== false)
+          || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
       });
       $all = array_values($all);
     }
@@ -911,11 +914,10 @@ class adminController extends Controller implements ControllerInterface
       return [
         'image' => !empty($pieza['fotografia']) ? 'assets/uploads/' . $pieza['fotografia'] : '',
         'id' => $pieza['id_acervo_general'],
-        'nombre' => $pieza['nombre_titulo_pieza'],
-        'ubicacion' => $pieza['ubicacion_fisica'],
-        // 'autor' => $pieza['autor'],
-        'descripcion' => $pieza['descripcion'],
-        'fecha' => $pieza['anio'],
+        'nombre' => !empty($pieza['nombre_titulo_pieza']) ? $pieza['nombre_titulo_pieza'] : (!empty($pieza['nombre']) ? $pieza['nombre'] : '-'),
+        'codigo_interno' => !empty($pieza['codigo_interno']) ? $pieza['codigo_interno'] : '-',
+        'autor' => !empty($pieza['autor']) ? $pieza['autor'] : '-',
+        'descripcion' => !empty($pieza['descripcion']) ? $pieza['descripcion'] : '-',
       ];
     }, $piezas);
 
@@ -947,12 +949,16 @@ class adminController extends Controller implements ControllerInterface
 
     require_once APP . 'models/acervoArqueologicoModel.php';
 
-    // Filtro de búsqueda simple (nombre o autor)
+    // Filtro de búsqueda (nombre, código interno, no_registro_inah, procedencia, descripción u observaciones)
     $all = AcervoArqueologicoModel::getAll();
     if ($search !== '') {
       $all = array_filter($all, function ($pieza) use ($search) {
-        return stripos($pieza['nombre_titulo_pieza'], $search) !== false
-          || stripos($pieza['codigo_interno'], $search) !== false;
+        return (isset($pieza['nombre_titulo_pieza']) && stripos($pieza['nombre_titulo_pieza'], $search) !== false)
+          || (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
+          || (isset($pieza['no_registro_inah']) && stripos($pieza['no_registro_inah'], $search) !== false)
+          || (isset($pieza['procedencia']) && stripos($pieza['procedencia'], $search) !== false)
+          || (isset($pieza['descripcion']) && stripos($pieza['descripcion'], $search) !== false)
+          || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
       });
       $all = array_values($all);
     }
@@ -966,12 +972,13 @@ class adminController extends Controller implements ControllerInterface
       return [
         'image' => !empty($pieza['fotografia']) ? 'assets/uploads/' . $pieza['fotografia'] : '',
         'id' => $pieza['id_acervo_arq'],
-        'nombre' => $pieza['nombre_titulo_pieza'],
-        'ubicacion' => $pieza['ubicacion_fisica'],
-        // 'autor' => $pieza['autor'],
-        'descripcion' => $pieza['descripcion'],
-        'fecha' => $pieza['no_registro_inah'],
-        'no_registro_inah' => $pieza['no_registro_inah'],
+        'nombre' => !empty($pieza['nombre_titulo_pieza']) ? $pieza['nombre_titulo_pieza'] : (!empty($pieza['nombre']) ? $pieza['nombre'] : '-'),
+        'codigo_interno' => !empty($pieza['codigo_interno']) ? $pieza['codigo_interno'] : '-',
+        'autor' => !empty($pieza['no_registro_inah']) ? $pieza['no_registro_inah'] : '-',
+        'ubicacion' => !empty($pieza['ubicacion_fisica']) ? $pieza['ubicacion_fisica'] : '-',
+        'descripcion' => !empty($pieza['descripcion']) ? $pieza['descripcion'] : '-',
+        'fecha' => !empty($pieza['no_registro_inah']) ? $pieza['no_registro_inah'] : '-',
+        'no_registro_inah' => !empty($pieza['no_registro_inah']) ? $pieza['no_registro_inah'] : '-',
       ];
     }, $piezas);
 
@@ -1003,13 +1010,17 @@ class adminController extends Controller implements ControllerInterface
 
     require_once APP . 'models/acervoNumismaticaModel.php';
 
-    // Filtro de búsqueda simple (nombre o autor)
+    // Filtro de búsqueda (código interno, denominación, ensayador, material, descripciones u observaciones)
     $all = AcervoNumismaticaModel::getAll();
     if ($search !== '') {
       $all = array_filter($all, function ($pieza) use ($search) {
         return (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
           || (isset($pieza['denominacion']) && stripos($pieza['denominacion'], $search) !== false)
-          || (isset($pieza['ensayador']) && stripos($pieza['ensayador'], $search) !== false);
+          || (isset($pieza['ensayador']) && stripos($pieza['ensayador'], $search) !== false)
+          || (isset($pieza['material']) && stripos($pieza['material'], $search) !== false)
+          || (isset($pieza['descripcion_cara_a']) && stripos($pieza['descripcion_cara_a'], $search) !== false)
+          || (isset($pieza['descripcion_cara_b']) && stripos($pieza['descripcion_cara_b'], $search) !== false)
+          || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
       });
       $all = array_values($all);
     }
@@ -1023,11 +1034,12 @@ class adminController extends Controller implements ControllerInterface
       return [
         'image' => !empty($pieza['fotografia']) ? 'assets/uploads/' . $pieza['fotografia'] : '',
         'id' => $pieza['id_acervo_numismatica'],
-        'nombre' => $pieza['codigo_interno'],
-        'ubicacion' => $pieza['ubicacion_fisica'],
-        // 'autor' => $pieza['autor'],
-        'descripcion' => $pieza['material'],
-        'fecha' => $pieza['fecha_epoca'],
+        'nombre' => !empty($pieza['denominacion']) ? $pieza['denominacion'] : (!empty($pieza['tipo_obra']) ? $pieza['tipo_obra'] : 'Pieza Numismática'),
+        'codigo_interno' => !empty($pieza['codigo_interno']) ? $pieza['codigo_interno'] : '-',
+        'autor' => !empty($pieza['ubicacion_fisica']) ? $pieza['ubicacion_fisica'] : '-',
+        'ubicacion' => !empty($pieza['ubicacion_fisica']) ? $pieza['ubicacion_fisica'] : '-',
+        'descripcion' => !empty($pieza['material']) ? $pieza['material'] : '-',
+        'fecha' => !empty($pieza['fecha_epoca']) ? $pieza['fecha_epoca'] : '-',
       ];
     }, $piezas);
 

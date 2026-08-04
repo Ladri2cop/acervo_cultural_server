@@ -133,9 +133,9 @@
               <tr>
                 <th>Imagen</th>
                 <th>Nombre</th>
-                <th>Ubicación</th>
+                <th>Código Interno</th>
+                <th>Autor</th>
                 <th>Descripción</th>
-                <th>Fecha</th>
                 <th>Acción</th>
               </tr>
             </thead>
