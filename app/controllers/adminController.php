@@ -607,11 +607,13 @@ class adminController extends Controller implements ControllerInterface
       'no_inventario'         => $_POST['no_inventario'] ?? '',
       'nombre_titulo_pieza'   => $_POST['nombre_titulo_pieza'] ?? '',
       'cm'                    => $_POST['cm'] ?? '',
+      'materia'               => $_POST['materia'] ?? '',
       'fotografia'            => '', // Se actualizará si se sube archivo
       'autor'                 => $_POST['autor'] ?? '',
       'anio'                  => $_POST['anio'] ?? '',
       'epoca'                 => $_POST['epoca'] ?? '',
       'tecnica'               => $_POST['tecnica'] ?? '',
+      'origen'                => $_POST['origen'] ?? '',
       'material'              => $_POST['material'] ?? '',
       'medidas'               => $_POST['medidas'] ?? '',
       'lote'                  => $_POST['lote'] ?? '',
@@ -1418,6 +1420,17 @@ function obtenerCamposAcervoGeneral()
       'placeholder' => 'Ej. 100',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
+    [
+      'type' => 'text',
+      'name' => 'materia',
+      'label' => 'Materia',
+      'id' => 'materia',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Ej. Óleo sobre lienzo',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
 
     [
       'type' => 'text',
@@ -1458,6 +1471,17 @@ function obtenerCamposAcervoGeneral()
       'class' => 'form-select',
       'required' => true,
       'options' => ['Óleo', 'Acuarela', 'Grabado', 'Mixta'],
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'origen',
+      'label' => 'Origen',
+      'id' => 'origen',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Ej. México',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [

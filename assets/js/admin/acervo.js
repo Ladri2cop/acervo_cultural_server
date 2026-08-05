@@ -706,12 +706,14 @@ function abrirModalVerPieza(id, tipoAcervo = 'general') {
           $('#ver-gen-codigo_interno').text(pieza.codigo_interno || '-');
           $('#ver-gen-no_inventario').text(pieza.no_inventario || '-');
           $('#ver-gen-nombre').text(pieza.nombre_titulo_pieza || pieza.nombre || '-');
+          $('#ver-gen-materia').text(pieza.materia || '-');
 
           $('#ver-gen-autor').text(pieza.autor || '-');
           $('#ver-gen-anio').text(pieza.anio || '-');
           $('#ver-gen-epoca').text(pieza.epoca || '-');
 
           $('#ver-gen-tecnica').text(pieza.tecnica || '-');
+          $('#ver-gen-origen').text(pieza.origen || '-');
           $('#ver-gen-material').text(pieza.material || '-');
           $('#ver-gen-medidas').text(pieza.medidas || '-');
           $('#ver-gen-lote').text(pieza.lote || '-');
@@ -806,10 +808,12 @@ function abrirModalEditarPieza(id, tipoAcervo = 'general') {
         $('#editar-no_inventario').val(pieza.no_inventario);
         $('#editar-nombre').val(pieza.nombre_titulo_pieza);
         $('#editar-cm').val(pieza.cm);
+        $('#editar-materia').val(pieza.materia);
         $('#editar-autor').val(pieza.autor);
         $('#editar-fecha').val(pieza.anio);
         $('#editar-epoca').val(pieza.epoca);
         $('#editar-tecnica').val(pieza.tecnica);
+        $('#editar-origen').val(pieza.origen);
         $('#editar-material').val(pieza.material);
         $('#editar-medidas').val(pieza.medidas);
         $('#editar-lote').val(pieza.lote);
@@ -868,10 +872,12 @@ document.addEventListener('DOMContentLoaded', function () {
       formData.append('no_inventario', $('#editar-no_inventario').val());
       formData.append('nombre_titulo_pieza', $('#editar-nombre').val());
       formData.append('cm', $('#editar-cm').val());
+      formData.append('materia', $('#editar-materia').val());
       formData.append('autor', $('#editar-autor').val());
       formData.append('anio', $('#editar-fecha').val());
       formData.append('epoca', $('#editar-epoca').val());
       formData.append('tecnica', $('#editar-tecnica').val());
+      formData.append('origen', $('#editar-origen').val());
       formData.append('material', $('#editar-material').val());
       formData.append('medidas', $('#editar-medidas').val());
       formData.append('lote', $('#editar-lote').val());

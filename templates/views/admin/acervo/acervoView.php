@@ -185,17 +185,21 @@
             <i class="bx bx-info-circle me-1"></i>Información General e Identificación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="editar-codigo_interno" class="form-label fw-semibold">Código Interno</label>
               <input type="text" class="form-control" id="editar-codigo_interno" name="codigo_interno">
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="editar-no_inventario" class="form-label fw-semibold">No. Inventario</label>
               <input type="text" class="form-control" id="editar-no_inventario" name="no_inventario">
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="editar-nombre" class="form-label fw-semibold">Nombre / Título de la Pieza</label>
               <input type="text" class="form-control" id="editar-nombre" name="nombre_titulo_pieza" required>
+            </div>
+            <div class="col-md-3">
+              <label for="editar-materia" class="form-label fw-semibold">Materia</label>
+              <input type="text" class="form-control" id="editar-materia" name="materia">
             </div>
           </div>
 
@@ -226,6 +230,10 @@
             <div class="col-md-4">
               <label for="editar-tecnica" class="form-label fw-semibold">Técnica</label>
               <input type="text" class="form-control" id="editar-tecnica" name="tecnica">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-origen" class="form-label fw-semibold">Origen</label>
+              <input type="text" class="form-control" id="editar-origen" name="origen">
             </div>
             <div class="col-md-4">
               <label for="editar-material" class="form-label fw-semibold">Material</label>
@@ -627,17 +635,21 @@
             <i class="bx bx-info-circle me-1"></i>Información General e Identificación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label fw-semibold">Código Interno</label>
               <div class="form-control bg-light" id="ver-gen-codigo_interno">-</div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label fw-semibold">No. Inventario</label>
               <div class="form-control bg-light" id="ver-gen-no_inventario">-</div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label fw-semibold">Nombre / Título de la Pieza</label>
               <div class="form-control bg-light" id="ver-gen-nombre">-</div>
+            </div>
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Materia</label>
+              <div class="form-control bg-light" id="ver-gen-materia">-</div>
             </div>
           </div>
 
@@ -668,6 +680,10 @@
             <div class="col-md-4">
               <label class="form-label fw-semibold">Técnica</label>
               <div class="form-control bg-light" id="ver-gen-tecnica">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Origen</label>
+              <div class="form-control bg-light" id="ver-gen-origen">-</div>
             </div>
             <div class="col-md-4">
               <label class="form-label fw-semibold">Material</label>
