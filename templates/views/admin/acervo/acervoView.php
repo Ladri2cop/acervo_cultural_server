@@ -25,22 +25,7 @@
         </div>
       </div>
 
-      <!-- Filtro: Año -->
-      <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-        <div class="card shadow h-100">
-          <div class="card-header py-2">
-            <h6 class="m-0 font-weight-bold text-primary title__card">
-              <i class='bx bx-calendar'></i> Año
-            </h6>
-          </div>
-          <div class="card-body">
-            <select name="anio" id="anio" class="form-select">
-              <option value="" hidden>Seleccione...</option>
-             
-            </select>
-          </div>
-        </div>
-      </div>
+
 
       <!-- Filtro: Cultura -->
       <div class="col-12 col-sm-6 col-md-4 col-lg-3">

@@ -2,12 +2,11 @@ $(document).ready(function () {
   console.log("registros.js loaded");
   inicializarVistaPreviaEdicion();
   mostrarEstadoInicialAcervo();
-  cargarAniosDinamicos();
 
   let searchTimeout;
   let perPageTimeout;
 
-  $('#tipo_registro, #anio, #cultura').on('change', function () {
+  $('#tipo_registro, #cultura').on('change', function () {
     const tipoAcervo = $('#tipo_registro').val();
     if (!tipoAcervo) {
       mostrarEstadoInicialAcervo();
@@ -20,7 +19,7 @@ $(document).ready(function () {
   });
 
   // Aplica Select2 a todos los selects dentro de la barra de filtros
-  $("#tipo_registro, #anio, #cultura").select2({
+  $("#tipo_registro, #cultura").select2({
     dropdownAutoWidth: true,
     width: "100%",
     minimumResultsForSearch: 5, // Muestra buscador solo si hay más de 5 opciones
@@ -71,11 +70,10 @@ $(document).ready(function () {
     }
 
     const search = $('#buscar-registro').val() || '';
-    const anio = $('#anio').val() || '';
     const cultura = $('#cultura').val() || '';
 
     // Generar la URL con los parámetros actuales
-    const url = `admin/${action}?tipo_registro=${encodeURIComponent(tipoAcervo)}&search=${encodeURIComponent(search)}&ubicacion=&anio=${encodeURIComponent(anio)}&cultura=${encodeURIComponent(cultura)}`;
+    const url = `admin/${action}?tipo_registro=${encodeURIComponent(tipoAcervo)}&search=${encodeURIComponent(search)}&ubicacion=&anio=&cultura=${encodeURIComponent(cultura)}`;
 
     // Redirigir para iniciar la descarga del reporte
     window.open(url, '_blank');
@@ -268,7 +266,7 @@ function mostrarListaPaginada(page = 1, perPage = 10, search = "", tipoAcervo = 
   formData.append("per_page", perPage);
   formData.append("search", search);
   formData.append("ubicacion", '');
-  formData.append("anio", $('#anio').val() || '');
+  formData.append("anio", '');
   formData.append("cultura", $('#cultura').val() || '');
   formData.append("csrf", Bee.csrf);
 
