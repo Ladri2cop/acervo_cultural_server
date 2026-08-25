@@ -27,7 +27,22 @@ class adminController extends Controller implements ControllerInterface
   {
     register_scripts([JS . 'admin/demo.js'], 'Chartjs gráficas para administración');
 
+    require_once APP . 'models/acervoGeneralModel.php';
+    require_once APP . 'models/acervoArqueologicoModel.php';
+    require_once APP . 'models/acervoNumismaticaModel.php';
+
+    $totalGeneral = AcervoGeneralModel::getTotal();
+    $totalArq     = AcervoArqueologicoModel::getTotal();
+    $totalNum     = AcervoNumismaticaModel::getTotal();
+
+    $totalRegistrados = $totalGeneral + $totalArq + $totalNum;
+
     $this->setTitle('Administración');
+    $this->addToData('totalRegistrados', $totalRegistrados);
+    $this->addToData('totalGeneral', $totalGeneral);
+    $this->addToData('totalArq', $totalArq);
+    $this->addToData('totalNum', $totalNum);
+
     $buttons =
       [
         [
@@ -794,7 +809,7 @@ class adminController extends Controller implements ControllerInterface
   private function filtrarAcervoPorPropiedades(array $all)
   {
     // Filtro por Ubicación
-    $ubicacionId = isset($_POST['ubicacion']) ? trim($_POST['ubicacion']) : '';
+    $ubicacionId = isset($_REQUEST['ubicacion']) ? trim($_REQUEST['ubicacion']) : '';
     if ($ubicacionId !== '') {
       $mapUbi = [
         '1' => 'Acambay',
@@ -818,7 +833,7 @@ class adminController extends Controller implements ControllerInterface
     }
 
     // Filtro por Año
-    $anioVal = isset($_POST['anio']) ? trim($_POST['anio']) : '';
+    $anioVal = isset($_REQUEST['anio']) ? trim($_REQUEST['anio']) : '';
     if ($anioVal !== '') {
       $all = array_filter($all, function ($pieza) use ($anioVal) {
         $camposBuscar = ['anio', 'fecha_epoca', 'epoca', 'no_registro_inah', 'descripcion', 'observaciones', 'nombre_titulo_pieza'];
@@ -833,7 +848,7 @@ class adminController extends Controller implements ControllerInterface
     }
 
     // Filtro por Cultura
-    $culturaId = isset($_POST['cultura']) ? trim($_POST['cultura']) : '';
+    $culturaId = isset($_REQUEST['cultura']) ? trim($_REQUEST['cultura']) : '';
     if ($culturaId !== '') {
       $mapCult = [
         '2' => 'Mexica',
@@ -884,30 +899,65 @@ class adminController extends Controller implements ControllerInterface
     return $all;
   }
 
+  private function get_filtered_acervo_data($tipoAcervo)
+  {
+    $search = isset($_REQUEST['search']) ? trim($_REQUEST['search']) : '';
+
+    if ($tipoAcervo === 'arqueologico') {
+      require_once APP . 'models/acervoArqueologicoModel.php';
+      $all = AcervoArqueologicoModel::getAll();
+      if ($search !== '') {
+        $all = array_filter($all, function ($pieza) use ($search) {
+          return (isset($pieza['nombre_titulo_pieza']) && stripos($pieza['nombre_titulo_pieza'], $search) !== false)
+            || (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
+            || (isset($pieza['no_registro_inah']) && stripos($pieza['no_registro_inah'], $search) !== false)
+            || (isset($pieza['procedencia']) && stripos($pieza['procedencia'], $search) !== false)
+            || (isset($pieza['descripcion']) && stripos($pieza['descripcion'], $search) !== false)
+            || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
+        });
+        $all = array_values($all);
+      }
+    } elseif ($tipoAcervo === 'numismatica') {
+      require_once APP . 'models/acervoNumismaticaModel.php';
+      $all = AcervoNumismaticaModel::getAll();
+      if ($search !== '') {
+        $all = array_filter($all, function ($pieza) use ($search) {
+          return (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
+            || (isset($pieza['denominacion']) && stripos($pieza['denominacion'], $search) !== false)
+            || (isset($pieza['ensayador']) && stripos($pieza['ensayador'], $search) !== false)
+            || (isset($pieza['material']) && stripos($pieza['material'], $search) !== false)
+            || (isset($pieza['descripcion_cara_a']) && stripos($pieza['descripcion_cara_a'], $search) !== false)
+            || (isset($pieza['descripcion_cara_b']) && stripos($pieza['descripcion_cara_b'], $search) !== false)
+            || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
+        });
+        $all = array_values($all);
+      }
+    } else {
+      // General
+      require_once APP . 'models/acervoGeneralModel.php';
+      $all = AcervoGeneralModel::getAll();
+      if ($search !== '') {
+        $all = array_filter($all, function ($pieza) use ($search) {
+          return (isset($pieza['nombre_titulo_pieza']) && stripos($pieza['nombre_titulo_pieza'], $search) !== false)
+            || (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
+            || (isset($pieza['autor']) && stripos($pieza['autor'], $search) !== false)
+            || (isset($pieza['descripcion']) && stripos($pieza['descripcion'], $search) !== false)
+            || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
+        });
+        $all = array_values($all);
+      }
+    }
+
+    return $this->filtrarAcervoPorPropiedades($all);
+  }
+
   public function get_acervo_general()
   {
-    // Parámetros de paginación y búsqueda
-    $page = isset($_POST['page']) ? (int)$_POST['page'] : 1;
-    $perPage = isset($_POST['per_page']) ? (int)$_POST['per_page'] : 10;
-    $search = isset($_POST['search']) ? trim($_POST['search']) : '';
+    $page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
+    $perPage = isset($_REQUEST['per_page']) ? (int)$_REQUEST['per_page'] : 10;
     $offset = ($page - 1) * $perPage;
 
-    require_once APP . 'models/acervoGeneralModel.php';
-
-    // Filtro de búsqueda (nombre, código interno, autor, descripción u observaciones)
-    $all = AcervoGeneralModel::getAll();
-    if ($search !== '') {
-      $all = array_filter($all, function ($pieza) use ($search) {
-        return (isset($pieza['nombre_titulo_pieza']) && stripos($pieza['nombre_titulo_pieza'], $search) !== false)
-          || (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
-          || (isset($pieza['autor']) && stripos($pieza['autor'], $search) !== false)
-          || (isset($pieza['descripcion']) && stripos($pieza['descripcion'], $search) !== false)
-          || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
-      });
-      $all = array_values($all);
-    }
-    $all = $this->filtrarAcervoPorPropiedades($all);
-
+    $all = $this->get_filtered_acervo_data('general');
     $total = count($all);
     $piezas = array_slice($all, $offset, $perPage);
 
@@ -943,29 +993,11 @@ class adminController extends Controller implements ControllerInterface
   // Endpoint para AJAX: listado paginado de Acervo Arqueológico
   public function get_acervo_arq()
   {
-    // Parámetros de paginación y búsqueda
-    $page = isset($_POST['page']) ? (int)$_POST['page'] : 1;
-    $perPage = isset($_POST['per_page']) ? (int)$_POST['per_page'] : 10;
-    $search = isset($_POST['search']) ? trim($_POST['search']) : '';
+    $page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
+    $perPage = isset($_REQUEST['per_page']) ? (int)$_REQUEST['per_page'] : 10;
     $offset = ($page - 1) * $perPage;
 
-    require_once APP . 'models/acervoArqueologicoModel.php';
-
-    // Filtro de búsqueda (nombre, código interno, no_registro_inah, procedencia, descripción u observaciones)
-    $all = AcervoArqueologicoModel::getAll();
-    if ($search !== '') {
-      $all = array_filter($all, function ($pieza) use ($search) {
-        return (isset($pieza['nombre_titulo_pieza']) && stripos($pieza['nombre_titulo_pieza'], $search) !== false)
-          || (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
-          || (isset($pieza['no_registro_inah']) && stripos($pieza['no_registro_inah'], $search) !== false)
-          || (isset($pieza['procedencia']) && stripos($pieza['procedencia'], $search) !== false)
-          || (isset($pieza['descripcion']) && stripos($pieza['descripcion'], $search) !== false)
-          || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
-      });
-      $all = array_values($all);
-    }
-    $all = $this->filtrarAcervoPorPropiedades($all);
-
+    $all = $this->get_filtered_acervo_data('arqueologico');
     $total = count($all);
     $piezas = array_slice($all, $offset, $perPage);
 
@@ -1004,30 +1036,11 @@ class adminController extends Controller implements ControllerInterface
   // Endpoint para AJAX: listado paginado de Acervo Numismática
   public function get_acervo_numismatica()
   {
-    // Parámetros de paginación y búsqueda
-    $page = isset($_POST['page']) ? (int)$_POST['page'] : 1;
-    $perPage = isset($_POST['per_page']) ? (int)$_POST['per_page'] : 10;
-    $search = isset($_POST['search']) ? trim($_POST['search']) : '';
+    $page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
+    $perPage = isset($_REQUEST['per_page']) ? (int)$_REQUEST['per_page'] : 10;
     $offset = ($page - 1) * $perPage;
 
-    require_once APP . 'models/acervoNumismaticaModel.php';
-
-    // Filtro de búsqueda (código interno, denominación, ensayador, material, descripciones u observaciones)
-    $all = AcervoNumismaticaModel::getAll();
-    if ($search !== '') {
-      $all = array_filter($all, function ($pieza) use ($search) {
-        return (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
-          || (isset($pieza['denominacion']) && stripos($pieza['denominacion'], $search) !== false)
-          || (isset($pieza['ensayador']) && stripos($pieza['ensayador'], $search) !== false)
-          || (isset($pieza['material']) && stripos($pieza['material'], $search) !== false)
-          || (isset($pieza['descripcion_cara_a']) && stripos($pieza['descripcion_cara_a'], $search) !== false)
-          || (isset($pieza['descripcion_cara_b']) && stripos($pieza['descripcion_cara_b'], $search) !== false)
-          || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
-      });
-      $all = array_values($all);
-    }
-    $all = $this->filtrarAcervoPorPropiedades($all);
-
+    $all = $this->get_filtered_acervo_data('numismatica');
     $total = count($all);
     $piezas = array_slice($all, $offset, $perPage);
 
@@ -1059,6 +1072,292 @@ class adminController extends Controller implements ControllerInterface
       'data' => $data,
       'pagination' => $pagination
     ]);
+    exit;
+  }
+
+  public function exportar_excel()
+  {
+    $tipo = isset($_REQUEST['tipo_registro']) ? trim($_REQUEST['tipo_registro']) : 'general';
+    $all = $this->get_filtered_acervo_data($tipo);
+
+    $filename = "acervo_" . $tipo . "_" . date('Y-m-d_H-i-s') . ".csv";
+
+    header('Content-Type: text/csv; charset=utf-8');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    echo "\xEF\xBB\xBF";
+
+    $output = fopen('php://output', 'w');
+
+    if ($tipo === 'arqueologico') {
+      fputcsv($output, [
+        'ID', 
+        'Código Interno', 
+        'No. Inventario SCYT', 
+        'No. Registro INAH', 
+        'Otros Registros', 
+        'Nombre / Título', 
+        'Pieza por Lote', 
+        'Época', 
+        'Procedencia', 
+        'Material', 
+        'Medidas', 
+        'Forma', 
+        'Técnica Manufactura', 
+        'Técnica Decorativa', 
+        'Colección', 
+        'Forma de Obtención', 
+        'Ubicación Física', 
+        'Estado de Conservación', 
+        'Descripción', 
+        'Representación', 
+        'Observaciones', 
+        'Fotografía'
+      ]);
+      foreach ($all as $p) {
+        fputcsv($output, [
+          $p['id_acervo_arq'] ?? '-',
+          $p['codigo_interno'] ?? '-',
+          $p['no_inventario_scyt'] ?? '-',
+          $p['no_registro_inah'] ?? '-',
+          $p['otros'] ?? '-',
+          $p['nombre_titulo_pieza'] ?? '-',
+          $p['numero_pieza_por_lote'] ?? '-',
+          $p['epoca'] ?? '-',
+          $p['procedencia'] ?? '-',
+          $p['material'] ?? ($p['Material'] ?? '-'),
+          $p['medidas'] ?? '-',
+          $p['forma'] ?? '-',
+          $p['tecnica_manufactura'] ?? '-',
+          $p['tecnica_decorativa'] ?? '-',
+          $p['coleccion'] ?? '-',
+          $p['obtencion'] ?? '-',
+          $p['ubicacion_fisica'] ?? '-',
+          $p['estado_conservacion'] ?? '-',
+          $p['descripcion'] ?? '-',
+          $p['representacion'] ?? '-',
+          $p['observaciones'] ?? '-',
+          $p['fotografia'] ?? '-'
+        ]);
+      }
+    } elseif ($tipo === 'numismatica') {
+      fputcsv($output, [
+        'ID', 
+        'Código Interno', 
+        'No. Inventario', 
+        'Tipo de Obra', 
+        'Ensayador', 
+        'Denominación', 
+        'Material', 
+        'Época', 
+        'Dimensiones (cm)', 
+        'Ubicación Física', 
+        'Estado de Conservación', 
+        'Descripción Cara A', 
+        'Descripción Cara B', 
+        'Observaciones', 
+        'Fotografía'
+      ]);
+      foreach ($all as $p) {
+        fputcsv($output, [
+          $p['id_acervo_numismatica'] ?? '-',
+          $p['codigo_interno'] ?? '-',
+          $p['no_inventario'] ?? '-',
+          $p['tipo_obra'] ?? '-',
+          $p['ensayador'] ?? '-',
+          $p['denominacion'] ?? '-',
+          $p['material'] ?? '-',
+          $p['fecha_epoca'] ?? '-',
+          $p['dimensiones'] ?? '-',
+          $p['ubicacion_fisica'] ?? '-',
+          $p['estado_conservacion'] ?? '-',
+          $p['descripcion_cara_a'] ?? '-',
+          $p['descripcion_cara_b'] ?? '-',
+          $p['observaciones'] ?? '-',
+          $p['fotografia'] ?? '-'
+        ]);
+      }
+    } else {
+      fputcsv($output, [
+        'ID', 
+        'Código Interno', 
+        'No. Inventario', 
+        'Nombre / Título', 
+        'Centímetros (cm)', 
+        'Materia', 
+        'Autor', 
+        'Año', 
+        'Época', 
+        'Técnica', 
+        'Origen', 
+        'Material', 
+        'Medidas', 
+        'Lote', 
+        'Peso (kg)', 
+        'Colección', 
+        'Tipo de Obra', 
+        'Ubicación Física', 
+        'Estado de Conservación', 
+        'Descripción', 
+        'Observaciones', 
+        'Fotografía'
+      ]);
+      foreach ($all as $p) {
+        fputcsv($output, [
+          $p['id_acervo_general'] ?? '-',
+          $p['codigo_interno'] ?? '-',
+          $p['no_inventario'] ?? '-',
+          $p['nombre_titulo_pieza'] ?? '-',
+          $p['cm'] ?? '-',
+          $p['materia'] ?? '-',
+          $p['autor'] ?? '-',
+          $p['anio'] ?? '-',
+          $p['epoca'] ?? '-',
+          $p['tecnica'] ?? '-',
+          $p['origen'] ?? '-',
+          $p['material'] ?? '-',
+          $p['medidas'] ?? '-',
+          $p['lote'] ?? '-',
+          $p['peso'] ?? '-',
+          $p['coleccion'] ?? '-',
+          $p['tipo'] ?? '-',
+          $p['ubicacion_fisica'] ?? '-',
+          $p['estado_conservacion'] ?? '-',
+          $p['descripcion'] ?? '-',
+          $p['observaciones'] ?? '-',
+          $p['fotografia'] ?? '-'
+        ]);
+      }
+    }
+
+    fclose($output);
+    exit;
+  }
+
+  public function exportar_pdf()
+  {
+    // Aumentar límites temporales para el procesamiento de PDF
+    ini_set('memory_limit', '512M');
+    set_time_limit(180);
+
+    $tipo = isset($_REQUEST['tipo_registro']) ? trim($_REQUEST['tipo_registro']) : 'general';
+    $all = $this->get_filtered_acervo_data($tipo);
+
+    $totalRegistros = count($all);
+    $limit = 1000;
+    if ($totalRegistros > $limit) {
+      $all = array_slice($all, 0, $limit);
+      $aviso = "Mostrando los primeros " . number_format($limit) . " registros de un total de " . number_format($totalRegistros) . " (use los filtros de búsqueda en el sistema para limitar los resultados).";
+    } else {
+      $aviso = "Total de registros: " . number_format($totalRegistros);
+    }
+
+    $titulo = "Reporte de Acervo - " . ucfirst($tipo === 'numismatica' ? 'Numismático' : ($tipo === 'arqueologico' ? 'Arqueológico' : 'General'));
+
+    $html = '
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>' . $titulo . '</title>
+      <style>
+        body { font-family: Arial, sans-serif; font-size: 10px; color: #333; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { margin: 0; font-size: 18px; color: #4e73df; }
+        .header p { margin: 5px 0 0 0; font-size: 12px; color: #666; }
+        .aviso { font-size: 11px; font-weight: bold; color: #e74a3b; text-align: center; margin-bottom: 15px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
+        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; vertical-align: top; word-wrap: break-word; overflow: hidden; }
+        th { background-color: #f2f2f2; font-weight: bold; color: #333; }
+        .footer { position: fixed; bottom: -20px; left: 0px; right: 0px; height: 20px; text-align: center; font-size: 8px; color: #999; }
+      </style>
+    </head>
+    <body>
+      <div class="header">
+        <h1>' . $titulo . '</h1>
+        <p>Generado el ' . date("d/m/Y H:i:s") . '</p>
+      </div>
+      <div class="aviso">' . $aviso . '</div>
+      <table>
+        <thead>';
+
+    if ($tipo === 'arqueologico') {
+      $html .= '
+          <tr>
+            <th style="width: 15%;">Código Interno</th>
+            <th style="width: 25%;">Nombre</th>
+            <th style="width: 15%;">No. INAH</th>
+            <th style="width: 15%;">Procedencia</th>
+            <th style="width: 30%;">Descripción</th>
+          </tr>
+        </thead>
+        <tbody>';
+      foreach ($all as $p) {
+        $html .= '
+          <tr>
+            <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['nombre_titulo_pieza'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['no_registro_inah'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['procedencia'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['descripcion'] ?? '-') . '</td>
+          </tr>';
+      }
+    } elseif ($tipo === 'numismatica') {
+      $html .= '
+          <tr>
+            <th style="width: 15%;">Código Interno</th>
+            <th style="width: 25%;">Denominación</th>
+            <th style="width: 20%;">Ubicación Física</th>
+            <th style="width: 15%;">Material</th>
+            <th style="width: 15%;">Época</th>
+            <th style="width: 10%;">Estado</th>
+          </tr>
+        </thead>
+        <tbody>';
+      foreach ($all as $p) {
+        $html .= '
+          <tr>
+            <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['denominacion'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['ubicacion_fisica'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['material'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['fecha_epoca'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['estado_conservacion'] ?? '-') . '</td>
+          </tr>';
+      }
+    } else {
+      $html .= '
+          <tr>
+            <th style="width: 15%;">Código Interno</th>
+            <th style="width: 25%;">Nombre</th>
+            <th style="width: 15%;">Autor</th>
+            <th style="width: 15%;">Materia</th>
+            <th style="width: 30%;">Descripción</th>
+          </tr>
+        </thead>
+        <tbody>';
+      foreach ($all as $p) {
+        $html .= '
+          <tr>
+            <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['nombre_titulo_pieza'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['autor'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['materia'] ?? '-') . '</td>
+            <td>' . htmlspecialchars($p['descripcion'] ?? '-') . '</td>
+          </tr>';
+      }
+    }
+
+    $html .= '
+        </tbody>
+      </table>
+    </body>
+    </html>';
+
+    require_once APP . 'classes/BeePdf.php';
+    $pdf = new BeePdf();
+    $pdf->streamPdf(true);
+    $pdf->setOrientation('landscape');
+    $pdf->create('reporte_acervo_' . $tipo, $html, true);
     exit;
   }
 
@@ -1368,6 +1667,215 @@ class adminController extends Controller implements ControllerInterface
         'msg' => $e->getMessage()
       ]);
     }
+  }
+
+  public function ficha_tecnica()
+  {
+    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+    $tipo = isset($_GET['tipo_acervo']) ? trim($_GET['tipo_acervo']) : '';
+
+    if ($id <= 0 || empty($tipo)) {
+      die('ID o tipo de acervo inválidos.');
+    }
+
+    $pieza = null;
+    $tipoLabel = '';
+
+    if ($tipo === 'arqueologico') {
+      require_once APP . 'models/acervoArqueologicoModel.php';
+      $rows = AcervoArqueologicoModel::getById($id);
+      if (!empty($rows)) {
+        $pieza = $rows[0];
+        $tipoLabel = 'Acervo Arqueológico';
+      }
+    } elseif ($tipo === 'numismatica') {
+      require_once APP . 'models/acervoNumismaticaModel.php';
+      $rows = AcervoNumismaticaModel::getById($id);
+      if (!empty($rows)) {
+        $pieza = $rows[0];
+        $tipoLabel = 'Acervo Numismático';
+      }
+    } else {
+      require_once APP . 'models/acervoGeneralModel.php';
+      $rows = AcervoGeneralModel::getById($id);
+      if (!empty($rows)) {
+        $pieza = $rows[0];
+        $tipoLabel = 'Acervo General';
+      }
+    }
+
+    if (!$pieza) {
+      die('No se encontró el registro especificado.');
+    }
+
+    // Procesar la imagen en base64 para Dompdf
+    $imgHtml = '<div class="no-img">Sin imagen</div>';
+    if (!empty($pieza['fotografia']) && file_exists(UPLOADS . $pieza['fotografia'])) {
+      $imgData = base64_encode(file_get_contents(UPLOADS . $pieza['fotografia']));
+      $imgSrc = 'data:image/' . pathinfo($pieza['fotografia'], PATHINFO_EXTENSION) . ';base64,' . $imgData;
+      $imgHtml = '<img src="' . $imgSrc . '" alt="Imagen de la pieza" class="img-pieza" />';
+    }
+
+    $titulo = "Ficha Técnica - " . ($pieza['nombre_titulo_pieza'] ?? $pieza['denominacion'] ?? 'Pieza sin título');
+
+    // Mapeo de propiedades a mostrar según el tipo de acervo
+    $propiedades = [];
+    $descripciones = [];
+
+    if ($tipo === 'arqueologico') {
+      $propiedades = [
+        'Código Interno' => $pieza['codigo_interno'] ?? '-',
+        'No. Inventario SCYT' => $pieza['no_inventario_scyt'] ?? '-',
+        'No. Registro INAH' => $pieza['no_registro_inah'] ?? '-',
+        'Otros Registros' => $pieza['otros'] ?? '-',
+        'Pieza por Lote' => $pieza['numero_pieza_por_lote'] ?? '-',
+        'Época' => $pieza['epoca'] ?? '-',
+        'Procedencia' => $pieza['procedencia'] ?? '-',
+        'Material' => $pieza['material'] ?? '-',
+        'Medidas' => $pieza['medidas'] ?? '-',
+        'Forma' => $pieza['forma'] ?? '-',
+        'Técnica Manufactura' => $pieza['tecnica_manufactura'] ?? '-',
+        'Técnica Decorativa' => $pieza['tecnica_decorativa'] ?? '-',
+        'Colección' => $pieza['coleccion'] ?? '-',
+        'Forma de Obtención' => $pieza['obtencion'] ?? '-',
+        'Ubicación Física' => $pieza['ubicacion_fisica'] ?? '-',
+        'Estado de Conservación' => $pieza['estado_conservacion'] ?? '-',
+      ];
+      $descripciones = [
+        'Descripción' => $pieza['descripcion'] ?? '-',
+        'Representación' => $pieza['representacion'] ?? '-',
+        'Observaciones' => $pieza['observaciones'] ?? '-',
+      ];
+    } elseif ($tipo === 'numismatica') {
+      $propiedades = [
+        'Código Interno' => $pieza['codigo_interno'] ?? '-',
+        'Número de Inventario' => $pieza['no_inventario'] ?? '-',
+        'Tipo de Obra' => $pieza['tipo_obra'] ?? '-',
+        'Ensayador' => $pieza['ensayador'] ?? '-',
+        'Denominación' => $pieza['denominacion'] ?? '-',
+        'Material' => $pieza['material'] ?? '-',
+        'Época' => $pieza['fecha_epoca'] ?? '-',
+        'Dimensiones (cm)' => $pieza['dimensiones'] ?? '-',
+        'Ubicación Física' => $pieza['ubicacion_fisica'] ?? '-',
+        'Estado de Conservación' => $pieza['estado_conservacion'] ?? '-',
+      ];
+      $descripciones = [
+        'Descripción Cara A' => $pieza['descripcion_cara_a'] ?? '-',
+        'Descripción Cara B' => $pieza['descripcion_cara_b'] ?? '-',
+        'Observaciones' => $pieza['observaciones'] ?? '-',
+      ];
+    } else {
+      // General
+      $propiedades = [
+        'Código Interno' => $pieza['codigo_interno'] ?? '-',
+        'No. Inventario' => $pieza['no_inventario'] ?? '-',
+        'Materia' => $pieza['materia'] ?? '-',
+        'Autor' => $pieza['autor'] ?? '-',
+        'Año' => $pieza['anio'] ?? '-',
+        'Época' => $pieza['epoca'] ?? '-',
+        'Técnica' => $pieza['tecnica'] ?? '-',
+        'Origen' => $pieza['origen'] ?? '-',
+        'Material' => $pieza['material'] ?? '-',
+        'Medidas' => $pieza['medidas'] ?? '-',
+        'Lote' => $pieza['lote'] ?? '-',
+        'Peso' => $pieza['peso'] ?? '-',
+        'Colección' => $pieza['coleccion'] ?? '-',
+        'Tipo de obra' => $pieza['tipo'] ?? '-',
+        'Ubicación Física' => $pieza['ubicacion_fisica'] ?? '-',
+        'Estado de Conservación' => $pieza['estado_conservacion'] ?? '-',
+      ];
+      $descripciones = [
+        'Descripción' => $pieza['descripcion'] ?? '-',
+        'Observaciones' => $pieza['observaciones'] ?? '-',
+      ];
+    }
+
+    $html = '
+    <!DOCTYPE html>
+    <html lang="es">
+    <head>
+      <meta charset="UTF-8">
+      <title>' . $titulo . '</title>
+      <style>
+        @page { margin: 25px; }
+        body { font-family: Arial, sans-serif; font-size: 11px; color: #333; line-height: 1.4; }
+        .container { border: 2px solid #333; padding: 15px; position: relative; min-height: 94%; }
+        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 15px; }
+        .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a; }
+        .header h2 { margin: 3px 0 0 0; font-size: 12px; font-weight: normal; color: #555; text-transform: uppercase; }
+        
+        .main-grid { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+        .img-col { width: 45%; text-align: center; vertical-align: middle; border: 1px solid #ccc; padding: 10px; background-color: #fafafa; }
+        .img-pieza { max-width: 100%; max-height: 250px; object-fit: contain; }
+        .no-img { font-size: 13px; color: #999; font-style: italic; padding: 60px 0; }
+        
+        .data-col { width: 55%; vertical-align: top; padding-left: 15px; }
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table td { padding: 4px 5px; border-bottom: 1px solid #eee; font-size: 10.5px; }
+        .label { font-weight: bold; color: #111; width: 45%; }
+        .value { color: #444; width: 55%; }
+        
+        .section-title { font-size: 11px; font-weight: bold; background-color: #e9e9e9; padding: 4px 6px; border-left: 3px solid #333; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase; }
+        
+        .text-block { margin-bottom: 8px; padding: 0 5px; }
+        .text-title { font-weight: bold; margin-bottom: 2px; color: #222; text-decoration: underline; }
+        .text-content { text-align: justify; color: #444; }
+        
+        .footer { text-align: center; font-size: 8px; color: #777; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 25px; }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <div class="header">
+          <h1>Ficha Técnica de Registro</h1>
+          <h2>' . htmlspecialchars($tipoLabel) . '</h2>
+        </div>
+        
+        <table class="main-grid">
+          <tr>
+            <td class="img-col">' . $imgHtml . '</td>
+            <td class="data-col">
+              <table class="data-table">';
+              
+    foreach ($propiedades as $lbl => $val) {
+      $html .= '
+                <tr>
+                  <td class="label">' . htmlspecialchars($lbl) . '</td>
+                  <td class="value">' . htmlspecialchars($val) . '</td>
+                </tr>';
+    }
+
+    $html .= '
+              </table>
+            </td>
+          </tr>
+        </table>
+        
+        <div class="section-title">Detalles y Descripciones</div>';
+        
+    foreach ($descripciones as $title => $content) {
+      if (!empty($content) && $content !== '-') {
+        $html .= '
+        <div class="text-block">
+          <div class="text-title">' . htmlspecialchars($title) . '</div>
+          <div class="text-content">' . nl2br(htmlspecialchars($content)) . '</div>
+        </div>';
+      }
+    }
+
+    $html .= '
+        <div class="footer">
+          Sistema de Inventario Para el Acervo Cultural - Ficha de Registro Oficial - Generado el ' . date('d/m/Y H:i') . '
+        </div>
+      </div>
+    </body>
+    </html>';
+
+    require_once APP . 'classes/BeePdf.php';
+    $pdf = new BeePdf();
+    $pdf->streamPdf(true);
+    $pdf->setOrientation('portrait');
+    $pdf->create('ficha_tecnica_' . $tipo . '_' . $id, $html, false);
     exit;
   }
 

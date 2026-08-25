@@ -58,6 +58,29 @@ $(document).ready(function () {
       mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
     }, 100);
   });
+
+  // Botones de exportación Excel y PDF
+  $('#btn-exportar-excel, #btn-exportar-pdf').on('click', function (e) {
+    e.preventDefault();
+    const action = $(this).attr('id') === 'btn-exportar-excel' ? 'exportar_excel' : 'exportar_pdf';
+    const tipoAcervo = $('#tipo_registro').val();
+    
+    if (!tipoAcervo) {
+      toastr.warning('Por favor, selecciona un tipo de acervo primero', 'Advertencia');
+      return;
+    }
+
+    const search = $('#buscar-registro').val() || '';
+    const ubicacion = $('#ubicacion').val() || '';
+    const anio = $('#anio').val() || '';
+    const cultura = $('#cultura').val() || '';
+
+    // Generar la URL con los parámetros actuales
+    const url = `admin/${action}?tipo_registro=${encodeURIComponent(tipoAcervo)}&search=${encodeURIComponent(search)}&ubicacion=${encodeURIComponent(ubicacion)}&anio=${encodeURIComponent(anio)}&cultura=${encodeURIComponent(cultura)}`;
+
+    // Redirigir para iniciar la descarga del reporte
+    window.open(url, '_blank');
+  });
 });
 
 function mostrarEstadoInicialAcervo() {
@@ -68,7 +91,10 @@ function mostrarEstadoInicialAcervo() {
 
   if (loader) loader.style.display = "none";
   if (tabla) tabla.style.display = "table";
-  if (paginacion) paginacion.style.opacity = "1";
+  if (paginacion) {
+    paginacion.innerHTML = "";
+    paginacion.style.opacity = "1";
+  }
 
   if (tablaPiezas) {
     tablaPiezas.innerHTML = `
@@ -423,6 +449,7 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
             <ul class="dropdown-menu">
               <li><a class="dropdown-item btn-ver" href="javascript:void(0);" data-id="${pieza.id}" data-tipo="${tipoAcervo}"> <i class='bx text-info bx__iconmenu bx-eye-alt'></i> Ver</a></li>
               ${tieneEdicion ? `<li><a class="dropdown-item btn-editar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i> Editar</a></li>` : ''}
+              <li><a class="dropdown-item btn-ficha" href="javascript:void(0);" data-id="${pieza.id}" data-tipo="${tipoAcervo}"><i class='bx text-success bx__iconmenu bx-file'></i> Ficha Técnica</a></li>
               <hr class="dropdown-divider">
               <li><a class="dropdown-item btn-eliminar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-danger bx__iconmenu bx-trash'></i> Eliminar</a></li>
             </ul>
@@ -432,7 +459,7 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
     tabla.appendChild(fila);
   });
 
-  // Delegación de eventos para Ver, Editar y Eliminar
+  // Delegación de eventos para Ver, Editar, Ficha Técnica y Eliminar
   tabla.querySelectorAll('.btn-ver').forEach(btn => {
     btn.addEventListener('click', function (e) {
       e.preventDefault();
@@ -440,6 +467,16 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
       const id = this.getAttribute('data-id');
       const tipo = this.getAttribute('data-tipo') || tipoAcervo;
       abrirModalVerPieza(id, tipo);
+    });
+  });
+
+  tabla.querySelectorAll('.btn-ficha').forEach(btn => {
+    btn.addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      const id = this.getAttribute('data-id');
+      const tipo = this.getAttribute('data-tipo') || tipoAcervo;
+      window.open(`admin/ficha_tecnica?id=${id}&tipo_acervo=${tipo}`, '_blank');
     });
   });
 
@@ -484,6 +521,32 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
   }
 }
 
+function setSelectValueOrAppend(selectId, value) {
+  const select = $(selectId);
+  if (!select.length) return;
+
+  const valToSet = (value !== null && value !== undefined) ? String(value).trim() : '';
+
+  if (valToSet === '') {
+    select.val('');
+    return;
+  }
+
+  let exists = false;
+  select.find('option').each(function() {
+    if ($(this).val() === valToSet) {
+      exists = true;
+      return false; // break
+    }
+  });
+
+  if (!exists) {
+    select.append(new Option(valToSet, valToSet));
+  }
+
+  select.val(valToSet);
+}
+
 function abrirModalEditarPiezaNum(id) {
   let formData = new FormData();
   formData.append('id', id);
@@ -503,14 +566,14 @@ function abrirModalEditarPiezaNum(id) {
         $('#editar-num-id').val(pieza.id_acervo_numismatica || pieza.id || '');
         $('#editar-num-codigo_interno').val(pieza.codigo_interno || '');
         $('#editar-num-no_inventario').val(pieza.no_inventario || '');
-        $('#editar-num-tipo_obra').val(pieza.tipo_obra || '');
+        setSelectValueOrAppend('#editar-num-tipo_obra', pieza.tipo_obra);
         $('#editar-num-ensayador').val(pieza.ensayador || '');
         $('#editar-num-denominacion').val(pieza.denominacion || '');
-        $('#editar-num-material').val(pieza.material || '');
-        $('#editar-num-fecha_epoca').val(pieza.fecha_epoca || '');
+        setSelectValueOrAppend('#editar-num-material', pieza.material);
+        setSelectValueOrAppend('#editar-num-fecha_epoca', pieza.fecha_epoca);
         $('#editar-num-dimensiones').val(pieza.dimensiones || '');
         $('#editar-num-ubicacion_fisica').val(pieza.ubicacion_fisica || '');
-        $('#editar-num-estado_conservacion').val(pieza.estado_conservacion || '');
+        setSelectValueOrAppend('#editar-num-estado_conservacion', pieza.estado_conservacion);
         $('#editar-num-observaciones').val(pieza.observaciones || '');
         $('#editar-num-descripcion_cara_a').val(pieza.descripcion_cara_a || '');
         $('#editar-num-descripcion_cara_b').val(pieza.descripcion_cara_b || '');
@@ -561,9 +624,9 @@ function abrirModalEditarPiezaArq(id) {
         $('#editar-arq-otros').val(pieza.otros || '');
         $('#editar-arq-nombre_titulo_pieza').val(pieza.nombre_titulo_pieza || '');
         $('#editar-arq-numero_pieza_por_lote').val(pieza.numero_pieza_por_lote || '');
-        $('#editar-arq-epoca').val(pieza.epoca || '');
+        setSelectValueOrAppend('#editar-arq-epoca', pieza.epoca);
         $('#editar-arq-procedencia').val(pieza.procedencia || '');
-        $('#editar-arq-material').val(pieza.material || '');
+        setSelectValueOrAppend('#editar-arq-material', pieza.material);
         $('#editar-arq-medidas').val(pieza.medidas || '');
         $('#editar-arq-forma').val(pieza.forma || '');
         $('#editar-arq-tecnica_manufactura').val(pieza.tecnica_manufactura || '');
@@ -571,7 +634,7 @@ function abrirModalEditarPiezaArq(id) {
         $('#editar-arq-coleccion').val(pieza.coleccion || '');
         $('#editar-arq-obtencion').val(pieza.obtencion || '');
         $('#editar-arq-ubicacion_fisica').val(pieza.ubicacion_fisica || '');
-        $('#editar-arq-estado_conservacion').val(pieza.estado_conservacion || '');
+        setSelectValueOrAppend('#editar-arq-estado_conservacion', pieza.estado_conservacion);
         $('#editar-arq-observaciones').val(pieza.observaciones || '');
         $('#editar-arq-descripcion').val(pieza.descripcion || '');
         $('#editar-arq-representacion').val(pieza.representacion || '');
@@ -811,17 +874,17 @@ function abrirModalEditarPieza(id, tipoAcervo = 'general') {
         $('#editar-materia').val(pieza.materia);
         $('#editar-autor').val(pieza.autor);
         $('#editar-fecha').val(pieza.anio);
-        $('#editar-epoca').val(pieza.epoca);
-        $('#editar-tecnica').val(pieza.tecnica);
+        setSelectValueOrAppend('#editar-epoca', pieza.epoca);
+        setSelectValueOrAppend('#editar-tecnica', pieza.tecnica);
         $('#editar-origen').val(pieza.origen);
-        $('#editar-material').val(pieza.material);
+        setSelectValueOrAppend('#editar-material', pieza.material);
         $('#editar-medidas').val(pieza.medidas);
         $('#editar-lote').val(pieza.lote);
         $('#editar-peso').val(pieza.peso);
-        $('#editar-coleccion').val(pieza.coleccion);
-        $('#editar-tipo').val(pieza.tipo);
+        setSelectValueOrAppend('#editar-coleccion', pieza.coleccion);
+        setSelectValueOrAppend('#editar-tipo', pieza.tipo);
         $('#editar-ubicacion').val(pieza.ubicacion_fisica);
-        $('#editar-estado_conservacion').val(pieza.estado_conservacion);
+        setSelectValueOrAppend('#editar-estado_conservacion', pieza.estado_conservacion);
         $('#editar-observaciones').val(pieza.observaciones);
         $('#editar-descripcion').val(pieza.descripcion);
         $('#editar-fotografia_actual').val(pieza.fotografia || '');

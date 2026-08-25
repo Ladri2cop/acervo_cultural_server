@@ -99,9 +99,17 @@
   <div class="col-12">
     <div class="card shadow mb-4">
       <div class="card-header py-3 d-flex justify-content-between align-items-center">
-        <h6 class="m-0 font-weight-bold text-primary title__card col-6 p-0">
-          <i class='bx  bx-database-alt'></i> Registros
+        <h6 class="m-0 font-weight-bold text-primary title__card p-0">
+          <i class='bx bx-database-alt'></i> Registros
         </h6>
+        <div>
+          <button type="button" id="btn-exportar-excel" class="btn btn-sm btn-success shadow-sm me-2">
+            <i class="fas fa-file-excel fa-sm text-white-50 me-1"></i> Exportar Excel
+          </button>
+          <button type="button" id="btn-exportar-pdf" class="btn btn-sm btn-danger shadow-sm">
+            <i class="fas fa-file-pdf fa-sm text-white-50 me-1"></i> Exportar PDF
+          </button>
+        </div>
       </div>
       <div class="card-body p-0">
         <div class="d-flex flex-wrap p-2">
@@ -218,7 +226,13 @@
             </div>
             <div class="col-md-4">
               <label for="editar-epoca" class="form-label fw-semibold">Época</label>
-              <input type="text" class="form-control" id="editar-epoca" name="epoca">
+              <select class="form-select" id="editar-epoca" name="epoca">
+                <option value="" hidden>Seleccione...</option>
+                <option value="Prehispánica">Prehispánica</option>
+                <option value="Colonial">Colonial</option>
+                <option value="Moderna">Moderna</option>
+                <option value="Contemporánea">Contemporánea</option>
+              </select>
             </div>
           </div>
 
@@ -229,7 +243,13 @@
           <div class="row g-3 mb-4">
             <div class="col-md-4">
               <label for="editar-tecnica" class="form-label fw-semibold">Técnica</label>
-              <input type="text" class="form-control" id="editar-tecnica" name="tecnica">
+              <select class="form-select" id="editar-tecnica" name="tecnica">
+                <option value="" hidden>Seleccione...</option>
+                <option value="Óleo">Óleo</option>
+                <option value="Acuarela">Acuarela</option>
+                <option value="Grabado">Grabado</option>
+                <option value="Mixta">Mixta</option>
+              </select>
             </div>
             <div class="col-md-4">
               <label for="editar-origen" class="form-label fw-semibold">Origen</label>
@@ -237,7 +257,13 @@
             </div>
             <div class="col-md-4">
               <label for="editar-material" class="form-label fw-semibold">Material</label>
-              <input type="text" class="form-control" id="editar-material" name="material">
+              <select class="form-select" id="editar-material" name="material">
+                <option value="" hidden>Seleccione...</option>
+                <option value="Madera">Madera</option>
+                <option value="Metal">Metal</option>
+                <option value="Cerámica">Cerámica</option>
+                <option value="Textil">Textil</option>
+              </select>
             </div>
             <div class="col-md-4">
               <label for="editar-medidas" class="form-label fw-semibold">Medidas</label>
@@ -253,11 +279,22 @@
             </div>
             <div class="col-md-3">
               <label for="editar-coleccion" class="form-label fw-semibold">Colección</label>
-              <input type="text" class="form-control" id="editar-coleccion" name="coleccion">
+              <select class="form-select" id="editar-coleccion" name="coleccion">
+                <option value="" hidden>Seleccione...</option>
+                <option value="Colección permanente">Colección permanente</option>
+                <option value="Colección temporal">Colección temporal</option>
+                <option value="Donación">Donación</option>
+              </select>
             </div>
             <div class="col-md-3">
               <label for="editar-tipo" class="form-label fw-semibold">Tipo</label>
-              <input type="text" class="form-control" id="editar-tipo" name="tipo">
+              <select class="form-select" id="editar-tipo" name="tipo">
+                <option value="" hidden>Seleccione...</option>
+                <option value="Pintura">Pintura</option>
+                <option value="Escultura">Escultura</option>
+                <option value="Fotografía">Fotografía</option>
+                <option value="Objeto">Objeto</option>
+              </select>
             </div>
           </div>
 
@@ -272,7 +309,13 @@
             </div>
             <div class="col-md-6">
               <label for="editar-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
-              <input type="text" class="form-control" id="editar-estado_conservacion" name="estado_conservacion">
+              <select class="form-select" id="editar-estado_conservacion" name="estado_conservacion">
+                <option value="" hidden>Seleccione...</option>
+                <option value="Excelente">Excelente</option>
+                <option value="Bueno">Bueno</option>
+                <option value="Regular">Regular</option>
+                <option value="Dañado">Dañado</option>
+              </select>
             </div>
           </div>
 
@@ -370,7 +413,13 @@
           <div class="row g-3 mb-4">
             <div class="col-md-4">
               <label for="editar-arq-epoca" class="form-label fw-semibold">Época</label>
-              <input type="text" class="form-control" id="editar-arq-epoca" name="epoca">
+              <select class="form-select" id="editar-arq-epoca" name="epoca">
+                <option value="" hidden>Seleccione...</option>
+                <option value="Prehispánica">Prehispánica</option>
+                <option value="Colonial">Colonial</option>
+                <option value="Moderna">Moderna</option>
+                <option value="Contemporánea">Contemporánea</option>
+              </select>
             </div>
             <div class="col-md-4">
               <label for="editar-arq-procedencia" class="form-label fw-semibold">Procedencia</label>
@@ -389,7 +438,13 @@
           <div class="row g-3 mb-4">
             <div class="col-md-4">
               <label for="editar-arq-material" class="form-label fw-semibold">Material</label>
-              <input type="text" class="form-control" id="editar-arq-material" name="material">
+              <select class="form-select" id="editar-arq-material" name="material">
+                <option value="" hidden>Seleccione...</option>
+                <option value="Madera">Madera</option>
+                <option value="Metal">Metal</option>
+                <option value="Cerámica">Cerámica</option>
+                <option value="Textil">Textil</option>
+              </select>
             </div>
             <div class="col-md-4">
               <label for="editar-arq-medidas" class="form-label fw-semibold">Medidas</label>
@@ -424,7 +479,13 @@
             </div>
             <div class="col-md-6">
               <label for="editar-arq-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
-              <input type="text" class="form-control" id="editar-arq-estado_conservacion" name="estado_conservacion">
+              <select class="form-select" id="editar-arq-estado_conservacion" name="estado_conservacion">
+                <option value="" hidden>Seleccione...</option>
+                <option value="Excelente">Excelente</option>
+                <option value="Bueno">Bueno</option>
+                <option value="Regular">Regular</option>
+                <option value="Dañado">Dañado</option>
+              </select>
             </div>
           </div>
 

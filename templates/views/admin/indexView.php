@@ -1,4 +1,9 @@
-<?php require_once INCLUDES . 'admin/dashboardTop.php'; ?>
+<?php 
+  require_once INCLUDES . 'admin/dashboardTop.php';
+  $totalRegistrados = $d->totalRegistrados ?? 0;
+  $acervoEstimado = 50000;
+  $porcentajeTotal = $acervoEstimado > 0 ? min(100, round(($totalRegistrados / $acervoEstimado) * 100, 2)) : 0;
+?>
 
 <!-- Content Row -->
 <div class="row">
@@ -9,7 +14,7 @@
           <div class="col mr-2">
             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
               Acervo estimado</div>
-            <div class="h5 mb-0 font-weight-bold text-gray-800">900,000</div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($acervoEstimado); ?></div>
           </div>
           <div class="col-auto">
             <i class="fa-solid fa-archway fa-2x text-gray-300"></i>
@@ -25,7 +30,7 @@
           <div class="col mr-2">
             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
               Total registrados</div>
-            <div class="h5 mb-0 font-weight-bold text-gray-800">127,000</div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($totalRegistrados); ?></div>
           </div>
           <div class="col-auto">
             <i class="fa-solid fa-hashtag fa-2x text-gray-300"></i>
@@ -43,11 +48,11 @@
             </div>
             <div class="row  align-items-center">
               <div class="col-auto">
-                <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">19%</div>
+                <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800"><?php echo $porcentajeTotal; ?>%</div>
               </div>
               <div class="col">
                 <div class="progress progress-sm mr-2">
-                  <div class="progress-bar bg-info" role="progressbar" style="width: 50%" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100"></div>
+                  <div class="progress-bar bg-info" role="progressbar" style="width: <?php echo $porcentajeTotal; ?>%" aria-valuenow="<?php echo $porcentajeTotal; ?>" aria-valuemin="0" aria-valuemax="100"></div>
                 </div>
               </div>
             </div>
@@ -72,6 +77,62 @@
           </div>
           <div class="col-auto">
             <i class="fas fa-comments fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+</div>
+
+<!-- Fila de Tarjetas por Tipo de Acervo -->
+<div class="row">
+  <!-- Acervo General -->
+  <div class="col-xl-4 col-md-6 mb-4">
+    <div class="card border-left-primary shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+              Acervo General</div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($d->totalGeneral ?? 0); ?></div>
+          </div>
+          <div class="col-auto">
+            <i class="fa-solid fa-layer-group fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acervo Arqueológico -->
+  <div class="col-xl-4 col-md-6 mb-4">
+    <div class="card border-left-warning shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+              Acervo Arqueológico</div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($d->totalArq ?? 0); ?></div>
+          </div>
+          <div class="col-auto">
+            <i class="fa-solid fa-landmark fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Acervo Numismático -->
+  <div class="col-xl-4 col-md-6 mb-4">
+    <div class="card border-left-info shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+              Acervo Numismático</div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800"><?php echo number_format($d->totalNum ?? 0); ?></div>
+          </div>
+          <div class="col-auto">
+            <i class="fa-solid fa-coins fa-2x text-gray-300"></i>
           </div>
         </div>
       </div>
