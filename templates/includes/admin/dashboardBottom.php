@@ -8,7 +8,7 @@
 <footer class="sticky-footer bg-white">
   <div class="container my-auto">
     <div class="copyright text-center my-auto">
-      <span>Desarrollado por el DTI - SCyT 2025</span>
+      <span>Desarrollado por el DTI - SCyT <?php echo date('Y'); ?></span>
     </div>
   </div>
 </footer>

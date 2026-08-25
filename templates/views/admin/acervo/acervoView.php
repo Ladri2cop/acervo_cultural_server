@@ -4,25 +4,7 @@
   <!-- Formulario para agregar usuario -->
   <div class="container-fluid mb-4">
     <div class="row g-2 align-items-end flex-wrap">
-      <!-- Filtro: Ubicación -->
-      <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-        <div class="card shadow h-100">
-          <div class="card-header py-2">
-            <h6 class="m-0 font-weight-bold text-primary title__card">
-              <i class='bx bx-map'></i> Ubicación
-            </h6>
-          </div>
-          <div class="card-body">
-            <select name="ubicacion" id="ubicacion" class="form-select">
-              <option value="" hidden>Seleccione...</option>
-              <option value="1">Acervo Acambay</option>
-              <option value="2">Acervo Tenancingo</option>
-              <option value="3">Acervo Toluca</option>
-              <option value="4">Acervo Zinacantepec</option>
-            </select>
-          </div>
-        </div>
-      </div>
+
 
       <!-- Filtro: Tipo de registro -->
       <div class="col-12 col-sm-6 col-md-4 col-lg-3">
