@@ -71,12 +71,52 @@ $(document).ready(function () {
 
     const search = $('#buscar-registro').val() || '';
     const cultura = $('#cultura').val() || '';
+    const baseUrl = `admin/${action}?tipo_registro=${encodeURIComponent(tipoAcervo)}&search=${encodeURIComponent(search)}&ubicacion=&anio=&cultura=${encodeURIComponent(cultura)}`;
 
-    // Generar la URL con los parámetros actuales
-    const url = `admin/${action}?tipo_registro=${encodeURIComponent(tipoAcervo)}&search=${encodeURIComponent(search)}&ubicacion=&anio=&cultura=${encodeURIComponent(cultura)}`;
+    if (action === 'exportar_excel') {
+      window.open(baseUrl, '_blank');
+      return;
+    }
 
-    // Redirigir para iniciar la descarga del reporte
-    window.open(url, '_blank');
+    // Para exportación PDF, verificar si requiere fragmentar en partes de 1,500
+    const checkUrl = baseUrl + '&count_only=1';
+    $.getJSON(checkUrl, function (res) {
+      if (res && res.total > res.limit) {
+        let optionsHtml = '';
+        for (let i = 1; i <= res.total_partes; i++) {
+          const inicio = ((i - 1) * res.limit) + 1;
+          const fin = Math.min(i * res.limit, res.total);
+          optionsHtml += `<option value="${i}">Parte ${i} (Registros del ${inicio.toLocaleString()} al ${fin.toLocaleString()})</option>`;
+        }
+
+        Swal.fire({
+          title: 'Exportación a PDF por Partes',
+          html: `
+            <p class="mb-3 text-start">Se encontraron <b>${res.total.toLocaleString()}</b> registros.<br>Para asegurar una exportación rápida y sin errores de memoria, el PDF se divide en partes de ${res.limit.toLocaleString()} registros.</p>
+            <div class="mb-3 text-start">
+              <label for="select-parte-pdf" class="form-label fw-bold">Selecciona la parte a descargar:</label>
+              <select id="select-parte-pdf" class="form-select">${optionsHtml}</select>
+            </div>
+          `,
+          icon: 'info',
+          showCancelButton: true,
+          confirmButtonText: '<i class="bx bx-download"></i> Descargar Parte',
+          cancelButtonText: 'Cancelar',
+          confirmButtonColor: '#4e73df',
+          preConfirm: () => {
+            return $('#select-parte-pdf').val();
+          }
+        }).then((result) => {
+          if (result.isConfirmed && result.value) {
+            window.open(baseUrl + '&parte=' + result.value, '_blank');
+          }
+        });
+      } else {
+        window.open(baseUrl, '_blank');
+      }
+    }).fail(function () {
+      window.open(baseUrl, '_blank');
+    });
   });
 });
 

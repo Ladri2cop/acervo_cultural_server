@@ -18,7 +18,7 @@ class BeePdf
 	 *
 	 * @var string
 	 */
-	private $font         = 'Arial';     // Por defecto
+	private $font         = 'Helvetica'; // Nativa PDF (muy rápida)
 
 	/**
 	 * La orientación del documento PDF
@@ -109,6 +109,8 @@ class BeePdf
 		$options->set('defaultPaperSize'       , $this->size);
 		$options->set('defaultPaperOrientation', $this->orientation);
 		$options->set('isRemoteEnabled'        , true);
+		$options->set('isFontSubsettingEnabled', false);
+		$options->set('isHtml5ParserEnabled'   , true);
 
 		// Creación del PDF en curso
 		$dompdf = new Dompdf($options);

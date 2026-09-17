@@ -1235,23 +1235,80 @@ class adminController extends Controller implements ControllerInterface
 
   public function exportar_pdf()
   {
-    // Aumentar límites temporales para el procesamiento de PDF
-    ini_set('memory_limit', '512M');
-    set_time_limit(180);
+    // Aumentar límites temporales y de memoria para el procesamiento de PDF
+    ini_set('memory_limit', '1024M');
+    set_time_limit(300);
 
     $tipo = isset($_REQUEST['tipo_registro']) ? trim($_REQUEST['tipo_registro']) : 'general';
     $all = $this->get_filtered_acervo_data($tipo);
 
     $totalRegistros = count($all);
-    $limit = 1000;
+    $limit = 1500;
+
+    // Si solo se consulta la cantidad para la interfaz
+    if (isset($_REQUEST['count_only']) && $_REQUEST['count_only'] == '1') {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'total' => $totalRegistros,
+        'limit' => $limit,
+        'total_partes' => (int)ceil($totalRegistros / $limit)
+      ]);
+      exit;
+    }
+
+    $parte = isset($_REQUEST['parte']) ? max(1, (int)$_REQUEST['parte']) : 1;
+    $totalPartes = (int)ceil($totalRegistros / $limit);
+    if ($totalPartes < 1) $totalPartes = 1;
+    if ($parte > $totalPartes) $parte = $totalPartes;
+
+    $offset = ($parte - 1) * $limit;
+    $all = array_slice($all, $offset, $limit);
+
     if ($totalRegistros > $limit) {
-      $all = array_slice($all, 0, $limit);
-      $aviso = "Mostrando los primeros " . number_format($limit) . " registros de un total de " . number_format($totalRegistros) . " (use los filtros de búsqueda en el sistema para limitar los resultados).";
+      $inicio = $offset + 1;
+      $fin = min($offset + $limit, $totalRegistros);
+      $aviso = "Mostrando Parte {$parte} de {$totalPartes}: Registros del " . number_format($inicio) . " al " . number_format($fin) . " (Total en sistema: " . number_format($totalRegistros) . ").";
     } else {
       $aviso = "Total de registros: " . number_format($totalRegistros);
     }
 
     $titulo = "Reporte de Acervo - " . ucfirst($tipo === 'numismatica' ? 'Numismático' : ($tipo === 'arqueologico' ? 'Arqueológico' : 'General'));
+
+    // Definir encabezado según el tipo
+    $tableHeaderHtml = '';
+    if ($tipo === 'arqueologico') {
+      $tableHeaderHtml = '
+          <tr>
+            <th style="width: 15%;">Código Interno</th>
+            <th style="width: 25%;">Nombre</th>
+            <th style="width: 15%;">No. INAH</th>
+            <th style="width: 15%;">Procedencia</th>
+            <th style="width: 30%;">Descripción</th>
+          </tr>';
+    } elseif ($tipo === 'numismatica') {
+      $tableHeaderHtml = '
+          <tr>
+            <th style="width: 15%;">Código Interno</th>
+            <th style="width: 25%;">Denominación</th>
+            <th style="width: 20%;">Ubicación Física</th>
+            <th style="width: 15%;">Material</th>
+            <th style="width: 15%;">Época</th>
+            <th style="width: 10%;">Estado</th>
+          </tr>';
+    } else {
+      $tableHeaderHtml = '
+          <tr>
+            <th style="width: 15%;">Código Interno</th>
+            <th style="width: 25%;">Nombre</th>
+            <th style="width: 15%;">Autor</th>
+            <th style="width: 15%;">Materia</th>
+            <th style="width: 30%;">Descripción</th>
+          </tr>';
+    }
+
+    // Dividir los datos en bloques de 100 filas por tabla para evitar el reflow exponencial de Dompdf
+    $chunks = array_chunk($all, 100);
 
     $html = '
     <!DOCTYPE html>
@@ -1260,15 +1317,16 @@ class adminController extends Controller implements ControllerInterface
       <meta charset="UTF-8">
       <title>' . $titulo . '</title>
       <style>
-        body { font-family: Arial, sans-serif; font-size: 10px; color: #333; }
-        .header { text-align: center; margin-bottom: 20px; }
-        .header h1 { margin: 0; font-size: 18px; color: #4e73df; }
-        .header p { margin: 5px 0 0 0; font-size: 12px; color: #666; }
-        .aviso { font-size: 11px; font-weight: bold; color: #e74a3b; text-align: center; margin-bottom: 15px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; table-layout: fixed; }
-        th, td { border: 1px solid #ddd; padding: 6px; text-align: left; vertical-align: top; word-wrap: break-word; overflow: hidden; }
+        @page { margin: 25px 25px 30px 25px; }
+        body { font-family: Helvetica, sans-serif; font-size: 9px; color: #333; margin: 0; padding: 0; }
+        .header { text-align: center; margin-bottom: 10px; }
+        .header h1 { margin: 0; font-size: 16px; color: #4e73df; }
+        .header p { margin: 3px 0 0 0; font-size: 10px; color: #666; }
+        .aviso { font-size: 10px; font-weight: bold; color: #e74a3b; text-align: center; margin-bottom: 10px; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; page-break-inside: auto; }
+        tr { page-break-inside: avoid; }
+        th, td { border: 1px solid #ccc; padding: 4px 5px; text-align: left; vertical-align: top; word-wrap: break-word; overflow: hidden; }
         th { background-color: #f2f2f2; font-weight: bold; color: #333; }
-        .footer { position: fixed; bottom: -20px; left: 0px; right: 0px; height: 20px; text-align: center; font-size: 8px; color: #999; }
       </style>
     </head>
     <body>
@@ -1276,80 +1334,41 @@ class adminController extends Controller implements ControllerInterface
         <h1>' . $titulo . '</h1>
         <p>Generado el ' . date("d/m/Y H:i:s") . '</p>
       </div>
-      <div class="aviso">' . $aviso . '</div>
-      <table>
-        <thead>';
+      <div class="aviso">' . $aviso . '</div>';
 
-    if ($tipo === 'arqueologico') {
-      $html .= '
-          <tr>
-            <th style="width: 15%;">Código Interno</th>
-            <th style="width: 25%;">Nombre</th>
-            <th style="width: 15%;">No. INAH</th>
-            <th style="width: 15%;">Procedencia</th>
-            <th style="width: 30%;">Descripción</th>
-          </tr>
-        </thead>
-        <tbody>';
-      foreach ($all as $p) {
-        $html .= '
-          <tr>
+    foreach ($chunks as $chunk) {
+      $html .= '<table><thead>' . $tableHeaderHtml . '</thead><tbody>';
+      foreach ($chunk as $p) {
+        $html .= '<tr>';
+        if ($tipo === 'arqueologico') {
+          $html .= '
             <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
             <td>' . htmlspecialchars($p['nombre_titulo_pieza'] ?? '-') . '</td>
             <td>' . htmlspecialchars($p['no_registro_inah'] ?? '-') . '</td>
             <td>' . htmlspecialchars($p['procedencia'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['descripcion'] ?? '-') . '</td>
-          </tr>';
-      }
-    } elseif ($tipo === 'numismatica') {
-      $html .= '
-          <tr>
-            <th style="width: 15%;">Código Interno</th>
-            <th style="width: 25%;">Denominación</th>
-            <th style="width: 20%;">Ubicación Física</th>
-            <th style="width: 15%;">Material</th>
-            <th style="width: 15%;">Época</th>
-            <th style="width: 10%;">Estado</th>
-          </tr>
-        </thead>
-        <tbody>';
-      foreach ($all as $p) {
-        $html .= '
-          <tr>
+            <td>' . htmlspecialchars($p['descripcion'] ?? '-') . '</td>';
+        } elseif ($tipo === 'numismatica') {
+          $html .= '
             <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
             <td>' . htmlspecialchars($p['denominacion'] ?? '-') . '</td>
             <td>' . htmlspecialchars($p['ubicacion_fisica'] ?? '-') . '</td>
             <td>' . htmlspecialchars($p['material'] ?? '-') . '</td>
             <td>' . htmlspecialchars($p['fecha_epoca'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['estado_conservacion'] ?? '-') . '</td>
-          </tr>';
-      }
-    } else {
-      $html .= '
-          <tr>
-            <th style="width: 15%;">Código Interno</th>
-            <th style="width: 25%;">Nombre</th>
-            <th style="width: 15%;">Autor</th>
-            <th style="width: 15%;">Materia</th>
-            <th style="width: 30%;">Descripción</th>
-          </tr>
-        </thead>
-        <tbody>';
-      foreach ($all as $p) {
-        $html .= '
-          <tr>
+            <td>' . htmlspecialchars($p['estado_conservacion'] ?? '-') . '</td>';
+        } else {
+          $html .= '
             <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
             <td>' . htmlspecialchars($p['nombre_titulo_pieza'] ?? '-') . '</td>
             <td>' . htmlspecialchars($p['autor'] ?? '-') . '</td>
             <td>' . htmlspecialchars($p['materia'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['descripcion'] ?? '-') . '</td>
-          </tr>';
+            <td>' . htmlspecialchars($p['descripcion'] ?? '-') . '</td>';
+        }
+        $html .= '</tr>';
       }
+      $html .= '</tbody></table>';
     }
 
     $html .= '
-        </tbody>
-      </table>
     </body>
     </html>';
 
