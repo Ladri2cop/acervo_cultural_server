@@ -1,6 +1,11 @@
 <?php
 
 use Cocur\Slugify\Slugify;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 /**
  * Plantilla general de controladores
@@ -1075,46 +1080,39 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  private function get_logo_base64()
+  {
+    $logoPath = IMAGES_PATH . 'cultura_turismo.png';
+    if (file_exists($logoPath)) {
+      return 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+    }
+    return '';
+  }
+
   public function exportar_excel()
   {
+    ini_set('memory_limit', '1024M');
+    set_time_limit(300);
+
     $tipo = isset($_REQUEST['tipo_registro']) ? trim($_REQUEST['tipo_registro']) : 'general';
     $all = $this->get_filtered_acervo_data($tipo);
 
-    $filename = "acervo_" . $tipo . "_" . date('Y-m-d_H-i-s') . ".csv";
+    $tipoNombre = mb_strtoupper($tipo === 'numismatica' ? 'NUMISMÁTICO' : ($tipo === 'arqueologico' ? 'ARQUEOLÓGICO' : 'GENERAL'), 'UTF-8');
+    $titulo = "REPORTE OFICIAL DE ACERVO " . $tipoNombre;
 
-    header('Content-Type: text/csv; charset=utf-8');
-    header('Content-Disposition: attachment; filename="' . $filename . '"');
-    echo "\xEF\xBB\xBF";
-
-    $output = fopen('php://output', 'w');
+    $headers = [];
+    $rows = [];
 
     if ($tipo === 'arqueologico') {
-      fputcsv($output, [
-        'ID', 
-        'Código Interno', 
-        'No. Inventario SCYT', 
-        'No. Registro INAH', 
-        'Otros Registros', 
-        'Nombre / Título', 
-        'Pieza por Lote', 
-        'Época', 
-        'Procedencia', 
-        'Material', 
-        'Medidas', 
-        'Forma', 
-        'Técnica Manufactura', 
-        'Técnica Decorativa', 
-        'Colección', 
-        'Forma de Obtención', 
-        'Ubicación Física', 
-        'Estado de Conservación', 
-        'Descripción', 
-        'Representación', 
-        'Observaciones', 
-        'Fotografía'
-      ]);
+      $headers = [
+        'ID', 'Código Interno', 'No. Inventario SCYT', 'No. Registro INAH', 'Otros Registros',
+        'Nombre / Título', 'Pieza por Lote', 'Época', 'Procedencia', 'Material',
+        'Medidas', 'Forma', 'Técnica Manufactura', 'Técnica Decorativa', 'Colección',
+        'Forma de Obtención', 'Ubicación Física', 'Estado de Conservación', 'Descripción',
+        'Representación', 'Observaciones', 'Fotografía'
+      ];
       foreach ($all as $p) {
-        fputcsv($output, [
+        $rows[] = [
           $p['id_acervo_arq'] ?? '-',
           $p['codigo_interno'] ?? '-',
           $p['no_inventario_scyt'] ?? '-',
@@ -1137,28 +1135,16 @@ class adminController extends Controller implements ControllerInterface
           $p['representacion'] ?? '-',
           $p['observaciones'] ?? '-',
           $p['fotografia'] ?? '-'
-        ]);
+        ];
       }
     } elseif ($tipo === 'numismatica') {
-      fputcsv($output, [
-        'ID', 
-        'Código Interno', 
-        'No. Inventario', 
-        'Tipo de Obra', 
-        'Ensayador', 
-        'Denominación', 
-        'Material', 
-        'Época', 
-        'Dimensiones (cm)', 
-        'Ubicación Física', 
-        'Estado de Conservación', 
-        'Descripción Cara A', 
-        'Descripción Cara B', 
-        'Observaciones', 
-        'Fotografía'
-      ]);
+      $headers = [
+        'ID', 'Código Interno', 'No. Inventario', 'Tipo de Obra', 'Ensayador',
+        'Denominación', 'Material', 'Época', 'Dimensiones (cm)', 'Ubicación Física',
+        'Estado de Conservación', 'Descripción Cara A', 'Descripción Cara B', 'Observaciones', 'Fotografía'
+      ];
       foreach ($all as $p) {
-        fputcsv($output, [
+        $rows[] = [
           $p['id_acervo_numismatica'] ?? '-',
           $p['codigo_interno'] ?? '-',
           $p['no_inventario'] ?? '-',
@@ -1174,35 +1160,18 @@ class adminController extends Controller implements ControllerInterface
           $p['descripcion_cara_b'] ?? '-',
           $p['observaciones'] ?? '-',
           $p['fotografia'] ?? '-'
-        ]);
+        ];
       }
     } else {
-      fputcsv($output, [
-        'ID', 
-        'Código Interno', 
-        'No. Inventario', 
-        'Nombre / Título', 
-        'Centímetros (cm)', 
-        'Materia', 
-        'Autor', 
-        'Año', 
-        'Época', 
-        'Técnica', 
-        'Origen', 
-        'Material', 
-        'Medidas', 
-        'Lote', 
-        'Peso (kg)', 
-        'Colección', 
-        'Tipo de Obra', 
-        'Ubicación Física', 
-        'Estado de Conservación', 
-        'Descripción', 
-        'Observaciones', 
-        'Fotografía'
-      ]);
+      $headers = [
+        'ID', 'Código Interno', 'No. Inventario', 'Nombre / Título', 'Centímetros (cm)',
+        'Materia', 'Autor', 'Año', 'Época', 'Técnica',
+        'Origen', 'Material', 'Medidas', 'Lote', 'Peso (kg)',
+        'Colección', 'Tipo de Obra', 'Ubicación Física', 'Estado de Conservación', 'Descripción',
+        'Observaciones', 'Fotografía'
+      ];
       foreach ($all as $p) {
-        fputcsv($output, [
+        $rows[] = [
           $p['id_acervo_general'] ?? '-',
           $p['codigo_interno'] ?? '-',
           $p['no_inventario'] ?? '-',
@@ -1225,11 +1194,77 @@ class adminController extends Controller implements ControllerInterface
           $p['descripcion'] ?? '-',
           $p['observaciones'] ?? '-',
           $p['fotografia'] ?? '-'
-        ]);
+        ];
       }
     }
 
-    fclose($output);
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->setTitle('Acervo Cultural');
+
+    $colCount = count($headers);
+    $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colCount);
+    $totalRows = count($rows);
+    $lastRow = 5 + $totalRows;
+
+    // Fila 1: Encabezado Institucional Vino
+    $sheet->mergeCells("A1:{$lastColLetter}1");
+    $sheet->setCellValue('A1', 'SECRETARÍA DE CULTURA Y TURISMO — GOBIERNO DEL ESTADO');
+    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(13)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_WHITE));
+    $sheet->getStyle('A1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF6B1D2F');
+    $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+    $sheet->getRowDimension(1)->setRowHeight(32);
+
+    // Fila 2: Subtítulo Dorado
+    $sheet->mergeCells("A2:{$lastColLetter}2");
+    $sheet->setCellValue('A2', 'SISTEMA DE INVENTARIO PARA EL ACERVO CULTURAL — ' . $titulo);
+    $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_WHITE));
+    $sheet->getStyle('A2')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFB38E2E');
+    $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+    $sheet->getRowDimension(2)->setRowHeight(24);
+
+    // Fila 3: Información de Generación
+    $sheet->mergeCells("A3:{$lastColLetter}3");
+    $sheet->setCellValue('A3', 'Generado el: ' . date('d/m/Y H:i:s') . ' | Total de registros: ' . number_format($totalRows));
+    $sheet->getStyle('A3')->getFont()->setItalic(true)->setSize(9)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF333333'));
+    $sheet->getStyle('A3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF8F9FA');
+    $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT)->setVertical(Alignment::VERTICAL_CENTER);
+    $sheet->getRowDimension(3)->setRowHeight(20);
+
+    // Fila 5: Encabezados de Tabla (Inserción en bloque)
+    $sheet->fromArray($headers, null, 'A5');
+    $sheet->getRowDimension(5)->setRowHeight(26);
+    $sheet->getStyle("A5:{$lastColLetter}5")->getFont()->setBold(true)->setSize(9)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_WHITE));
+    $sheet->getStyle("A5:{$lastColLetter}5")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF6B1D2F');
+    $sheet->getStyle("A5:{$lastColLetter}5")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+    $sheet->getStyle("A5:{$lastColLetter}5")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FF541725');
+
+    // Filas de Datos (Inserción ultra-rápida desde array en bloque)
+    if ($totalRows > 0) {
+      $sheet->fromArray($rows, null, 'A6');
+
+      // Aplicar formato en bloque a todas las celdas de datos de una sola vez
+      $dataRange = "A6:{$lastColLetter}{$lastRow}";
+      $sheet->getStyle($dataRange)->getFont()->setSize(8.5);
+      $sheet->getStyle($dataRange)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+      $sheet->getStyle($dataRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FFDCDCDC');
+    }
+
+    // Ajustar anchos estándar predefinidos para evitar el bucle lento de autoSize en miles de celdas
+    for ($i = 1; $i <= $colCount; $i++) {
+      $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
+      $sheet->getColumnDimension($colLetter)->setWidth(22);
+    }
+
+    $filename = "acervo_" . $tipo . "_" . date('Y-m-d_H-i-s') . ".xlsx";
+
+    header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: max-age=0');
+
+    $writer = new Xlsx($spreadsheet);
+    $writer->setPreCalculateFormulas(false);
+    $writer->save('php://output');
     exit;
   }
 
@@ -1274,6 +1309,7 @@ class adminController extends Controller implements ControllerInterface
     }
 
     $titulo = "Reporte de Acervo - " . ucfirst($tipo === 'numismatica' ? 'Numismático' : ($tipo === 'arqueologico' ? 'Arqueológico' : 'General'));
+    $logoBase64 = $this->get_logo_base64();
 
     // Definir encabezado según el tipo
     $tableHeaderHtml = '';
@@ -1307,9 +1343,6 @@ class adminController extends Controller implements ControllerInterface
           </tr>';
     }
 
-    // Dividir los datos en bloques de 100 filas por tabla para evitar el reflow exponencial de Dompdf
-    $chunks = array_chunk($all, 100);
-
     $html = '
     <!DOCTYPE html>
     <html lang="es">
@@ -1317,58 +1350,87 @@ class adminController extends Controller implements ControllerInterface
       <meta charset="UTF-8">
       <title>' . $titulo . '</title>
       <style>
-        @page { margin: 25px 25px 30px 25px; }
-        body { font-family: Helvetica, sans-serif; font-size: 9px; color: #333; margin: 0; padding: 0; }
-        .header { text-align: center; margin-bottom: 10px; }
-        .header h1 { margin: 0; font-size: 16px; color: #4e73df; }
-        .header p { margin: 3px 0 0 0; font-size: 10px; color: #666; }
-        .aviso { font-size: 10px; font-weight: bold; color: #e74a3b; text-align: center; margin-bottom: 10px; }
-        table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; page-break-inside: auto; }
+        @page { margin: 20px 25px 30px 25px; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 8.5px; color: #222; margin: 0; padding: 0; }
+        
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; border-bottom: 3px solid #6b1d2f; padding-bottom: 6px; }
+        .header-logo { width: 220px; vertical-align: middle; }
+        .header-logo img { max-height: 48px; max-width: 210px; }
+        .header-text { text-align: right; vertical-align: middle; }
+        .title-gov { font-size: 13px; font-weight: bold; color: #6b1d2f; text-transform: uppercase; letter-spacing: 0.5px; }
+        .title-sub { font-size: 9.5px; font-weight: bold; color: #b38e2e; text-transform: uppercase; margin-top: 1px; }
+        .title-report { font-size: 11px; font-weight: bold; color: #111; margin-top: 2px; }
+
+        .aviso { background-color: #fdf8f9; border: 1px solid #f2cfd5; border-left: 4px solid #6b1d2f; padding: 6px 10px; font-size: 9px; color: #6b1d2f; margin-bottom: 10px; border-radius: 2px; }
+        
+        table.data-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; table-layout: fixed; }
+        thead { display: table-header-group; }
         tr { page-break-inside: avoid; }
-        th, td { border: 1px solid #ccc; padding: 4px 5px; text-align: left; vertical-align: top; word-wrap: break-word; overflow: hidden; }
-        th { background-color: #f2f2f2; font-weight: bold; color: #333; }
+        th { background-color: #6b1d2f; color: #ffffff; font-weight: bold; padding: 5px 6px; text-align: left; font-size: 8.5px; text-transform: uppercase; border: 1px solid #541725; }
+        td { border: 1px solid #dcdcdc; padding: 4px 5px; text-align: left; vertical-align: top; font-size: 8px; color: #222; word-wrap: break-word; overflow: hidden; }
+        tr:nth-child(even) td { background-color: #fcf8f9; }
+
+        .footer { position: fixed; bottom: -15px; left: 0px; right: 0px; height: 15px; text-align: center; font-size: 7.5px; color: #777; border-top: 1px solid #ddd; padding-top: 3px; }
       </style>
     </head>
     <body>
-      <div class="header">
-        <h1>' . $titulo . '</h1>
-        <p>Generado el ' . date("d/m/Y H:i:s") . '</p>
+      <div class="footer">
+        Secretaría de Cultura y Turismo — Gobierno del Estado | Sistema de Inventario Para el Acervo Cultural — Documento de Control Oficial
       </div>
-      <div class="aviso">' . $aviso . '</div>';
 
-    foreach ($chunks as $chunk) {
-      $html .= '<table><thead>' . $tableHeaderHtml . '</thead><tbody>';
-      foreach ($chunk as $p) {
-        $html .= '<tr>';
-        if ($tipo === 'arqueologico') {
-          $html .= '
-            <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['nombre_titulo_pieza'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['no_registro_inah'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['procedencia'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['descripcion'] ?? '-') . '</td>';
-        } elseif ($tipo === 'numismatica') {
-          $html .= '
-            <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['denominacion'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['ubicacion_fisica'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['material'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['fecha_epoca'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['estado_conservacion'] ?? '-') . '</td>';
-        } else {
-          $html .= '
-            <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['nombre_titulo_pieza'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['autor'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['materia'] ?? '-') . '</td>
-            <td>' . htmlspecialchars($p['descripcion'] ?? '-') . '</td>';
-        }
-        $html .= '</tr>';
+      <table class="header-table">
+        <tr>
+          <td class="header-logo">';
+    if ($logoBase64) {
+      $html .= '<img src="' . $logoBase64 . '" alt="Secretaría de Cultura y Turismo" />';
+    }
+    $html .= '
+          </td>
+          <td class="header-text">
+            <div class="title-gov">Secretaría de Cultura y Turismo</div>
+            <div class="title-sub">Sistema de Inventario Para el Acervo Cultural</div>
+            <div class="title-report">' . htmlspecialchars($titulo) . ' — ' . date("d/m/Y H:i") . '</div>
+          </td>
+        </tr>
+      </table>
+
+      <div class="aviso">' . $aviso . '</div>
+      
+      <table class="data-table">
+        <thead>' . $tableHeaderHtml . '</thead>
+        <tbody>';
+
+    foreach ($all as $p) {
+      $html .= '<tr>';
+      if ($tipo === 'arqueologico') {
+        $html .= '
+          <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['nombre_titulo_pieza'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['no_registro_inah'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['procedencia'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['descripcion'] ?? '-') . '</td>';
+      } elseif ($tipo === 'numismatica') {
+        $html .= '
+          <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['denominacion'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['ubicacion_fisica'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['material'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['fecha_epoca'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['estado_conservacion'] ?? '-') . '</td>';
+      } else {
+        $html .= '
+          <td>' . htmlspecialchars($p['codigo_interno'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['nombre_titulo_pieza'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['autor'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['materia'] ?? '-') . '</td>
+          <td>' . htmlspecialchars($p['descripcion'] ?? '-') . '</td>';
       }
-      $html .= '</tbody></table>';
+      $html .= '</tr>';
     }
 
     $html .= '
+        </tbody>
+      </table>
     </body>
     </html>';
 
@@ -1809,6 +1871,8 @@ class adminController extends Controller implements ControllerInterface
       ];
     }
 
+    $logoBase64 = $this->get_logo_base64();
+
     $html = '
     <!DOCTYPE html>
     <html lang="es">
@@ -1816,39 +1880,55 @@ class adminController extends Controller implements ControllerInterface
       <meta charset="UTF-8">
       <title>' . $titulo . '</title>
       <style>
-        @page { margin: 25px; }
-        body { font-family: Arial, sans-serif; font-size: 11px; color: #333; line-height: 1.4; }
-        .container { border: 2px solid #333; padding: 15px; position: relative; min-height: 94%; }
-        .header { text-align: center; border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 15px; }
-        .header h1 { margin: 0; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; color: #1a1a1a; }
-        .header h2 { margin: 3px 0 0 0; font-size: 12px; font-weight: normal; color: #555; text-transform: uppercase; }
+        @page { margin: 20px; }
+        body { font-family: Helvetica, Arial, sans-serif; font-size: 10px; color: #222; line-height: 1.4; margin: 0; padding: 0; }
+        .container { border: 2px solid #6b1d2f; padding: 15px; position: relative; background-color: #ffffff; }
         
-        .main-grid { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        .img-col { width: 45%; text-align: center; vertical-align: middle; border: 1px solid #ccc; padding: 10px; background-color: #fafafa; }
-        .img-pieza { max-width: 100%; max-height: 250px; object-fit: contain; }
-        .no-img { font-size: 13px; color: #999; font-style: italic; padding: 60px 0; }
+        .header-table { width: 100%; border-collapse: collapse; margin-bottom: 12px; border-bottom: 2px solid #6b1d2f; padding-bottom: 8px; }
+        .header-logo { width: 220px; vertical-align: middle; }
+        .header-logo img { max-height: 52px; max-width: 210px; }
+        .header-text { text-align: right; vertical-align: middle; }
+        .header-text h1 { margin: 0; font-size: 14px; text-transform: uppercase; color: #6b1d2f; font-weight: bold; letter-spacing: 0.5px; }
+        .header-text h2 { margin: 2px 0 0 0; font-size: 10px; font-weight: bold; color: #b38e2e; text-transform: uppercase; }
+        .header-text .doc-type { margin-top: 3px; font-size: 11px; font-weight: bold; color: #111; text-transform: uppercase; }
         
-        .data-col { width: 55%; vertical-align: top; padding-left: 15px; }
+        .main-grid { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+        .img-col { width: 42%; text-align: center; vertical-align: middle; border: 1px solid #dcdcdc; padding: 8px; background-color: #fafafa; }
+        .img-pieza { max-width: 100%; max-height: 240px; object-fit: contain; }
+        .no-img { font-size: 12px; color: #999; font-style: italic; padding: 50px 0; }
+        
+        .data-col { width: 58%; vertical-align: top; padding-left: 12px; }
         .data-table { width: 100%; border-collapse: collapse; }
-        .data-table td { padding: 4px 5px; border-bottom: 1px solid #eee; font-size: 10.5px; }
-        .label { font-weight: bold; color: #111; width: 45%; }
-        .value { color: #444; width: 55%; }
+        .data-table td { padding: 4px 6px; border-bottom: 1px solid #eee; font-size: 9.5px; }
+        .label { font-weight: bold; color: #6b1d2f; width: 45%; }
+        .value { color: #333; width: 55%; }
         
-        .section-title { font-size: 11px; font-weight: bold; background-color: #e9e9e9; padding: 4px 6px; border-left: 3px solid #333; margin-top: 15px; margin-bottom: 8px; text-transform: uppercase; }
+        .section-title { font-size: 10px; font-weight: bold; background-color: #6b1d2f; color: #ffffff; padding: 5px 8px; border-left: 4px solid #b38e2e; margin-top: 12px; margin-bottom: 8px; text-transform: uppercase; }
         
-        .text-block { margin-bottom: 8px; padding: 0 5px; }
-        .text-title { font-weight: bold; margin-bottom: 2px; color: #222; text-decoration: underline; }
-        .text-content { text-align: justify; color: #444; }
+        .text-block { margin-bottom: 8px; padding: 6px 10px; background-color: #fdf8f9; border: 1px solid #f2cfd5; border-left: 3px solid #6b1d2f; }
+        .text-title { font-weight: bold; margin-bottom: 3px; color: #6b1d2f; font-size: 9.5px; text-transform: uppercase; }
+        .text-content { text-align: justify; color: #333; font-size: 9px; line-height: 1.35; }
         
-        .footer { text-align: center; font-size: 8px; color: #777; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 25px; }
+        .footer { text-align: center; font-size: 7.5px; color: #666; border-top: 1px solid #dcdcdc; padding-top: 6px; margin-top: 20px; }
       </style>
     </head>
     <body>
       <div class="container">
-        <div class="header">
-          <h1>Ficha Técnica de Registro</h1>
-          <h2>' . htmlspecialchars($tipoLabel) . '</h2>
-        </div>
+        <table class="header-table">
+          <tr>
+            <td class="header-logo">';
+    if ($logoBase64) {
+      $html .= '<img src="' . $logoBase64 . '" alt="Secretaría de Cultura y Turismo" />';
+    }
+    $html .= '
+            </td>
+            <td class="header-text">
+              <h1>Secretaría de Cultura y Turismo</h1>
+              <h2>Sistema de Inventario Para el Acervo Cultural</h2>
+              <div class="doc-type">Ficha Técnica Oficial — ' . htmlspecialchars($tipoLabel) . '</div>
+            </td>
+          </tr>
+        </table>
         
         <table class="main-grid">
           <tr>
@@ -1870,7 +1950,7 @@ class adminController extends Controller implements ControllerInterface
           </tr>
         </table>
         
-        <div class="section-title">Detalles y Descripciones</div>';
+        <div class="section-title">Detalles y Descripciones Oficiales</div>';
         
     foreach ($descripciones as $title => $content) {
       if (!empty($content) && $content !== '-') {
@@ -1884,7 +1964,7 @@ class adminController extends Controller implements ControllerInterface
 
     $html .= '
         <div class="footer">
-          Sistema de Inventario Para el Acervo Cultural - Ficha de Registro Oficial - Generado el ' . date('d/m/Y H:i') . '
+          Secretaría de Cultura y Turismo — Gobierno del Estado | Ficha Oficial de Registro de Acervo | Generado el ' . date('d/m/Y H:i') . '
         </div>
       </div>
     </body>
