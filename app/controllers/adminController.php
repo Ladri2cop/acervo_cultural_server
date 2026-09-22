@@ -3,9 +3,10 @@
 use Cocur\Slugify\Slugify;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Worksheet\Drawing;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use PhpOffice\PhpSpreadsheet\Style\Border;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\Border;
 
 /**
  * Plantilla general de controladores
@@ -911,7 +912,23 @@ class adminController extends Controller implements ControllerInterface
     if ($tipoAcervo === 'arqueologico') {
       require_once APP . 'models/acervoArqueologicoModel.php';
       $all = AcervoArqueologicoModel::getAll();
-      if ($search !== '') {
+    } elseif ($tipoAcervo === 'numismatica') {
+      require_once APP . 'models/acervoNumismaticaModel.php';
+      $all = AcervoNumismaticaModel::getAll();
+    } else {
+      // General
+      require_once APP . 'models/acervoGeneralModel.php';
+      $all = AcervoGeneralModel::getAll();
+    }
+
+    // Asegurar filtrado estricto por status = 1 (activos)
+    $all = array_filter($all, function ($pieza) {
+      return isset($pieza['status']) ? ((string)$pieza['status'] === '1' || $pieza['status'] === 1) : true;
+    });
+    $all = array_values($all);
+
+    if ($search !== '') {
+      if ($tipoAcervo === 'arqueologico') {
         $all = array_filter($all, function ($pieza) use ($search) {
           return (isset($pieza['nombre_titulo_pieza']) && stripos($pieza['nombre_titulo_pieza'], $search) !== false)
             || (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
@@ -920,12 +937,7 @@ class adminController extends Controller implements ControllerInterface
             || (isset($pieza['descripcion']) && stripos($pieza['descripcion'], $search) !== false)
             || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
         });
-        $all = array_values($all);
-      }
-    } elseif ($tipoAcervo === 'numismatica') {
-      require_once APP . 'models/acervoNumismaticaModel.php';
-      $all = AcervoNumismaticaModel::getAll();
-      if ($search !== '') {
+      } elseif ($tipoAcervo === 'numismatica') {
         $all = array_filter($all, function ($pieza) use ($search) {
           return (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
             || (isset($pieza['denominacion']) && stripos($pieza['denominacion'], $search) !== false)
@@ -935,13 +947,7 @@ class adminController extends Controller implements ControllerInterface
             || (isset($pieza['descripcion_cara_b']) && stripos($pieza['descripcion_cara_b'], $search) !== false)
             || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
         });
-        $all = array_values($all);
-      }
-    } else {
-      // General
-      require_once APP . 'models/acervoGeneralModel.php';
-      $all = AcervoGeneralModel::getAll();
-      if ($search !== '') {
+      } else {
         $all = array_filter($all, function ($pieza) use ($search) {
           return (isset($pieza['nombre_titulo_pieza']) && stripos($pieza['nombre_titulo_pieza'], $search) !== false)
             || (isset($pieza['codigo_interno']) && stripos($pieza['codigo_interno'], $search) !== false)
@@ -949,8 +955,8 @@ class adminController extends Controller implements ControllerInterface
             || (isset($pieza['descripcion']) && stripos($pieza['descripcion'], $search) !== false)
             || (isset($pieza['observaciones']) && stripos($pieza['observaciones'], $search) !== false);
         });
-        $all = array_values($all);
       }
+      $all = array_values($all);
     }
 
     return $this->filtrarAcervoPorPropiedades($all);
@@ -1089,6 +1095,24 @@ class adminController extends Controller implements ControllerInterface
     return '';
   }
 
+  private function get_gobierno_logo_base64()
+  {
+    $logoPath = IMAGES_PATH . 'gobierno.png';
+    if (file_exists($logoPath)) {
+      return 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+    }
+    return '';
+  }
+
+  private function get_adm_logo_base64()
+  {
+    $logoPath = IMAGES_PATH . 'adm.png';
+    if (file_exists($logoPath)) {
+      return 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+    }
+    return '';
+  }
+
   public function exportar_excel()
   {
     ini_set('memory_limit', '1024M');
@@ -1100,9 +1124,11 @@ class adminController extends Controller implements ControllerInterface
     $tipoNombre = mb_strtoupper($tipo === 'numismatica' ? 'NUMISMÁTICO' : ($tipo === 'arqueologico' ? 'ARQUEOLÓGICO' : 'GENERAL'), 'UTF-8');
     $titulo = "REPORTE OFICIAL DE ACERVO " . $tipoNombre;
 
-    $headers = [];
-    $rows = [];
+    $spreadsheet = new Spreadsheet();
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheet->setTitle('Acervo Cultural');
 
+    // Headers por tipo de registro
     if ($tipo === 'arqueologico') {
       $headers = [
         'ID', 'Código Interno', 'No. Inventario SCYT', 'No. Registro INAH', 'Otros Registros',
@@ -1111,7 +1137,86 @@ class adminController extends Controller implements ControllerInterface
         'Forma de Obtención', 'Ubicación Física', 'Estado de Conservación', 'Descripción',
         'Representación', 'Observaciones', 'Fotografía'
       ];
-      foreach ($all as $p) {
+    } elseif ($tipo === 'numismatica') {
+      $headers = [
+        'ID', 'Código Interno', 'No. Inventario', 'Tipo de Obra', 'Ensayador',
+        'Denominación', 'Material', 'Época', 'Dimensiones (cm)', 'Ubicación Física',
+        'Estado de Conservación', 'Descripción Cara A', 'Descripción Cara B', 'Observaciones', 'Fotografía'
+      ];
+    } else {
+      $headers = [
+        'ID', 'Código Interno', 'No. Inventario', 'Nombre / Título', 'Centímetros (cm)',
+        'Materia', 'Autor', 'Año', 'Época', 'Técnica',
+        'Origen', 'Material', 'Medidas', 'Lote', 'Peso (kg)',
+        'Colección', 'Tipo de Obra', 'Ubicación Física', 'Estado de Conservación', 'Descripción',
+        'Observaciones', 'Fotografía'
+      ];
+    }
+
+    $colCount = count($headers);
+    $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colCount);
+
+    // Incrustar Logo Gobierno (Izquierda)
+    if (file_exists(IMAGES_PATH . 'gobierno.png')) {
+      $drawing1 = new Drawing();
+      $drawing1->setName('Gobierno');
+      $drawing1->setPath(IMAGES_PATH . 'gobierno.png');
+      $drawing1->setHeight(48);
+      $drawing1->setCoordinates('A1');
+      $drawing1->setOffsetX(5);
+      $drawing1->setOffsetY(4);
+      $drawing1->setWorksheet($sheet);
+    }
+
+    // Incrustar Logo ADM (Derecha)
+    if (file_exists(IMAGES_PATH . 'adm.png')) {
+      $drawing2 = new Drawing();
+      $drawing2->setName('ADM');
+      $drawing2->setPath(IMAGES_PATH . 'adm.png');
+      $drawing2->setHeight(48);
+      $drawing2->setCoordinates($lastColLetter . '1');
+      $drawing2->setOffsetX(5);
+      $drawing2->setOffsetY(4);
+      $drawing2->setWorksheet($sheet);
+    }
+
+    // Título Central
+    $midStart = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(4);
+    $midEnd = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(max(5, $colCount - 3));
+    
+    $sheet->mergeCells("{$midStart}1:{$midEnd}1");
+    $sheet->setCellValue("{$midStart}1", htmlspecialchars($titulo));
+    $sheet->getStyle("{$midStart}1")->getFont()->setBold(true)->setSize(12)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF6B1D2F'));
+    $sheet->getStyle("{$midStart}1")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+    $sheet->mergeCells("{$midStart}2:{$midEnd}2");
+    $sheet->setCellValue("{$midStart}2", "SISTEMA DE INVENTARIO PARA EL ACERVO CULTURAL");
+    $sheet->getStyle("{$midStart}2")->getFont()->setBold(true)->setSize(9)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FFB38E2E'));
+    $sheet->getStyle("{$midStart}2")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+
+    $sheet->getRowDimension(1)->setRowHeight(32);
+    $sheet->getRowDimension(2)->setRowHeight(22);
+
+    // Barra Informativa
+    $sheet->mergeCells("A3:{$lastColLetter}3");
+    $sheet->setCellValue('A3', 'Generado el: ' . date('d/m/Y H:i:s') . ' | Total de registros: ' . number_format(count($all)));
+    $sheet->getStyle('A3')->getFont()->setItalic(true)->setSize(9)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF333333'));
+    $sheet->getStyle('A3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF8F9FA');
+    $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT)->setVertical(Alignment::VERTICAL_CENTER);
+    $sheet->getRowDimension(3)->setRowHeight(20);
+
+    // Encabezados de Tabla en Fila 5
+    $sheet->fromArray($headers, null, 'A5');
+    $sheet->getRowDimension(5)->setRowHeight(26);
+    $sheet->getStyle("A5:{$lastColLetter}5")->getFont()->setBold(true)->setSize(9)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_WHITE));
+    $sheet->getStyle("A5:{$lastColLetter}5")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF6B1D2F');
+    $sheet->getStyle("A5:{$lastColLetter}5")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
+    $sheet->getStyle("A5:{$lastColLetter}5")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FF541725');
+
+    // Extraer filas de datos
+    $rows = [];
+    foreach ($all as $p) {
+      if ($tipo === 'arqueologico') {
         $rows[] = [
           $p['id_acervo_arq'] ?? '-',
           $p['codigo_interno'] ?? '-',
@@ -1136,14 +1241,7 @@ class adminController extends Controller implements ControllerInterface
           $p['observaciones'] ?? '-',
           $p['fotografia'] ?? '-'
         ];
-      }
-    } elseif ($tipo === 'numismatica') {
-      $headers = [
-        'ID', 'Código Interno', 'No. Inventario', 'Tipo de Obra', 'Ensayador',
-        'Denominación', 'Material', 'Época', 'Dimensiones (cm)', 'Ubicación Física',
-        'Estado de Conservación', 'Descripción Cara A', 'Descripción Cara B', 'Observaciones', 'Fotografía'
-      ];
-      foreach ($all as $p) {
+      } elseif ($tipo === 'numismatica') {
         $rows[] = [
           $p['id_acervo_numismatica'] ?? '-',
           $p['codigo_interno'] ?? '-',
@@ -1161,16 +1259,7 @@ class adminController extends Controller implements ControllerInterface
           $p['observaciones'] ?? '-',
           $p['fotografia'] ?? '-'
         ];
-      }
-    } else {
-      $headers = [
-        'ID', 'Código Interno', 'No. Inventario', 'Nombre / Título', 'Centímetros (cm)',
-        'Materia', 'Autor', 'Año', 'Época', 'Técnica',
-        'Origen', 'Material', 'Medidas', 'Lote', 'Peso (kg)',
-        'Colección', 'Tipo de Obra', 'Ubicación Física', 'Estado de Conservación', 'Descripción',
-        'Observaciones', 'Fotografía'
-      ];
-      foreach ($all as $p) {
+      } else {
         $rows[] = [
           $p['id_acervo_general'] ?? '-',
           $p['codigo_interno'] ?? '-',
@@ -1198,62 +1287,9 @@ class adminController extends Controller implements ControllerInterface
       }
     }
 
-    $spreadsheet = new Spreadsheet();
-    $sheet = $spreadsheet->getActiveSheet();
-    $sheet->setTitle('Acervo Cultural');
-
-    $colCount = count($headers);
-    $lastColLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($colCount);
     $totalRows = count($rows);
-    $lastRow = 5 + $totalRows;
-
-    // Fila 1: Encabezado Institucional Vino
-    $sheet->mergeCells("A1:{$lastColLetter}1");
-    $sheet->setCellValue('A1', 'SECRETARÍA DE CULTURA Y TURISMO — GOBIERNO DEL ESTADO');
-    $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(13)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_WHITE));
-    $sheet->getStyle('A1')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF6B1D2F');
-    $sheet->getStyle('A1')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-    $sheet->getRowDimension(1)->setRowHeight(32);
-
-    // Fila 2: Subtítulo Dorado
-    $sheet->mergeCells("A2:{$lastColLetter}2");
-    $sheet->setCellValue('A2', 'SISTEMA DE INVENTARIO PARA EL ACERVO CULTURAL — ' . $titulo);
-    $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(10)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_WHITE));
-    $sheet->getStyle('A2')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFB38E2E');
-    $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-    $sheet->getRowDimension(2)->setRowHeight(24);
-
-    // Fila 3: Información de Generación
-    $sheet->mergeCells("A3:{$lastColLetter}3");
-    $sheet->setCellValue('A3', 'Generado el: ' . date('d/m/Y H:i:s') . ' | Total de registros: ' . number_format($totalRows));
-    $sheet->getStyle('A3')->getFont()->setItalic(true)->setSize(9)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF333333'));
-    $sheet->getStyle('A3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF8F9FA');
-    $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT)->setVertical(Alignment::VERTICAL_CENTER);
-    $sheet->getRowDimension(3)->setRowHeight(20);
-
-    // Fila 5: Encabezados de Tabla (Inserción en bloque)
-    $sheet->fromArray($headers, null, 'A5');
-    $sheet->getRowDimension(5)->setRowHeight(26);
-    $sheet->getStyle("A5:{$lastColLetter}5")->getFont()->setBold(true)->setSize(9)->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color(\PhpOffice\PhpSpreadsheet\Style\Color::COLOR_WHITE));
-    $sheet->getStyle("A5:{$lastColLetter}5")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF6B1D2F');
-    $sheet->getStyle("A5:{$lastColLetter}5")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
-    $sheet->getStyle("A5:{$lastColLetter}5")->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FF541725');
-
-    // Filas de Datos (Inserción ultra-rápida desde array en bloque)
     if ($totalRows > 0) {
       $sheet->fromArray($rows, null, 'A6');
-
-      // Aplicar formato en bloque a todas las celdas de datos de una sola vez
-      $dataRange = "A6:{$lastColLetter}{$lastRow}";
-      $sheet->getStyle($dataRange)->getFont()->setSize(8.5);
-      $sheet->getStyle($dataRange)->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
-      $sheet->getStyle($dataRange)->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB('FFDCDCDC');
-    }
-
-    // Ajustar anchos estándar predefinidos para evitar el bucle lento de autoSize en miles de celdas
-    for ($i = 1; $i <= $colCount; $i++) {
-      $colLetter = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
-      $sheet->getColumnDimension($colLetter)->setWidth(22);
     }
 
     $filename = "acervo_" . $tipo . "_" . date('Y-m-d_H-i-s') . ".xlsx";
@@ -1308,8 +1344,9 @@ class adminController extends Controller implements ControllerInterface
       $aviso = "Total de registros: " . number_format($totalRegistros);
     }
 
-    $titulo = "Reporte de Acervo - " . ucfirst($tipo === 'numismatica' ? 'Numismático' : ($tipo === 'arqueologico' ? 'Arqueológico' : 'General'));
-    $logoBase64 = $this->get_logo_base64();
+     $gobiernoBase64 = $this->get_gobierno_logo_base64();
+    $admBase64 = $this->get_adm_logo_base64();
+    $culturaBase64 = $this->get_logo_base64();
 
     // Definir encabezado según el tipo
     $tableHeaderHtml = '';
@@ -1354,12 +1391,14 @@ class adminController extends Controller implements ControllerInterface
         body { font-family: Helvetica, Arial, sans-serif; font-size: 8.5px; color: #222; margin: 0; padding: 0; }
         
         .header-table { width: 100%; border-collapse: collapse; margin-bottom: 8px; border-bottom: 3px solid #6b1d2f; padding-bottom: 6px; }
-        .header-logo { width: 220px; vertical-align: middle; }
-        .header-logo img { max-height: 48px; max-width: 210px; }
-        .header-text { text-align: right; vertical-align: middle; }
-        .title-gov { font-size: 13px; font-weight: bold; color: #6b1d2f; text-transform: uppercase; letter-spacing: 0.5px; }
-        .title-sub { font-size: 9.5px; font-weight: bold; color: #b38e2e; text-transform: uppercase; margin-top: 1px; }
-        .title-report { font-size: 11px; font-weight: bold; color: #111; margin-top: 2px; }
+        .header-logo-left { width: 180px; vertical-align: middle; text-align: left; }
+        .header-logo-left img { max-height: 44px; max-width: 170px; }
+        .header-logo-right { width: 180px; vertical-align: middle; text-align: right; }
+        .header-logo-right img { max-height: 44px; max-width: 170px; }
+        .header-text { text-align: center; vertical-align: middle; }
+        .title-gov { font-size: 12px; font-weight: bold; color: #6b1d2f; text-transform: uppercase; letter-spacing: 0.5px; }
+        .title-sub { font-size: 9px; font-weight: bold; color: #b38e2e; text-transform: uppercase; margin-top: 1px; }
+        .title-report { font-size: 10.5px; font-weight: bold; color: #111; margin-top: 2px; }
 
         .aviso { background-color: #fdf8f9; border: 1px solid #f2cfd5; border-left: 4px solid #6b1d2f; padding: 6px 10px; font-size: 9px; color: #6b1d2f; margin-bottom: 10px; border-radius: 2px; }
         
@@ -1380,9 +1419,11 @@ class adminController extends Controller implements ControllerInterface
 
       <table class="header-table">
         <tr>
-          <td class="header-logo">';
-    if ($logoBase64) {
-      $html .= '<img src="' . $logoBase64 . '" alt="Secretaría de Cultura y Turismo" />';
+          <td class="header-logo-left">';
+    if ($gobiernoBase64) {
+      $html .= '<img src="' . $gobiernoBase64 . '" alt="Gobierno del Estado de México" />';
+    } elseif ($culturaBase64) {
+      $html .= '<img src="' . $culturaBase64 . '" alt="Secretaría de Cultura y Turismo" />';
     }
     $html .= '
           </td>
@@ -1390,6 +1431,12 @@ class adminController extends Controller implements ControllerInterface
             <div class="title-gov">Secretaría de Cultura y Turismo</div>
             <div class="title-sub">Sistema de Inventario Para el Acervo Cultural</div>
             <div class="title-report">' . htmlspecialchars($titulo) . ' — ' . date("d/m/Y H:i") . '</div>
+          </td>
+          <td class="header-logo-right">';
+    if ($admBase64) {
+      $html .= '<img src="' . $admBase64 . '" alt="Estado de México" />';
+    }
+    $html .= '
           </td>
         </tr>
       </table>
