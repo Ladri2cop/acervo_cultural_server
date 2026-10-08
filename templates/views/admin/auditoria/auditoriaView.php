@@ -29,6 +29,11 @@
     font-family: monospace;
     font-size: 0.82rem;
   }
+  .pagination-container .pagination,
+  .card-body ul.pagination {
+    margin-bottom: 0;
+    justify-content: center !important;
+  }
 </style>
 
 <div class="row">
@@ -205,7 +210,7 @@
           </div>
 
           <!-- Paginación -->
-          <div class="d-flex justify-content-center mt-3">
+          <div class="d-flex justify-content-center align-items-center w-100 mt-4 pagination-container text-center">
             <?php echo $d->auditoria->pagination; ?>
           </div>
         <?php else: ?>
