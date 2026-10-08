@@ -25,10 +25,10 @@ $(document).ready(function () {
     // Confirmar acción
     Swal.fire("¡Confirmado!", "Redirigiendo...", "success");
 
-    // setTimeout(() => {
-    //   window.location = url;
-    //   return;
-    // }, 1500);
+    setTimeout(() => {
+      window.location = url;
+      return;
+    }, 500);
   });
 
   /**

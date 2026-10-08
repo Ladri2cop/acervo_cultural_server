@@ -69,6 +69,8 @@ class loginController extends Controller implements ControllerInterface
         Auth::login($user['id'], $user);
       }
 
+      registrar_auditoria('LOGIN', 'bee_users', null, 'Inicio de sesión exitoso', null, (int)$user['id']);
+
       Redirect::to('admin');
     } catch (Exception $e) {
       Flasher::error($e->getMessage());

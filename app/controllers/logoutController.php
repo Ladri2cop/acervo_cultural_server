@@ -16,6 +16,9 @@ class logoutController extends Controller implements ControllerInterface
 
   function index()
   {
+    // Registrar en auditoría antes de destruir sesión
+    registrar_auditoria('LOGOUT', 'bee_users', null, 'Cierre de sesión del usuario', null, (int)get_user('id'));
+
     // Si las sesiones son persistentes es requerido borrar cookies
     if (persistent_session() === true) {
       BeeSession::destroy_session();

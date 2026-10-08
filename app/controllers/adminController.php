@@ -133,13 +133,19 @@ class adminController extends Controller implements ControllerInterface
   function roles()
   {
     $this->setTitle('Roles y permisos');
+    $currentRole = get_user('id_role');
     
-    // Obtener roles con cantidad única de permisos asignados
-    $sqlRoles = "SELECT r.*, COUNT(DISTINCT rp.id_permiso) as total_permisos FROM bee_roles r LEFT JOIN bee_roles_permisos rp ON r.id = rp.id_role GROUP BY r.id ORDER BY r.id ASC";
+    // Obtener roles con cantidad única de permisos asignados (si no es super-admin id=1, omitir rol Super Administrador id=1)
+    $whereRoles = ($currentRole == 1) ? "" : "WHERE r.id != 1";
+    $sqlRoles = sprintf("SELECT r.*, COUNT(DISTINCT rp.id_permiso) as total_permisos FROM bee_roles r LEFT JOIN bee_roles_permisos rp ON r.id = rp.id_role %s GROUP BY r.id ORDER BY r.id ASC", $whereRoles);
     $roles = userModel::query($sqlRoles);
     
-    // Obtener todos los permisos agrupados
-    $sqlPermisos = "SELECT * FROM bee_permisos ORDER BY id ASC";
+    // Obtener permisos de los CRUDs existentes (omitir permisos de administración de usuarios/roles)
+    if ($currentRole == 1) {
+      $sqlPermisos = "SELECT * FROM bee_permisos ORDER BY id ASC";
+    } else {
+      $sqlPermisos = "SELECT * FROM bee_permisos WHERE slug NOT IN ('admin-access', 'gestion_usuarios', 'gestion_roles') ORDER BY id ASC";
+    }
     $permisos = userModel::query($sqlPermisos);
     
     $this->addToData('roles', $roles ? $roles : []);
@@ -174,6 +180,7 @@ class adminController extends Controller implements ControllerInterface
         throw new Exception(get_bee_message(0));
       }
 
+      $currentRole = get_user('id_role');
       $nombre   = sanitize_input($_POST['nombre']);
       $slug     = (new Slugify())->slugify($nombre);
       $permisos = isset($_POST['permisos']) && is_array($_POST['permisos']) ? $_POST['permisos'] : [];
@@ -186,6 +193,13 @@ class adminController extends Controller implements ControllerInterface
       $sqlCheck = "SELECT id FROM bee_roles WHERE slug = :slug OR nombre = :nombre LIMIT 1";
       if (userModel::query($sqlCheck, ['slug' => $slug, 'nombre' => $nombre])) {
         throw new Exception('Ya existe un rol con ese nombre.');
+      }
+
+      // Si no es Super Administrador, restringir permisos asignables solo a CRUDs de acervo y exportaciones
+      if ($currentRole != 1) {
+        $allowedRows = userModel::query("SELECT id FROM bee_permisos WHERE slug NOT IN ('admin-access', 'gestion_usuarios', 'gestion_roles')");
+        $allowedIds = $allowedRows ? array_column($allowedRows, 'id') : [];
+        $permisos = array_intersect(array_map('intval', $permisos), $allowedIds);
       }
 
       $dataRole = [
@@ -207,6 +221,8 @@ class adminController extends Controller implements ControllerInterface
         ]);
       }
 
+      registrar_auditoria('INSERT', 'bee_roles', $id_role, sprintf('Creación de rol: %s con %d permisos', $nombre, count($permisos)));
+
       Flasher::success(sprintf('Rol <b>%s</b> creado exitosamente.', $nombre));
       Redirect::back();
     } catch (Exception $e) {
@@ -226,6 +242,7 @@ class adminController extends Controller implements ControllerInterface
         throw new Exception(get_bee_message(0));
       }
 
+      $currentRole = get_user('id_role');
       $id_role  = (int)$_POST['id_role'];
       $nombre   = sanitize_input($_POST['nombre']);
       $slug     = (new Slugify())->slugify($nombre);
@@ -233,6 +250,10 @@ class adminController extends Controller implements ControllerInterface
 
       if ($id_role <= 0) {
         throw new Exception('ID de rol no válido.');
+      }
+
+      if ($id_role === 1 && $currentRole != 1) {
+        throw new Exception('No tienes permisos para modificar el rol de Super Administrador.');
       }
 
       // Verificar existencia
@@ -245,6 +266,13 @@ class adminController extends Controller implements ControllerInterface
       $sqlCheckDup = "SELECT id FROM bee_roles WHERE (slug = :slug OR nombre = :nombre) AND id != :id LIMIT 1";
       if (userModel::query($sqlCheckDup, ['slug' => $slug, 'nombre' => $nombre, 'id' => $id_role])) {
         throw new Exception('Ya existe otro rol con ese nombre.');
+      }
+
+      // Si no es Super Administrador, filtrar permisos asignables
+      if ($currentRole != 1) {
+        $allowedRows = userModel::query("SELECT id FROM bee_permisos WHERE slug NOT IN ('admin-access', 'gestion_usuarios', 'gestion_roles')");
+        $allowedIds = $allowedRows ? array_column($allowedRows, 'id') : [];
+        $permisos = array_intersect(array_map('intval', $permisos), $allowedIds);
       }
 
       // Actualizar nombre y slug del rol
@@ -261,6 +289,8 @@ class adminController extends Controller implements ControllerInterface
           'id_permiso' => $id_permiso
         ]);
       }
+
+      registrar_auditoria('UPDATE', 'bee_roles', $id_role, sprintf('Edición de rol: %s con %d permisos', $nombre, count($permisos)));
 
       Flasher::success(sprintf('Rol <b>%s</b> actualizado exitosamente.', $nombre));
       Redirect::back();
@@ -284,7 +314,7 @@ class adminController extends Controller implements ControllerInterface
       $id_role = (int)$id_role;
 
       if ($id_role === 1) {
-        throw new Exception('No puedes eliminar el rol de Administrador principal.');
+        throw new Exception('No puedes eliminar el rol de Super Administrador.');
       }
 
       // Verificar si hay usuarios asociados a este rol
@@ -293,8 +323,10 @@ class adminController extends Controller implements ControllerInterface
         throw new Exception('No se puede eliminar el rol porque hay usuarios asignados a él.');
       }
 
-      userModel::remove('bee_roles_permisos', ['id_role' => $id_role], 0);
-      userModel::remove('bee_roles', ['id' => $id_role], 1);
+      userModel::query("DELETE FROM bee_roles_permisos WHERE id_role = :id_role", ['id_role' => $id_role]);
+      userModel::query("DELETE FROM bee_roles WHERE id = :id_role", ['id_role' => $id_role]);
+
+      registrar_auditoria('DELETE', 'bee_roles', $id_role, 'Eliminación de rol');
 
       Flasher::success('Rol eliminado con éxito.');
       Redirect::back();
@@ -307,10 +339,38 @@ class adminController extends Controller implements ControllerInterface
   function usuarios()
   {
     $this->setTitle('Usuarios');
-    $this->addToData('users', userModel::all_paginated());
-    $this->addToData('roles', userModel::get_roles());
+    $currentRole = get_user('id_role');
+    $currentUserId = get_user('id');
+
+    // Si es super-admin id_role = 1, ve todos los usuarios y todos los roles.
+    // Si es otro rol de administración, ve los usuarios que él creó y los roles disponibles excepto el rol 1 (Super Admin).
+    if ($currentRole == 1) {
+      $users = userModel::all_paginated();
+      $roles = userModel::get_roles();
+    } else {
+      $sqlUsers = sprintf("SELECT u.*, r.nombre as role_name FROM bee_users u LEFT JOIN bee_roles r ON u.id_role = r.id WHERE u.created_by = %d OR u.id = %d ORDER BY u.id DESC", (int)$currentUserId, (int)$currentUserId);
+      $users = PaginationHandler::paginate($sqlUsers);
+
+      $sqlRoles = "SELECT * FROM bee_roles WHERE id != 1 ORDER BY id ASC";
+      $roles = userModel::query($sqlRoles) ?: [];
+    }
+
+    $this->addToData('users', $users);
+    $this->addToData('roles', $roles);
     $this->addToData('slug', 'usuarios');
     $this->setView('usuarios/usuarios');
+    $this->render();
+  }
+
+  function auditoria()
+  {
+    $this->setTitle('Registro de Auditoría');
+    $sql = "SELECT * FROM db_framework.auditoria ORDER BY id_auditoria DESC";
+    $auditoria = PaginationHandler::paginate($sql);
+
+    $this->addToData('auditoria', $auditoria);
+    $this->addToData('slug', 'auditoria');
+    $this->setView('auditoria/auditoria');
     $this->render();
   }
 
@@ -331,8 +391,14 @@ class adminController extends Controller implements ControllerInterface
       $email        = $_POST['email'];
       $password     = $_POST['password'];
       $id_role      = (int)$_POST['id_role'];
+      $currentRole  = get_user('id_role');
+      $currentUserId = get_user('id');
       $errorMessage = '';
       $errors       = 0;
+
+      if ($id_role === 1 && $currentRole != 1) {
+        throw new Exception('No tienes permisos para asignar el rol de Super Administrador.');
+      }
 
       // Verificar que no exista ya un usuario con ese username o correo electrónico
       $sql = 'SELECT * FROM bee_users WHERE username = :username OR email = :email';
@@ -370,20 +436,23 @@ class adminController extends Controller implements ControllerInterface
         throw new Exception($errorMessage);
       }
 
-      // Agregar el nuevo usuario a la base de datos
+      // Agregar el nuevo usuario a la base de datos vinculando el id del creador
       $user     =
         [
           'id_role'    => $id_role,
           'username'   => $username,
           'email'      => $email,
           'password'   => password_hash($password . AUTH_SALT, PASSWORD_BCRYPT),
-          'created_at' => now()
+          'created_at' => now(),
+          'created_by' => $currentUserId
         ];
 
       // Insertando el registro en la base de datos
       if (!$id = userModel::add(userModel::$t1, $user)) {
         throw new Exception('Hubo un problema al agregar el usuario.');
       }
+
+      registrar_auditoria('INSERT', 'bee_users', $id, sprintf('Creación de nuevo usuario: %s con id_role: %d', $username, $id_role));
 
       Flasher::success(sprintf('Nuevo usuario agregado con éxito:<br>Usuario: <b>%s</b><br>Contraseña: <b>%s</b>', $user['username'], $password));
       Redirect::back();
@@ -469,6 +538,8 @@ class adminController extends Controller implements ControllerInterface
         throw new Exception('No se realizaron cambios o hubo un problema al actualizar el usuario.');
       }
 
+      registrar_auditoria('UPDATE', 'bee_users', $id_usuario, sprintf('Edición de usuario: %s con id_role: %d', $username, $id_role));
+
       Flasher::success(sprintf('Usuario <b>%s</b> actualizado con éxito.', $username));
       Redirect::back();
     } catch (Exception $e) {
@@ -498,6 +569,8 @@ class adminController extends Controller implements ControllerInterface
       if (!userModel::remove(userModel::$t1, ['id' => $id], 1)) {
         throw new Exception('Hubo un problema al borrar el usuario.');
       }
+
+      registrar_auditoria('DELETE', 'bee_users', (int)$id, sprintf('Eliminación de usuario: %s', $user['username']));
 
       Flasher::success(sprintf('Usuario <b>%s</b> borrado con éxito.', $user['username']));
       Redirect::back();
@@ -533,6 +606,8 @@ class adminController extends Controller implements ControllerInterface
       if (!userModel::update(userModel::$t1, ['id' => $id], ['auth_token' => null])) {
         throw new Exception('Hubo un problema al actualizar el usuario.');
       }
+
+      registrar_auditoria('DESTRUIR_SESION', 'bee_users', (int)$id, sprintf('Cierre forzado de sesión para el usuario %s por un administrador', $user['username']));
 
       Flasher::success(sprintf('La sesión de <b>%s</b> ha sido cerrada con éxito.', $user['username']));
       Redirect::back();
@@ -972,6 +1047,7 @@ class adminController extends Controller implements ControllerInterface
     $id = AcervoGeneralModel::addPieza($data);
 
     if ($id) {
+      registrar_auditoria('INSERT', 'acervo_general', $id, 'Registro de nueva pieza: ' . ($data['nombre_titulo_pieza'] ?? ''), 5);
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 200,
@@ -1039,6 +1115,7 @@ class adminController extends Controller implements ControllerInterface
     $id = AcervoArqueologicoModel::addPieza($data);
 
     if ($id) {
+      registrar_auditoria('INSERT', 'acervo_arqueologico', $id, 'Registro de pieza arqueológica: ' . ($data['nombre_titulo_pieza'] ?? ''), 3);
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 200,
@@ -1099,6 +1176,7 @@ class adminController extends Controller implements ControllerInterface
     $id = AcervoNumismaticaModel::addPieza($data);
 
     if ($id) {
+      registrar_auditoria('INSERT', 'acervo_numismatica', $id, 'Registro de pieza numismática: ' . ($data['denominacion'] ?? ''), 4);
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 200,
@@ -1601,6 +1679,7 @@ class adminController extends Controller implements ControllerInterface
     }
 
     $filename = "acervo_" . $tipo . "_" . date('Y-m-d_H-i-s') . ".xlsx";
+    registrar_auditoria('EXPORT_EXCEL', 'acervo_' . $tipo, null, 'Exportación de reporte a Excel (Tipo: ' . $tipo . ')');
 
     header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
     header('Content-Disposition: attachment; filename="' . $filename . '"');
@@ -1791,6 +1870,7 @@ class adminController extends Controller implements ControllerInterface
     </html>';
 
     require_once APP . 'classes/BeePdf.php';
+    registrar_auditoria('EXPORT_PDF', 'acervo_' . $tipo, null, 'Exportación de reporte a PDF (Tipo: ' . $tipo . ', Parte: ' . $parte . ')');
     $pdf = new BeePdf();
     $pdf->streamPdf(true);
     $pdf->setOrientation('landscape');
@@ -1840,6 +1920,10 @@ class adminController extends Controller implements ControllerInterface
 
     $ok = AcervoGeneralModel::updatePieza($id, $data);
     if ($ok) {
+      $piezaDespues = AcervoGeneralModel::getById($id);
+      $datosAntesJson = ($piezaActual && isset($piezaActual[0])) ? $piezaActual[0] : $piezaActual;
+      $datosDespuesJson = ($piezaDespues && isset($piezaDespues[0])) ? $piezaDespues[0] : $piezaDespues;
+      registrar_auditoria('UPDATE', 'acervo_general', $id, 'Edición de pieza de acervo general', 5, null, $datosAntesJson, $datosDespuesJson);
       echo json_encode(['status' => 200, 'msg' => 'Pieza actualizada correctamente']);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
@@ -1889,6 +1973,10 @@ class adminController extends Controller implements ControllerInterface
 
     $ok = AcervoArqueologicoModel::updatePieza($id, $data);
     if ($ok) {
+      $piezaDespues = AcervoArqueologicoModel::getById($id);
+      $datosAntesJson = ($piezaActual && isset($piezaActual[0])) ? $piezaActual[0] : $piezaActual;
+      $datosDespuesJson = ($piezaDespues && isset($piezaDespues[0])) ? $piezaDespues[0] : $piezaDespues;
+      registrar_auditoria('UPDATE', 'acervo_arqueologico', $id, 'Edición de pieza de acervo arqueológico', 3, null, $datosAntesJson, $datosDespuesJson);
       echo json_encode(['status' => 200, 'msg' => 'Pieza actualizada correctamente']);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
@@ -1938,6 +2026,10 @@ class adminController extends Controller implements ControllerInterface
 
     $ok = AcervoNumismaticaModel::updatePieza($id, $data);
     if ($ok) {
+      $piezaDespues = AcervoNumismaticaModel::getById($id);
+      $datosAntesJson = ($piezaActual && isset($piezaActual[0])) ? $piezaActual[0] : $piezaActual;
+      $datosDespuesJson = ($piezaDespues && isset($piezaDespues[0])) ? $piezaDespues[0] : $piezaDespues;
+      registrar_auditoria('UPDATE', 'acervo_numismatica', $id, 'Edición de pieza numismática', 4, null, $datosAntesJson, $datosDespuesJson);
       echo json_encode(['status' => 200, 'msg' => 'Pieza actualizada correctamente']);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
@@ -1957,6 +2049,7 @@ class adminController extends Controller implements ControllerInterface
     require_once APP . 'models/acervoGeneralModel.php';
     $ok = AcervoGeneralModel::deletePieza($id);
     if ($ok) {
+      registrar_auditoria('DELETE', 'acervo_general', $id, 'Eliminación de pieza de acervo general', 5);
       echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al eliminar la pieza']);
@@ -1976,6 +2069,7 @@ class adminController extends Controller implements ControllerInterface
     require_once APP . 'models/acervoArqueologicoModel.php';
     $ok = AcervoArqueologicoModel::deletePieza($id);
     if ($ok) {
+      registrar_auditoria('DELETE', 'acervo_arqueologico', $id, 'Eliminación de pieza de acervo arqueológico', 3);
       echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al eliminar la pieza']);
@@ -1995,6 +2089,7 @@ class adminController extends Controller implements ControllerInterface
     require_once APP . 'models/acervoNumismaticaModel.php';
     $ok = AcervoNumismaticaModel::deletePieza($id);
     if ($ok) {
+      registrar_auditoria('DELETE', 'acervo_numismatica', $id, 'Eliminación de pieza numismática', 4);
       echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al eliminar la pieza']);
