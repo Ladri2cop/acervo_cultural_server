@@ -107,7 +107,7 @@ class BeeRoleManager extends Model
     $sql     = sprintf($sql, $this->permissionsTableName, $this->rolesPermissionsTableName);
     $results = parent::query($sql, ['id' => $this->roleId]);
 
-    $this->permissions = $result === false ? [] : $results;
+    $this->permissions = $results === false ? [] : $results;
 
     $this->role['permisos'] = $this->permissions;
   }
@@ -233,13 +233,6 @@ class BeeRoleManager extends Model
    */
   function can(string $permission)
   {
-    // Si el role es desarrollador asignado como "developer"
-    if (in_array($this->roleSlug, ['developer'])) return true;
-
-    // Si el role tiene asignado acceso total de administrador sin necesidad de tener todos los permisos asignados
-    if (in_array('admin-access', $this->formatPermissions())) return true;
-
-    // Para verificaciones generales si no es administrador o desarrollador
     return in_array($permission, $this->formatPermissions());
   }
 

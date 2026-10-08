@@ -16,6 +16,38 @@ use PhpOffice\PhpSpreadsheet\Style\Border;
  */
 class adminController extends Controller implements ControllerInterface
 {
+  /**
+   * Verifica si el usuario en sesión tiene un permiso específico
+   */
+  private function check_user_permission(string $permissionSlug)
+  {
+    $id_role = get_user('id_role');
+    if (!$id_role) {
+      $id_role = 1; // Fallback por defecto si no está definido
+    }
+    
+    // Obtener slug del rol
+    $roleRow = userModel::query("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1", ['id' => $id_role]);
+    $roleSlug = ($roleRow && isset($roleRow[0]['slug'])) ? $roleRow[0]['slug'] : 'admin';
+
+    $roleManager = new BeeRoleManager($roleSlug);
+    if (!$roleManager->can($permissionSlug)) {
+      $isAjax = is_ajax() || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) || !empty($_POST);
+      if ($isAjax) {
+        http_response_code(403);
+        header('Content-Type: application/json');
+        echo json_encode([
+          'status' => 403,
+          'msg' => 'No tienes permisos suficientes para realizar esta acción.'
+        ]);
+        exit;
+      }
+      Flasher::error('No tienes permisos suficientes para acceder a esta sección.');
+      Redirect::to('admin');
+      exit;
+    }
+  }
+
   function __construct()
   {
     // Validación de sesión de usuario
@@ -98,10 +130,185 @@ class adminController extends Controller implements ControllerInterface
   ////////////////////////////////////////////////////
   ////////////////////////////////////////////////////
   ////////////////////////////////////////////////////
+  function roles()
+  {
+    $this->setTitle('Roles y permisos');
+    
+    // Obtener roles con cantidad única de permisos asignados
+    $sqlRoles = "SELECT r.*, COUNT(DISTINCT rp.id_permiso) as total_permisos FROM bee_roles r LEFT JOIN bee_roles_permisos rp ON r.id = rp.id_role GROUP BY r.id ORDER BY r.id ASC";
+    $roles = userModel::query($sqlRoles);
+    
+    // Obtener todos los permisos agrupados
+    $sqlPermisos = "SELECT * FROM bee_permisos ORDER BY id ASC";
+    $permisos = userModel::query($sqlPermisos);
+    
+    $this->addToData('roles', $roles ? $roles : []);
+    $this->addToData('permisos', $permisos ? $permisos : []);
+    $this->addToData('slug', 'roles');
+    $this->setView('roles/roles');
+    $this->render();
+  }
+
+  function get_permisos_rol($id_role = null)
+  {
+    header('Content-Type: application/json');
+    if (!$id_role) {
+      echo json_encode(['status' => 400, 'permisos' => []]);
+      exit;
+    }
+    $sql = "SELECT id_permiso FROM bee_roles_permisos WHERE id_role = :id_role";
+    $rows = userModel::query($sql, ['id_role' => $id_role]);
+    $ids = $rows ? array_column($rows, 'id_permiso') : [];
+    echo json_encode(['status' => 200, 'permisos' => $ids]);
+    exit;
+  }
+
+  function post_roles()
+  {
+    try {
+      if (!check_posted_data(['nombre'], $_POST)) {
+        throw new Exception('Por favor ingresa el nombre del rol.');
+      }
+
+      if (!Csrf::validate($_POST['csrf'])) {
+        throw new Exception(get_bee_message(0));
+      }
+
+      $nombre   = sanitize_input($_POST['nombre']);
+      $slug     = (new Slugify())->slugify($nombre);
+      $permisos = isset($_POST['permisos']) && is_array($_POST['permisos']) ? $_POST['permisos'] : [];
+
+      if (empty($nombre)) {
+        throw new Exception('El nombre del rol no puede estar vacío.');
+      }
+
+      // Verificar si ya existe un rol con el mismo nombre o slug
+      $sqlCheck = "SELECT id FROM bee_roles WHERE slug = :slug OR nombre = :nombre LIMIT 1";
+      if (userModel::query($sqlCheck, ['slug' => $slug, 'nombre' => $nombre])) {
+        throw new Exception('Ya existe un rol con ese nombre.');
+      }
+
+      $dataRole = [
+        'nombre' => $nombre,
+        'slug'   => $slug,
+        'creado' => now()
+      ];
+
+      $id_role = userModel::add('bee_roles', $dataRole);
+      if (!$id_role) {
+        throw new Exception('Hubo un error al guardar el rol en la base de datos.');
+      }
+
+      // Insertar permisos asignados
+      foreach ($permisos as $id_permiso) {
+        userModel::add('bee_roles_permisos', [
+          'id_role'    => $id_role,
+          'id_permiso' => (int)$id_permiso
+        ]);
+      }
+
+      Flasher::success(sprintf('Rol <b>%s</b> creado exitosamente.', $nombre));
+      Redirect::back();
+    } catch (Exception $e) {
+      Flasher::error($e->getMessage());
+      Redirect::back();
+    }
+  }
+
+  function post_editar_rol()
+  {
+    try {
+      if (!check_posted_data(['id_role', 'nombre'], $_POST)) {
+        throw new Exception('Faltan datos obligatorios para editar el rol.');
+      }
+
+      if (!Csrf::validate($_POST['csrf'])) {
+        throw new Exception(get_bee_message(0));
+      }
+
+      $id_role  = (int)$_POST['id_role'];
+      $nombre   = sanitize_input($_POST['nombre']);
+      $slug     = (new Slugify())->slugify($nombre);
+      $permisos = isset($_POST['permisos']) && is_array($_POST['permisos']) ? $_POST['permisos'] : [];
+
+      if ($id_role <= 0) {
+        throw new Exception('ID de rol no válido.');
+      }
+
+      // Verificar existencia
+      $sqlCheckRole = "SELECT * FROM bee_roles WHERE id = :id LIMIT 1";
+      if (!userModel::query($sqlCheckRole, ['id' => $id_role])) {
+        throw new Exception('El rol que intentas editar no existe.');
+      }
+
+      // Verificar duplicidad de nombre
+      $sqlCheckDup = "SELECT id FROM bee_roles WHERE (slug = :slug OR nombre = :nombre) AND id != :id LIMIT 1";
+      if (userModel::query($sqlCheckDup, ['slug' => $slug, 'nombre' => $nombre, 'id' => $id_role])) {
+        throw new Exception('Ya existe otro rol con ese nombre.');
+      }
+
+      // Actualizar nombre y slug del rol
+      userModel::update('bee_roles', ['id' => $id_role], ['nombre' => $nombre, 'slug' => $slug]);
+
+      // Eliminar asignaciones actuales de permisos del rol mediante consulta directa
+      userModel::query("DELETE FROM bee_roles_permisos WHERE id_role = :id_role", ['id_role' => $id_role]);
+
+      // Reinsertar permisos seleccionados sin duplicados
+      $permisos = array_unique(array_map('intval', $permisos));
+      foreach ($permisos as $id_permiso) {
+        userModel::add('bee_roles_permisos', [
+          'id_role'    => $id_role,
+          'id_permiso' => $id_permiso
+        ]);
+      }
+
+      Flasher::success(sprintf('Rol <b>%s</b> actualizado exitosamente.', $nombre));
+      Redirect::back();
+    } catch (Exception $e) {
+      Flasher::error($e->getMessage());
+      Redirect::back();
+    }
+  }
+
+  function borrar_rol($id_role = null)
+  {
+    try {
+      if (!Csrf::validate($_GET['_t'])) {
+        throw new Exception(get_bee_message(0));
+      }
+
+      if (!$id_role) {
+        throw new Exception('ID de rol no proporcionado.');
+      }
+
+      $id_role = (int)$id_role;
+
+      if ($id_role === 1) {
+        throw new Exception('No puedes eliminar el rol de Administrador principal.');
+      }
+
+      // Verificar si hay usuarios asociados a este rol
+      $sqlUsers = "SELECT id FROM bee_users WHERE id_role = :id_role LIMIT 1";
+      if (userModel::query($sqlUsers, ['id_role' => $id_role])) {
+        throw new Exception('No se puede eliminar el rol porque hay usuarios asignados a él.');
+      }
+
+      userModel::remove('bee_roles_permisos', ['id_role' => $id_role], 0);
+      userModel::remove('bee_roles', ['id' => $id_role], 1);
+
+      Flasher::success('Rol eliminado con éxito.');
+      Redirect::back();
+    } catch (Exception $e) {
+      Flasher::error($e->getMessage());
+      Redirect::back();
+    }
+  }
+
   function usuarios()
   {
     $this->setTitle('Usuarios');
     $this->addToData('users', userModel::all_paginated());
+    $this->addToData('roles', userModel::get_roles());
     $this->addToData('slug', 'usuarios');
     $this->setView('usuarios/usuarios');
     $this->render();
@@ -110,7 +317,7 @@ class adminController extends Controller implements ControllerInterface
   function post_usuarios()
   {
     try {
-      if (!check_posted_data(['username', 'email', 'password'], $_POST)) {
+      if (!check_posted_data(['username', 'email', 'password', 'id_role'], $_POST)) {
         throw new Exception('Por favor completa el formulario.');
       }
 
@@ -123,6 +330,7 @@ class adminController extends Controller implements ControllerInterface
       $username     = $_POST['username'];
       $email        = $_POST['email'];
       $password     = $_POST['password'];
+      $id_role      = (int)$_POST['id_role'];
       $errorMessage = '';
       $errors       = 0;
 
@@ -153,6 +361,11 @@ class adminController extends Controller implements ControllerInterface
         $errors++;
       }
 
+      if ($id_role <= 0) {
+        $errorMessage .= '- Por favor selecciona un rol válido.<br>';
+        $errors++;
+      }
+
       if ($errors > 0) {
         throw new Exception($errorMessage);
       }
@@ -160,6 +373,7 @@ class adminController extends Controller implements ControllerInterface
       // Agregar el nuevo usuario a la base de datos
       $user     =
         [
+          'id_role'    => $id_role,
           'username'   => $username,
           'email'      => $email,
           'password'   => password_hash($password . AUTH_SALT, PASSWORD_BCRYPT),
@@ -172,6 +386,90 @@ class adminController extends Controller implements ControllerInterface
       }
 
       Flasher::success(sprintf('Nuevo usuario agregado con éxito:<br>Usuario: <b>%s</b><br>Contraseña: <b>%s</b>', $user['username'], $password));
+      Redirect::back();
+    } catch (Exception $e) {
+      Flasher::error($e->getMessage());
+      Redirect::back();
+    }
+  }
+
+  function post_editar_usuario()
+  {
+    try {
+      if (!check_posted_data(['id_usuario', 'username', 'email', 'id_role'], $_POST)) {
+        throw new Exception('Por favor completa los datos obligatorios.');
+      }
+
+      if (!Csrf::validate($_POST['csrf'])) {
+        throw new Exception(get_bee_message(0));
+      }
+
+      array_map('sanitize_input', $_POST);
+      $id_usuario   = (int)$_POST['id_usuario'];
+      $username     = $_POST['username'];
+      $email        = $_POST['email'];
+      $id_role      = (int)$_POST['id_role'];
+      $password     = isset($_POST['password']) ? trim($_POST['password']) : '';
+      $errorMessage = '';
+      $errors       = 0;
+
+      // Verificar existencia del usuario
+      if (!$userExisting = userModel::by_id($id_usuario)) {
+        throw new Exception('El usuario que intentas editar no existe.');
+      }
+
+      // Verificar duplicados en username o email
+      $sql = 'SELECT * FROM bee_users WHERE (username = :username OR email = :email) AND id != :id';
+      if (userModel::query($sql, ['username' => $username, 'email' => $email, 'id' => $id_usuario])) {
+        throw new Exception('Ya existe otro usuario registrado con ese nombre de usuario o correo electrónico.');
+      }
+
+      if (!preg_match('/^[a-zA-Z0-9]{5,20}$/', $username)) {
+        $errorMessage .= '- El nombre de usuario debe contener entre 5 y 20 caracteres alfanuméricos.<br>';
+        $errors++;
+      }
+
+      if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $errorMessage .= '- El correo electrónico no es válido.<br>';
+        $errors++;
+      }
+
+      if (is_temporary_email($email)) {
+        $errorMessage .= '- El dominio del correo electrónico no está autorizado.<br>';
+        $errors++;
+      }
+
+      if (!empty($password)) {
+        if (!preg_match('/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*_-])[A-Za-z\d!@#$%^&*_-]{5,20}$/', $password)) {
+          $errorMessage .= '- La nueva contraseña debe ser de entre 5 y 20 caracteres (minúscula, mayúscula, dígito y caracter especial !@#$%^&*_-).<br>';
+          $errors++;
+        }
+      }
+
+      if ($id_role <= 0) {
+        $errorMessage .= '- Por favor selecciona un rol válido.<br>';
+        $errors++;
+      }
+
+      if ($errors > 0) {
+        throw new Exception($errorMessage);
+      }
+
+      $dataUpdate = [
+        'username' => $username,
+        'email'    => $email,
+        'id_role'  => $id_role
+      ];
+
+      if (!empty($password)) {
+        $dataUpdate['password'] = password_hash($password . AUTH_SALT, PASSWORD_BCRYPT);
+      }
+
+      if (!userModel::update_by_id($id_usuario, $dataUpdate)) {
+        throw new Exception('No se realizaron cambios o hubo un problema al actualizar el usuario.');
+      }
+
+      Flasher::success(sprintf('Usuario <b>%s</b> actualizado con éxito.', $username));
       Redirect::back();
     } catch (Exception $e) {
       Flasher::error($e->getMessage());
@@ -518,16 +816,19 @@ class adminController extends Controller implements ControllerInterface
     $campos = [];
     $action = 'admin/post_registro';
 
-    switch ($tipo) {
+    switch ((int)$tipo) {
       case 1:
+        $this->check_user_permission('registrar_acervo_general');
         $campos = obtenerCamposAcervoGeneral();
         $action = 'admin/post_registro';
         break;
       case 2:
+        $this->check_user_permission('registrar_acervo_arqueologico');
         $campos = obtenerCamposAcervoArqueologico();
         $action = 'admin/post_registro_arq';
         break;
       case 3:
+        $this->check_user_permission('registrar_acervo_numismatica');
         $campos = obtenerCamposAcervoNumismatica();
         $action = 'admin/post_registro_numismatica';
         break;
@@ -622,6 +923,7 @@ class adminController extends Controller implements ControllerInterface
 
   function post_registro()
   {
+    $this->check_user_permission('registrar_acervo_general');
     // Procesar y guardar los datos del formulario de acervoGeneral
     $data = [
       'codigo_interno'        => $_POST['codigo_interno'] ?? '',
@@ -688,6 +990,7 @@ class adminController extends Controller implements ControllerInterface
 
   function post_registro_arq()
   {
+    $this->check_user_permission('registrar_acervo_arqueologico');
     // Procesar y guardar los datos del formulario de acervoGeneral
     $data = [
       'codigo_interno'          => $_POST['codigo_interno'] ?? '',
@@ -754,6 +1057,7 @@ class adminController extends Controller implements ControllerInterface
 
   function post_registro_numismatica()
   {
+    $this->check_user_permission('registrar_acervo_numismatica');
     // Procesar y guardar los datos del formulario de acervoNumismatica
     $data = [
       'codigo_interno'        => $_POST['codigo_interno'] ?? '',
@@ -964,6 +1268,7 @@ class adminController extends Controller implements ControllerInterface
 
   public function get_acervo_general()
   {
+    $this->check_user_permission('ver_acervo_general');
     $page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
     $perPage = isset($_REQUEST['per_page']) ? (int)$_REQUEST['per_page'] : 10;
     $offset = ($page - 1) * $perPage;
@@ -1004,6 +1309,7 @@ class adminController extends Controller implements ControllerInterface
   // Endpoint para AJAX: listado paginado de Acervo Arqueológico
   public function get_acervo_arq()
   {
+    $this->check_user_permission('ver_acervo_arqueologico');
     $page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
     $perPage = isset($_REQUEST['per_page']) ? (int)$_REQUEST['per_page'] : 10;
     $offset = ($page - 1) * $perPage;
@@ -1047,6 +1353,7 @@ class adminController extends Controller implements ControllerInterface
   // Endpoint para AJAX: listado paginado de Acervo Numismática
   public function get_acervo_numismatica()
   {
+    $this->check_user_permission('ver_acervo_numismatica');
     $page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
     $perPage = isset($_REQUEST['per_page']) ? (int)$_REQUEST['per_page'] : 10;
     $offset = ($page - 1) * $perPage;
@@ -1115,6 +1422,7 @@ class adminController extends Controller implements ControllerInterface
 
   public function exportar_excel()
   {
+    $this->check_user_permission('exportar_excel');
     ini_set('memory_limit', '1024M');
     set_time_limit(300);
 
@@ -1306,6 +1614,7 @@ class adminController extends Controller implements ControllerInterface
 
   public function exportar_pdf()
   {
+    $this->check_user_permission('exportar_pdf');
     // Aumentar límites temporales y de memoria para el procesamiento de PDF
     ini_set('memory_limit', '1024M');
     set_time_limit(300);
@@ -1492,6 +1801,7 @@ class adminController extends Controller implements ControllerInterface
   // Editar pieza de acervo general (AJAX)
   public function acervo_general_editar()
   {
+    $this->check_user_permission('editar_acervo_general');
     $id = isset($_POST['id_acervo_general']) ? (int)$_POST['id_acervo_general'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
@@ -1540,6 +1850,7 @@ class adminController extends Controller implements ControllerInterface
   // Editar pieza de acervo arqueológico (AJAX)
   public function acervo_arq_editar()
   {
+    $this->check_user_permission('editar_acervo_arqueologico');
     $id = isset($_POST['id_acervo_arq']) ? (int)$_POST['id_acervo_arq'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
@@ -1588,6 +1899,7 @@ class adminController extends Controller implements ControllerInterface
   // Editar pieza de acervo numismático (AJAX)
   public function acervo_numismatica_editar()
   {
+    $this->check_user_permission('editar_acervo_numismatica');
     $id = isset($_POST['id_acervo_numismatica']) ? (int)$_POST['id_acervo_numismatica'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
@@ -1636,6 +1948,7 @@ class adminController extends Controller implements ControllerInterface
   // Eliminar pieza de acervo general (AJAX)
   public function acervo_general_eliminar()
   {
+    $this->check_user_permission('eliminar_acervo_general');
     $id = isset($_POST['id_acervo_general']) ? (int)$_POST['id_acervo_general'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
@@ -1654,6 +1967,7 @@ class adminController extends Controller implements ControllerInterface
   // Eliminar pieza de acervo arqueológico (AJAX)
   public function acervo_arq_eliminar()
   {
+    $this->check_user_permission('eliminar_acervo_arqueologico');
     $id = isset($_POST['id_acervo_arq']) ? (int)$_POST['id_acervo_arq'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
@@ -1669,9 +1983,10 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
-  // Eliminar pieza de acervo general (AJAX)
+  // Eliminar pieza de acervo numismático (AJAX)
   public function acervo_numismatica_eliminar()
   {
+    $this->check_user_permission('eliminar_acervo_numismatica');
     $id = isset($_POST['id_acervo_numismatica']) ? (int)$_POST['id_acervo_numismatica'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);

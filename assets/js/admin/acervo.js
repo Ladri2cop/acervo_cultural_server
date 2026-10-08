@@ -317,10 +317,13 @@ function mostrarListaPaginada(page = 1, perPage = 10, search = "", tipoAcervo = 
     data: formData,
     error: function (err) {
       console.log(`AJAX error in request: ${JSON.stringify(err, null, 2)}`);
-      toastr.error(
-        "Ocurrió un error al registrar, intenta más tarde",
-        "ERROR!"
-      );
+      let errorMsg = "Ocurrió un error al cargar los datos, intenta más tarde";
+      if (err.responseJSON && err.responseJSON.msg) {
+        errorMsg = err.responseJSON.msg;
+      } else if (err.status === 403) {
+        errorMsg = "No tienes permisos suficientes para realizar esta acción.";
+      }
+      toastr.error(errorMsg, "Acceso Denegado");
       // Ocultar loader y mostrar tabla en caso de error
       if (loader) {
         loader.style.display = "none";
@@ -361,7 +364,23 @@ function mostrarListaPaginada(page = 1, perPage = 10, search = "", tipoAcervo = 
         construirPaginacion(pagination, search, tipoSeleccionado);
       } else {
         console.log(dataresponse);
-        toastr.warning("No se pudieron cargar los datos", "Atención");
+        const msg = dataresponse.msg || "No tienes permisos suficientes para realizar esta acción.";
+        toastr.error(msg, "Acceso Denegado");
+
+        const tablaPiezas = document.getElementById("tabla-piezas");
+        if (tablaPiezas) {
+          tablaPiezas.innerHTML = `
+            <tr>
+              <td colspan="6" class="text-center py-4 text-danger">
+                <i class='bx bx-lock-alt bx-lg mb-2'></i>
+                <p class="mb-0 fw-bold">${msg}</p>
+              </td>
+            </tr>
+          `;
+        }
+        if (paginacion) {
+          paginacion.innerHTML = "";
+        }
       }
     },
   });
@@ -522,9 +541,26 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
       e.preventDefault();
       e.stopPropagation();
       const id = this.getAttribute('data-id');
-      if (confirm('¿Seguro que deseas eliminar esta pieza?')) {
-        eliminarPieza(id, tipoAcervo);
-      }
+
+      Swal.fire({
+        title: '¿Estás seguro?',
+        text: 'Esta acción eliminará el registro seleccionado de forma permanente.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#e74a3b',
+        cancelButtonColor: '#858796',
+        confirmButtonText: '<i class="fas fa-trash me-1"></i> Sí, eliminar',
+        cancelButtonText: 'Cancelar',
+        customClass: {
+          confirmButton: 'btn btn-danger px-4',
+          cancelButton: 'btn btn-secondary px-4'
+        },
+        buttonsStyling: false
+      }).then((result) => {
+        if (result.isConfirmed) {
+          eliminarPieza(id, tipoAcervo);
+        }
+      });
     });
   });
 
@@ -1016,8 +1052,9 @@ document.addEventListener('DOMContentLoaded', function () {
             toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
           }
         },
-        error: function () {
-          toastr.error('Error de red al actualizar', 'Error');
+        error: function (xhr) {
+          const msg = (xhr.responseJSON && xhr.responseJSON.msg) ? xhr.responseJSON.msg : (xhr.status === 403 ? 'No tienes permisos suficientes para realizar esta acción.' : 'Error de red al actualizar.');
+          toastr.error(msg, 'Acceso Denegado');
         }
       });
     });
@@ -1077,8 +1114,9 @@ document.addEventListener('DOMContentLoaded', function () {
             toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
           }
         },
-        error: function () {
-          toastr.error('Error de red al actualizar', 'Error');
+        error: function (xhr) {
+          const msg = (xhr.responseJSON && xhr.responseJSON.msg) ? xhr.responseJSON.msg : (xhr.status === 403 ? 'No tienes permisos suficientes para realizar esta acción.' : 'Error de red al actualizar.');
+          toastr.error(msg, 'Acceso Denegado');
         }
       });
     });
@@ -1131,8 +1169,9 @@ document.addEventListener('DOMContentLoaded', function () {
             toastr.error(resp.msg || 'No se pudo actualizar', 'Error');
           }
         },
-        error: function () {
-          toastr.error('Error de red al actualizar', 'Error');
+        error: function (xhr) {
+          const msg = (xhr.responseJSON && xhr.responseJSON.msg) ? xhr.responseJSON.msg : (xhr.status === 403 ? 'No tienes permisos suficientes para realizar esta acción.' : 'Error de red al actualizar.');
+          toastr.error(msg, 'Acceso Denegado');
         }
       });
     });
@@ -1163,8 +1202,9 @@ function eliminarPieza(id) {
         toastr.error(resp.msg || 'No se pudo eliminar', 'Error');
       }
     },
-    error: function () {
-      toastr.error('Error de red al eliminar', 'Error');
+    error: function (xhr) {
+      const msg = (xhr.responseJSON && xhr.responseJSON.msg) ? xhr.responseJSON.msg : (xhr.status === 403 ? 'No tienes permisos suficientes para realizar esta acción.' : 'Error de red al eliminar.');
+      toastr.error(msg, 'Acceso Denegado');
     }
   });
 }

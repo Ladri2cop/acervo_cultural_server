@@ -158,7 +158,7 @@ define('LDB_PASS', '720./Srv.xi8');
 define('LDB_CHARSET', 'utf8');
 
 // El controlador por defecto / el método por defecto / el controlador de errores por defecto
-define('DEFAULT_CONTROLLER', 'bee');
+define('DEFAULT_CONTROLLER', 'login');
 define('DEFAULT_ERROR_CONTROLLER', 'error');
 define('DEFAULT_METHOD', 'index');
 

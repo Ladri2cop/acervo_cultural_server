@@ -10,8 +10,10 @@ class homeController extends Controller implements ControllerInterface
 
   function index()
   {
-    $this->setTitle('Inicio');
-    $this->setView('index');
-    $this->render();
+    if (Auth::validate()) {
+      Redirect::to('admin');
+    } else {
+      Redirect::to('login');
+    }
   }
 }

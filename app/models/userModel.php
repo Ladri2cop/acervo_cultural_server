@@ -32,9 +32,15 @@ class userModel extends Model {
 
   static function all_paginated()
   {
-    // Todos los registros
-    $sql = sprintf('SELECT * FROM %s ORDER BY id DESC', self::$t1);
+    // Todos los registros con el nombre del rol asignado
+    $sql = sprintf('SELECT u.*, r.nombre as role_name FROM %s u LEFT JOIN bee_roles r ON u.id_role = r.id ORDER BY u.id DESC', self::$t1);
     return PaginationHandler::paginate($sql);
+  }
+
+  static function get_roles()
+  {
+    $sql = 'SELECT * FROM bee_roles ORDER BY id ASC';
+    return ($rows = parent::query($sql)) ? $rows : [];
   }
 
   static function by_id($id)

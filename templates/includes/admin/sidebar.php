@@ -47,13 +47,6 @@
     </a>
   </li>
 
-  <li class="nav-item" data-page="catalogos">
-    <a class="nav-link" href="admin/catalogos">
-      <i class='bx  bx-book'></i>
-      <span>Catálogos</span>
-    </a>
-  </li>
-
   <!-- Divider -->
   <hr class="sidebar-divider">
 
@@ -62,23 +55,7 @@
     GESTIÓN
   </div>
 
-  <!-- Nav Item - Pages Collapse Menu -->
-  <li class="nav-item" data-page="paginas">
-    <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapsePages" aria-expanded="true" aria-controls="collapsePages">
-      <i class='bx  bx-folder'></i>
-      <span>Páginas</span>
-    </a>
-    <div id="collapsePages" class="collapse" aria-labelledby="headingPages" data-parent="#accordionSidebar">
-      <div class="bg-white py-2 collapse-inner rounded">
-        <a class="collapse-item" href="login">Login</a>
-        <a class="collapse-item" href="registro">Registro</a>
-        <a class="collapse-item" href="admin/perfil">Perfil</a>
-        <a class="collapse-item" href="vuejs">Vue3</a>
-      </div>
-    </div>
-  </li>
-
-  <!-- Nav Item - Pages Collapse Menu -->
+  <!-- Nav Item - Usuarios Collapse Menu -->
   <li class="nav-item" data-page="componentes">
     <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapeseUsers" aria-expanded="true" aria-controls="collapeseUsers">
       <i class='bx  bx-group'></i>
@@ -88,22 +65,7 @@
       <div class="bg-white py-2 collapse-inner rounded">
         <h6 class="collapse-header">Gestión de usuarios</h6>
         <a class="collapse-item" href="admin/usuarios">Usuarios</a>
-      </div>
-    </div>
-  </li>
-
-  <!-- Nav Item - Pages Collapse Menu -->
-  <li class="nav-item" data-page="componentes">
-    <a class="nav-link collapsed" href="#" data-toggle="collapse" data-target="#collapseConfig" aria-expanded="true" aria-controls="collapseConfig">
-      <i class='bx  bx-cog'></i>
-      <span>Configuración</span>
-    </a>
-    <div id="collapseConfig" class="collapse" aria-labelledby="headingTwo" data-parent="#accordionSidebar">
-      <div class="bg-white py-2 collapse-inner rounded">
-        <h6 class="collapse-header">Administrador</h6>
-        <a class="collapse-item" href="admin/formularios">Formularios</a>
-        <a class="collapse-item" href="admin/botones">Botones</a>
-        <a class="collapse-item" href="admin/cartas">Cartas</a>
+        <a class="collapse-item" href="admin/roles">Roles y permisos</a>
       </div>
     </div>
   </li>

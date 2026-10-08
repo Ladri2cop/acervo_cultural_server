@@ -38,26 +38,50 @@ select.addEventListener("change", function () {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
+      "X-Requested-With": "XMLHttpRequest",
+      "Accept": "application/json"
     },
     body: formData.toString(),
   })
-    .then((response) => response.json())
+    .then((response) => {
+      if (response.status === 403) {
+        return response.json().then(data => {
+          throw new Error(data.msg || "No tienes permisos suficientes para realizar esta acción.");
+        });
+      }
+      return response.json();
+    })
     .then((data) => {
       const formCard = document.getElementById("formCard");
 
-      if (data.status) {
+      if (data.status === true || data.status === 200) {
         contenedor.innerHTML = data.html;
         if (formCard) formCard.style.display = "block";
         inicializarVistaPrevia(); // Ejecutar script para vista previa
         inicializarEnvioFormulario();
       } else {
-        contenedor.innerHTML = `<div class="alert alert-warning">${data.message}</div>`;
+        const errorMsg = data.msg || data.message || "No tienes permisos suficientes para realizar esta acción.";
+        toastr.error(errorMsg, "Acceso Denegado");
+        contenedor.innerHTML = `
+          <div class="text-center py-5 text-danger">
+            <i class='bx bx-lock-alt bx-lg mb-2'></i>
+            <h5 class="fw-bold">${errorMsg}</h5>
+          </div>
+        `;
         if (formCard) formCard.style.display = "block";
       }
     })
     .catch((error) => {
-      contenedor.innerHTML =
-        '<div class="alert alert-danger">Error al cargar el formulario.</div>';
+      const formCard = document.getElementById("formCard");
+      const errorMsg = error.message || "No tienes permisos suficientes para realizar esta acción.";
+      toastr.error(errorMsg, "Acceso Denegado");
+      contenedor.innerHTML = `
+        <div class="text-center py-5 text-danger">
+          <i class='bx bx-lock-alt bx-lg mb-2'></i>
+          <h5 class="fw-bold">${errorMsg}</h5>
+        </div>
+      `;
+      if (formCard) formCard.style.display = "block";
       console.error("Error en fetch:", error);
     });
 });
@@ -66,7 +90,7 @@ function inicializarVistaPrevia() {
   const imageInput = document.querySelector('input[type="file"]');
   const previewContainer = document.getElementById("previewContainer");
   const previewText = document.getElementById("previewText");
-  const previewIcon = previewContainer.querySelector("i");
+  const previewIcon = previewContainer ? previewContainer.querySelector("i") : null;
 
   if (!imageInput || !previewContainer || !previewText || !previewIcon) return;
 
@@ -114,15 +138,25 @@ function inicializarEnvioFormulario() {
   form.addEventListener("submit", function (e) {
     e.preventDefault(); // 👈 Evita el envío tradicional
 
-    const imagenAcervo = document.getElementById("imageInput");
     const formData = new FormData(form); // 👈 Captura todos los campos y archivos
     const endpoint = form.getAttribute("action") || "admin/post_registro";
 
     fetch(endpoint, {
       method: "POST",
+      headers: {
+        "X-Requested-With": "XMLHttpRequest",
+        "Accept": "application/json"
+      },
       body: formData,
     })
-      .then((response) => response.json())
+      .then((response) => {
+        if (response.status === 403) {
+          return response.json().then(data => {
+            throw new Error(data.msg || "No tienes permisos suficientes para realizar esta acción.");
+          });
+        }
+        return response.json();
+      })
       .then((data) => {
         if (data.status === 200) {
           // ✅ Mostrar mensaje sin redirigir
@@ -131,32 +165,29 @@ function inicializarEnvioFormulario() {
           form.reset();
           const previewImage = document.getElementById("previewImage");
           const previewText = document.getElementById("previewText");
-          const previewIcon = document
-            .getElementById("previewContainer")
-            .querySelector("i");
+          const previewContainer = document.getElementById("previewContainer");
+          const previewIcon = previewContainer ? previewContainer.querySelector("i") : null;
           if (previewImage) {
             previewImage.src = "";
             previewImage.classList.remove("show");
           }
           if (previewText) previewText.style.display = "inline";
           if (previewIcon) previewIcon.style.display = "inline";
-          const previewContainer = document.getElementById("previewContainer");
           if (previewContainer) window.scrollTo({ top: 0, behavior: "smooth" });
-          previewText.classList.remove("name-image_success");
+          if (previewText) previewText.classList.remove("name-image_success");
           if (previewText) previewText.innerText = "No hay imagen seleccionada";
-          if (previewContainer)
-            previewContainer.classList.remove("preview-reverse"); // 👈 reinicia vista previa
+          if (previewContainer) previewContainer.classList.remove("preview-reverse");
         } else {
           toastr.error(
-            data.msg || data.message || "Error al registrar el registro.",
-            "ERROR"
+            data.msg || data.message || "No tienes permisos suficientes para realizar esta acción.",
+            "Acceso Denegado"
           );
           console.error("Error en datos recibidos:", data);
         }
       })
       .catch((error) => {
         console.error("Error al enviar el formulario:", error);
-        toastr.error("Error de red.", "ERROR");
+        toastr.error(error.message || "No tienes permisos suficientes para realizar esta acción.", "Acceso Denegado");
       });
   });
 }
