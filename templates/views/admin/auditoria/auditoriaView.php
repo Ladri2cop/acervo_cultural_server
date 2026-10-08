@@ -29,10 +29,22 @@
     font-family: monospace;
     font-size: 0.82rem;
   }
+  .pagination-container {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px;
+  }
   .pagination-container .pagination,
   .card-body ul.pagination {
     margin-bottom: 0;
     justify-content: center !important;
+  }
+  .pagination-container small {
+    display: block;
+    width: 100%;
+    text-align: center;
   }
 </style>
 
