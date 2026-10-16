@@ -3378,7 +3378,7 @@ class adminController extends Controller implements ControllerInterface
 
       $folio = PrestamosModel::generarFolio($tipoMovimiento);
       $estatus = ($tipoMovimiento === 'transferencia') ? 'completada' : 'activo';
-      $idUser = (int)(get_user_id() ?? (isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : 1));
+      $idUser = (int)(get_user('id') ?: (isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : 1));
 
       $movData = [
         'folio' => $folio,
@@ -3491,7 +3491,7 @@ class adminController extends Controller implements ControllerInterface
         $lugarDevolucion = $mov['lugar_origen'];
       }
 
-      $idUser = (int)(get_user_id() ?? (isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : 1));
+      $idUser = (int)(get_user('id') ?: (isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : 1));
 
       $obsFinal = $mov['observaciones'] ?? '';
       if (!empty($observacionesDevolucion)) {

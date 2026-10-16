@@ -298,4 +298,25 @@ function user_can_delete_acervo(?string $tipo = null): bool
   return user_can('eliminar_acervo_general')
     || user_can('eliminar_acervo_arqueologico')
     || user_can('eliminar_acervo_numismatica');
-}
+}
+
+/**
+ * Obtiene el ID del usuario en sesión actual
+ *
+ * @return int|null
+ */
+function get_user_id(): ?int
+{
+  $id = get_user('id');
+  if ($id) return (int)$id;
+
+  if (isset($_SESSION['user_session']['user']['id'])) {
+    return (int)$_SESSION['user_session']['user']['id'];
+  }
+  if (isset($_SESSION['user']['id'])) {
+    return (int)$_SESSION['user']['id'];
+  }
+
+  return null;
+}
+
