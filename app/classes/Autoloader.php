@@ -20,12 +20,18 @@ class Autoloader
    */
   private static function autoload($class_name)
   {
-    if (is_file(CLASSES . $class_name . '.php')) {
-      require_once CLASSES . $class_name . '.php';
-    } elseif (is_file(CONTROLLERS . $class_name . '.php')) {
-      require_once CONTROLLERS . $class_name . '.php';
-    } elseif (is_file(MODELS . $class_name . '.php')) {
-      require_once MODELS . $class_name . '.php';
+    $candidates = [$class_name, lcfirst($class_name)];
+    foreach ($candidates as $name) {
+      if (is_file(CLASSES . $name . '.php')) {
+        require_once CLASSES . $name . '.php';
+        return;
+      } elseif (is_file(CONTROLLERS . $name . '.php')) {
+        require_once CONTROLLERS . $name . '.php';
+        return;
+      } elseif (is_file(MODELS . $name . '.php')) {
+        require_once MODELS . $name . '.php';
+        return;
+      }
     }
   }
 }

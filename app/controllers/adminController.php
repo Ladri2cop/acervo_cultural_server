@@ -3202,6 +3202,437 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  // =========================================================================
+  // MÓDULO: PRÉSTAMOS Y TRANSFERENCIAS DE ACERVO
+  // =========================================================================
+
+  public function prestamos_transferencias()
+  {
+    if (!is_admin_user()) {
+      Flasher::error('Acceso denegado. Solo administradores pueden gestionar préstamos y transferencias.');
+      Redirect::to(user_can_view_acervo() ? 'admin/acervo' : 'admin');
+      exit;
+    }
+
+    $db = Db::connect();
+    $stmt = $db->query("SELECT id_museo, nombre_museo, ubicacion, responsable_museo FROM museos WHERE status = 1 ORDER BY nombre_museo ASC");
+    $museos = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+
+    $this->setTitle('Préstamos y Transferencias de Acervo');
+    $this->addToData('slug', 'prestamos_transferencias');
+    $this->addToData('museos', $museos);
+    $this->setView('prestamos/prestamos');
+    $this->render();
+  }
+
+  public function get_prestamos_transferencias_data()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    try {
+      $tipoMovimiento = isset($_REQUEST['tipo_movimiento']) ? trim($_REQUEST['tipo_movimiento']) : 'todos';
+      $estatus = isset($_REQUEST['estatus']) ? trim($_REQUEST['estatus']) : 'todos';
+      $tipoAcervo = isset($_REQUEST['tipo_acervo']) ? trim($_REQUEST['tipo_acervo']) : 'todos';
+      $search = isset($_REQUEST['search']) ? trim($_REQUEST['search']) : '';
+      $page = isset($_REQUEST['page']) ? max(1, (int)$_REQUEST['page']) : 1;
+      $perPage = isset($_REQUEST['per_page']) ? max(5, (int)$_REQUEST['per_page']) : 10;
+
+      $filters = [
+        'tipo_movimiento' => $tipoMovimiento,
+        'estatus' => $estatus,
+        'tipo_acervo' => $tipoAcervo,
+        'search' => $search
+      ];
+
+      $kpis = PrestamosModel::getKPIs();
+      $result = PrestamosModel::getMovimientosList($filters, $page, $perPage);
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'data' => $result['data'],
+        'kpis' => $kpis,
+        'total' => $result['total'],
+        'page' => $result['page'],
+        'per_page' => $result['per_page'],
+        'total_pages' => $result['total_pages']
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al obtener datos de movimientos: ' . $e->getMessage()
+      ]);
+    }
+    exit;
+  }
+
+  public function buscar_piezas_para_movimiento()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    try {
+      $search = isset($_REQUEST['q']) ? trim($_REQUEST['q']) : '';
+      $tipoAcervo = isset($_REQUEST['tipo_acervo']) ? trim($_REQUEST['tipo_acervo']) : 'todos';
+      $limit = isset($_REQUEST['limit']) ? min(100, max(5, (int)$_REQUEST['limit'])) : 25;
+
+      $piezas = PrestamosModel::buscarPiezasDisponibles($search, $tipoAcervo, $limit);
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'data' => $piezas
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al buscar piezas: ' . $e->getMessage()
+      ]);
+    }
+    exit;
+  }
+
+  public function post_crear_movimiento()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. Solo administradores pueden registrar préstamos y transferencias.']);
+      exit;
+    }
+
+    try {
+      $tipoMovimiento = isset($_POST['tipo_movimiento']) ? trim($_POST['tipo_movimiento']) : '';
+      $tipoAcervo = isset($_POST['tipo_acervo']) ? trim($_POST['tipo_acervo']) : '';
+      $idPieza = isset($_POST['id_pieza']) ? (int)$_POST['id_pieza'] : 0;
+      $tipoOrigen = isset($_POST['tipo_origen']) ? trim($_POST['tipo_origen']) : 'museo';
+      $lugarOrigen = isset($_POST['lugar_origen']) ? trim($_POST['lugar_origen']) : '';
+      $responsableOrigen = isset($_POST['responsable_origen']) ? trim($_POST['responsable_origen']) : '';
+      $tipoDestino = isset($_POST['tipo_destino']) ? trim($_POST['tipo_destino']) : 'museo';
+      $lugarDestino = isset($_POST['lugar_destino']) ? trim($_POST['lugar_destino']) : '';
+      $responsableDestino = isset($_POST['responsable_destino']) ? trim($_POST['responsable_destino']) : '';
+      $fechaSalida = isset($_POST['fecha_salida']) ? trim($_POST['fecha_salida']) : date('Y-m-d');
+      $fechaDevolucionEstimada = isset($_POST['fecha_devolucion_estimada']) ? trim($_POST['fecha_devolucion_estimada']) : null;
+      $motivo = isset($_POST['motivo']) ? trim($_POST['motivo']) : '';
+      $noOficio = isset($_POST['no_oficio_autorizacion']) ? trim($_POST['no_oficio_autorizacion']) : null;
+      $condicionesEntrega = isset($_POST['condiciones_entrega']) ? trim($_POST['condiciones_entrega']) : null;
+      $observaciones = isset($_POST['observaciones']) ? trim($_POST['observaciones']) : null;
+
+      if (!in_array($tipoMovimiento, ['prestamo', 'transferencia'])) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'Debe seleccionar un tipo de movimiento válido (Préstamo o Transferencia).']);
+        exit;
+      }
+
+      if (!in_array($tipoAcervo, ['general', 'arqueologico', 'numismatica']) || $idPieza <= 0) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'Debe seleccionar una pieza válida del catálogo.']);
+        exit;
+      }
+
+      if (empty($lugarOrigen) || empty($lugarDestino)) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'El lugar de origen y el lugar de destino son obligatorios.']);
+        exit;
+      }
+
+      if (empty($fechaSalida)) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'La fecha de salida es obligatoria.']);
+        exit;
+      }
+
+      if ($tipoMovimiento === 'prestamo' && empty($fechaDevolucionEstimada)) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'Para préstamos temporales, la fecha estimada de devolución es obligatoria.']);
+        exit;
+      }
+
+      if ($tipoMovimiento === 'prestamo' && !empty($fechaDevolucionEstimada) && $fechaDevolucionEstimada < $fechaSalida) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'La fecha estimada de devolución no puede ser anterior a la fecha de salida.']);
+        exit;
+      }
+
+      if (empty($motivo)) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'El motivo del movimiento es obligatorio.']);
+        exit;
+      }
+
+      // Validar existencia de pieza y estatus aprobado
+      $pieza = PrestamosModel::obtenerDetallePieza($tipoAcervo, $idPieza);
+      if (!$pieza) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 404, 'msg' => 'La pieza seleccionada no fue encontrada en el catálogo.']);
+        exit;
+      }
+
+      $folio = PrestamosModel::generarFolio($tipoMovimiento);
+      $estatus = ($tipoMovimiento === 'transferencia') ? 'completada' : 'activo';
+      $idUser = (int)(get_user_id() ?? (isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : 1));
+
+      $movData = [
+        'folio' => $folio,
+        'tipo_movimiento' => $tipoMovimiento,
+        'tipo_acervo' => $tipoAcervo,
+        'id_pieza' => $idPieza,
+        'codigo_interno_pieza' => $pieza['codigo_interno'] ?? '',
+        'titulo_pieza' => $pieza['titulo'] ?? ($pieza['nombre_titulo_pieza'] ?? ''),
+        'tipo_origen' => $tipoOrigen,
+        'lugar_origen' => $lugarOrigen,
+        'responsable_origen' => $responsableOrigen,
+        'tipo_destino' => $tipoDestino,
+        'lugar_destino' => $lugarDestino,
+        'responsable_destino' => $responsableDestino,
+        'fecha_salida' => $fechaSalida,
+        'fecha_devolucion_estimada' => ($tipoMovimiento === 'prestamo') ? $fechaDevolucionEstimada : null,
+        'motivo' => $motivo,
+        'no_oficio_autorizacion' => $noOficio,
+        'condiciones_entrega' => $condicionesEntrega,
+        'observaciones' => $observaciones,
+        'estatus' => $estatus,
+        'id_usuario_registro' => $idUser
+      ];
+
+      $idMovimiento = PrestamosModel::addMovimiento($movData);
+
+      if (!$idMovimiento) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 500, 'msg' => 'No se pudo guardar el registro del movimiento.']);
+        exit;
+      }
+
+      // Actualizar ubicación física de la pieza
+      if ($tipoMovimiento === 'transferencia') {
+        $nuevaUbicacion = $lugarDestino;
+      } else {
+        $nuevaUbicacion = sprintf('En préstamo en: %s (Folio: %s)', $lugarDestino, $folio);
+      }
+      PrestamosModel::actualizarUbicacionPieza($tipoAcervo, $idPieza, $nuevaUbicacion);
+
+      // Auditoría
+      $descAudit = sprintf(
+        'Registro de %s con folio %s para la pieza %s (Origen: %s -> Destino: %s)',
+        ucfirst($tipoMovimiento),
+        $folio,
+        $movData['codigo_interno_pieza'],
+        $lugarOrigen,
+        $lugarDestino
+      );
+      registrar_auditoria('INSERT', 'prestamos_transferencias', $idMovimiento, $descAudit);
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 201,
+        'msg' => sprintf('Movimiento registrado exitosamente con folio %s.', $folio),
+        'folio' => $folio,
+        'id' => $idMovimiento
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al registrar movimiento: ' . $e->getMessage()
+      ]);
+    }
+    exit;
+  }
+
+  public function post_devolver_prestamo()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. Solo administradores pueden gestionar devoluciones.']);
+      exit;
+    }
+
+    try {
+      $idMovimiento = isset($_POST['id_movimiento']) ? (int)$_POST['id_movimiento'] : 0;
+      $fechaDevolucion = isset($_POST['fecha_devolucion_real']) ? trim($_POST['fecha_devolucion_real']) : date('Y-m-d H:i:s');
+      $lugarDevolucion = isset($_POST['lugar_devolucion']) ? trim($_POST['lugar_devolucion']) : '';
+      $condicionesDevolucion = isset($_POST['condiciones_devolucion']) ? trim($_POST['condiciones_devolucion']) : '';
+      $observacionesDevolucion = isset($_POST['observaciones_devolucion']) ? trim($_POST['observaciones_devolucion']) : '';
+
+      if ($idMovimiento <= 0) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'ID de movimiento no válido.']);
+        exit;
+      }
+
+      $mov = PrestamosModel::getById($idMovimiento);
+      if (!$mov) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 404, 'msg' => 'El movimiento especificado no existe.']);
+        exit;
+      }
+
+      if ($mov['tipo_movimiento'] !== 'prestamo') {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'Solo los préstamos temporales admiten registro de devolución.']);
+        exit;
+      }
+
+      if ($mov['estatus'] !== 'activo') {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'El préstamo ya no se encuentra en estatus activo.']);
+        exit;
+      }
+
+      if (empty($lugarDevolucion)) {
+        $lugarDevolucion = $mov['lugar_origen'];
+      }
+
+      $idUser = (int)(get_user_id() ?? (isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : 1));
+
+      $obsFinal = $mov['observaciones'] ?? '';
+      if (!empty($observacionesDevolucion)) {
+        $obsFinal = trim($obsFinal . "\n[Devolución " . date('d/m/Y H:i') . "]: " . $observacionesDevolucion);
+      }
+
+      $updateData = [
+        'estatus' => 'devuelto',
+        'fecha_devolucion_real' => $fechaDevolucion,
+        'lugar_devolucion' => $lugarDevolucion,
+        'condiciones_devolucion' => $condicionesDevolucion,
+        'observaciones' => $obsFinal,
+        'id_usuario_devolucion' => $idUser
+      ];
+
+      PrestamosModel::updateMovimiento($idMovimiento, $updateData);
+
+      // Reincorporar pieza a su ubicación de retorno
+      PrestamosModel::actualizarUbicacionPieza($mov['tipo_acervo'], $mov['id_pieza'], $lugarDevolucion);
+
+      // Auditoría
+      $descAudit = sprintf(
+        'Devolución de préstamo registrada para folio %s. Pieza %s reincorporada en %s',
+        $mov['folio'],
+        $mov['codigo_interno_pieza'],
+        $lugarDevolucion
+      );
+      registrar_auditoria('UPDATE', 'prestamos_transferencias', $idMovimiento, $descAudit);
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'msg' => sprintf('Devolución del préstamo %s registrada exitosamente. La pieza ha sido reincorporada a %s.', $mov['folio'], $lugarDevolucion)
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al registrar devolución: ' . $e->getMessage()
+      ]);
+    }
+    exit;
+  }
+
+  public function get_detalle_movimiento()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    try {
+      $id = isset($_REQUEST['id']) ? (int)$_REQUEST['id'] : 0;
+      if ($id <= 0) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'ID no válido']);
+        exit;
+      }
+
+      $mov = PrestamosModel::getById($id);
+      if (!$mov) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 404, 'msg' => 'Movimiento no encontrado']);
+        exit;
+      }
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'data' => $mov
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al obtener detalle del movimiento: ' . $e->getMessage()
+      ]);
+    }
+    exit;
+  }
+
+  public function post_cancelar_movimiento()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    try {
+      $id = isset($_POST['id_movimiento']) ? (int)$_POST['id_movimiento'] : 0;
+      $motivoCancelacion = isset($_POST['motivo_cancelacion']) ? trim($_POST['motivo_cancelacion']) : '';
+
+      if ($id <= 0) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'ID no válido']);
+        exit;
+      }
+
+      $mov = PrestamosModel::getById($id);
+      if (!$mov) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 404, 'msg' => 'Movimiento no encontrado']);
+        exit;
+      }
+
+      if ($mov['estatus'] === 'cancelado') {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'El movimiento ya se encuentra cancelado']);
+        exit;
+      }
+
+      $obs = $mov['observaciones'] ?? '';
+      $obs = trim($obs . "\n[Cancelado el " . date('d/m/Y H:i') . "]: " . $motivoCancelacion);
+
+      PrestamosModel::updateMovimiento($id, [
+        'estatus' => 'cancelado',
+        'observaciones' => $obs
+      ]);
+
+      // Revertir ubicación de la pieza a lugar_origen
+      PrestamosModel::actualizarUbicacionPieza($mov['tipo_acervo'], $mov['id_pieza'], $mov['lugar_origen']);
+
+      registrar_auditoria('UPDATE', 'prestamos_transferencias', $id, sprintf('Cancelación del movimiento folio %s. Ubicación revertida a %s', $mov['folio'], $mov['lugar_origen']));
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'msg' => 'Movimiento cancelado exitosamente. La ubicación de la pieza fue revertida a su origen.'
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al cancelar movimiento: ' . $e->getMessage()
+      ]);
+    }
+    exit;
+  }
+
 }
 
 function obtenerCamposAcervoGeneral()

@@ -60,6 +60,12 @@
       <span>Revisión de Acervo</span>
     </a>
   </li>
+  <li class="nav-item" data-page="prestamos_transferencias">
+    <a class="nav-link" href="admin/prestamos_transferencias">
+      <i class='bx bx-transfer-alt'></i>
+      <span>Préstamos y Transferencias</span>
+    </a>
+  </li>
   <?php endif; ?>
 
   <?php if (is_admin_user()): ?>
