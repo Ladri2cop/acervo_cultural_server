@@ -155,7 +155,7 @@ define('LDB_HOST', 'localhost');
 define('LDB_NAME', 'db_framework');
 define('LDB_USER', 'srvccm');
 define('LDB_PASS', '720./Srv.xi8');
-define('LDB_CHARSET', 'utf8');
+define('LDB_CHARSET', 'utf8mb4');
 
 // El controlador por defecto / el método por defecto / el controlador de errores por defecto
 define('DEFAULT_CONTROLLER', 'login');

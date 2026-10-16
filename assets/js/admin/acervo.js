@@ -495,11 +495,39 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
     }
   }
 
+  const permisos = (window.permisosAcervo && window.permisosAcervo[tipoAcervo])
+    ? window.permisosAcervo[tipoAcervo]
+    : { editar: false, eliminar: false };
+
+  const puedeEditar = Boolean(permisos.editar);
+  const puedeEliminar = Boolean(permisos.eliminar);
+
   piezas.forEach((pieza) => {
     const fila = document.createElement("tr");
     const codigoTxt = pieza.codigo_interno || '-';
     const autorTxt = pieza.autor || '-';
-    const tieneEdicion = true;
+
+    let opcionesDropdown = `
+      <li><a class="dropdown-item btn-ver" href="javascript:void(0);" data-id="${pieza.id}" data-tipo="${tipoAcervo}"> <i class='bx text-info bx__iconmenu bx-eye-alt'></i> Ver</a></li>
+    `;
+
+    if (puedeEditar) {
+      opcionesDropdown += `
+        <li><a class="dropdown-item btn-editar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i> Editar</a></li>
+      `;
+    }
+
+    opcionesDropdown += `
+      <li><a class="dropdown-item btn-ficha" href="javascript:void(0);" data-id="${pieza.id}" data-tipo="${tipoAcervo}"><i class='bx text-success bx__iconmenu bx-file'></i> Ficha Técnica</a></li>
+    `;
+
+    if (puedeEliminar) {
+      opcionesDropdown += `
+        <hr class="dropdown-divider">
+        <li><a class="dropdown-item btn-eliminar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-danger bx__iconmenu bx-trash'></i> Eliminar</a></li>
+      `;
+    }
+
     fila.innerHTML = `
         <td><img src="${pieza.image}" alt="${pieza.nombre}" class="img__miniatura" /></td>
         <td>${pieza.nombre || '-'}</td>
@@ -512,11 +540,7 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
               <i class='bx bx-caret-down'></i> 
             </button>
             <ul class="dropdown-menu">
-              <li><a class="dropdown-item btn-ver" href="javascript:void(0);" data-id="${pieza.id}" data-tipo="${tipoAcervo}"> <i class='bx text-info bx__iconmenu bx-eye-alt'></i> Ver</a></li>
-              ${tieneEdicion ? `<li><a class="dropdown-item btn-editar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-warning bx__iconmenu bx-pencil-circle'></i> Editar</a></li>` : ''}
-              <li><a class="dropdown-item btn-ficha" href="javascript:void(0);" data-id="${pieza.id}" data-tipo="${tipoAcervo}"><i class='bx text-success bx__iconmenu bx-file'></i> Ficha Técnica</a></li>
-              <hr class="dropdown-divider">
-              <li><a class="dropdown-item btn-eliminar" href="javascript:void(0);" data-id="${pieza.id}"><i class='bx text-danger bx__iconmenu bx-trash'></i> Eliminar</a></li>
+              ${opcionesDropdown}
             </ul>
           </div>
         </td>
@@ -545,61 +569,65 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
     });
   });
 
-  tabla.querySelectorAll('.btn-eliminar').forEach(btn => {
-    btn.addEventListener('click', function (e) {
-      e.preventDefault();
-      e.stopPropagation();
-      const id = this.getAttribute('data-id');
+  if (puedeEliminar) {
+    tabla.querySelectorAll('.btn-eliminar').forEach(btn => {
+      btn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        const id = this.getAttribute('data-id');
 
-      Swal.fire({
-        title: '¿Estás seguro?',
-        text: 'Esta acción eliminará el registro seleccionado de forma permanente.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#e74a3b',
-        cancelButtonColor: '#858796',
-        confirmButtonText: '<i class="fas fa-trash me-1"></i> Sí, eliminar',
-        cancelButtonText: 'Cancelar',
-        customClass: {
-          confirmButton: 'btn btn-danger px-4',
-          cancelButton: 'btn btn-secondary px-4'
-        },
-        buttonsStyling: false
-      }).then((result) => {
-        if (result.isConfirmed) {
-          eliminarPieza(id, tipoAcervo);
-        }
+        Swal.fire({
+          title: '¿Estás seguro?',
+          text: 'Esta acción eliminará el registro seleccionado de forma permanente.',
+          icon: 'warning',
+          showCancelButton: true,
+          confirmButtonColor: '#e74a3b',
+          cancelButtonColor: '#858796',
+          confirmButtonText: '<i class="fas fa-trash me-1"></i> Sí, eliminar',
+          cancelButtonText: 'Cancelar',
+          customClass: {
+            confirmButton: 'btn btn-danger px-4',
+            cancelButton: 'btn btn-secondary px-4'
+          },
+          buttonsStyling: false
+        }).then((result) => {
+          if (result.isConfirmed) {
+            eliminarPieza(id, tipoAcervo);
+          }
+        });
       });
     });
-  });
+  }
 
-  if (tipoAcervo === 'general') {
-    tabla.querySelectorAll('.btn-editar').forEach(btn => {
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = this.getAttribute('data-id');
-        abrirModalEditarPieza(id, 'general');
+  if (puedeEditar) {
+    if (tipoAcervo === 'general') {
+      tabla.querySelectorAll('.btn-editar').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = this.getAttribute('data-id');
+          abrirModalEditarPieza(id, 'general');
+        });
       });
-    });
-  } else if (tipoAcervo === 'arqueologico') {
-    tabla.querySelectorAll('.btn-editar').forEach(btn => {
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = this.getAttribute('data-id');
-        abrirModalEditarPiezaArq(id);
+    } else if (tipoAcervo === 'arqueologico') {
+      tabla.querySelectorAll('.btn-editar').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = this.getAttribute('data-id');
+          abrirModalEditarPiezaArq(id);
+        });
       });
-    });
-  } else if (tipoAcervo === 'numismatica') {
-    tabla.querySelectorAll('.btn-editar').forEach(btn => {
-      btn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        const id = this.getAttribute('data-id');
-        abrirModalEditarPiezaNum(id);
+    } else if (tipoAcervo === 'numismatica') {
+      tabla.querySelectorAll('.btn-editar').forEach(btn => {
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          const id = this.getAttribute('data-id');
+          abrirModalEditarPiezaNum(id);
+        });
       });
-    });
+    }
   }
 }
 
@@ -629,7 +657,15 @@ function setSelectValueOrAppend(selectId, value) {
   select.val(valToSet);
 }
 
-function abrirModalEditarPiezaNum(id) {
+function abrirModalEditarPiezaNum(id, esCorreccion = false) {
+  const permisos = (window.permisosAcervo && window.permisosAcervo.numismatica)
+    ? window.permisosAcervo.numismatica
+    : { editar: false, eliminar: false };
+  if (!permisos.editar && !esCorreccion && !(window.currentUser && window.currentUser.isAdmin)) {
+    toastr.error('No tienes permisos para editar piezas de acervo numismático.', 'Acceso Denegado');
+    return;
+  }
+
   let formData = new FormData();
   formData.append('id', id);
   formData.append('csrf', Bee.csrf);
@@ -671,7 +707,12 @@ function abrirModalEditarPiezaNum(id) {
           inputFotografiaNum.value = '';
         }
 
-        const modalNum = new bootstrap.Modal(document.getElementById('modalEditarPiezaNum'));
+        const modalEl = document.getElementById('modalEditarPiezaNum');
+        if (!modalEl) {
+          toastr.error('No se pudo encontrar el formulario de edición numismático.', 'Error');
+          return;
+        }
+        const modalNum = new bootstrap.Modal(modalEl);
         modalNum.show();
       } else {
         toastr.error('No se pudo obtener la información de la pieza numismática', 'Error');
@@ -683,7 +724,15 @@ function abrirModalEditarPiezaNum(id) {
   });
 }
 
-function abrirModalEditarPiezaArq(id) {
+function abrirModalEditarPiezaArq(id, esCorreccion = false) {
+  const permisos = (window.permisosAcervo && window.permisosAcervo.arqueologico)
+    ? window.permisosAcervo.arqueologico
+    : { editar: false, eliminar: false };
+  if (!permisos.editar && !esCorreccion && !(window.currentUser && window.currentUser.isAdmin)) {
+    toastr.error('No tienes permisos para editar piezas de acervo arqueológico.', 'Acceso Denegado');
+    return;
+  }
+
   let formData = new FormData();
   formData.append('id', id);
   formData.append('csrf', Bee.csrf);
@@ -732,7 +781,12 @@ function abrirModalEditarPiezaArq(id) {
           inputFotografiaArq.value = '';
         }
 
-        const modalArq = new bootstrap.Modal(document.getElementById('modalEditarPiezaArq'));
+        const modalEl = document.getElementById('modalEditarPiezaArq');
+        if (!modalEl) {
+          toastr.error('No tienes permisos para editar piezas de acervo arqueológico.', 'Acceso Denegado');
+          return;
+        }
+        const modalArq = new bootstrap.Modal(modalEl);
         modalArq.show();
       } else {
         toastr.error('No se pudo obtener la información de la pieza arqueológica', 'Error');
@@ -891,7 +945,15 @@ function abrirModalVerPieza(id, tipoAcervo = 'general') {
 }
 
 // Abre el modal de edición y rellena los campos
-function abrirModalEditarPieza(id, tipoAcervo = 'general') {
+function abrirModalEditarPieza(id, tipoAcervo = 'general', esCorreccion = false) {
+  const permisos = (window.permisosAcervo && window.permisosAcervo[tipoAcervo])
+    ? window.permisosAcervo[tipoAcervo]
+    : { editar: false, eliminar: false };
+  if (!permisos.editar && !esCorreccion && !(window.currentUser && window.currentUser.isAdmin)) {
+    toastr.error('No tienes permisos para editar piezas de este acervo.', 'Acceso Denegado');
+    return;
+  }
+
   // Petición AJAX para obtener todos los datos de la pieza
   let formData = new FormData();
   formData.append('id', id);
@@ -981,7 +1043,12 @@ function abrirModalEditarPieza(id, tipoAcervo = 'general') {
           inputFotografia.value = '';
         }
 
-        const modal = new bootstrap.Modal(document.getElementById('modalEditarPieza'));
+        const modalEl = document.getElementById(tipoAcervo === 'arqueologico' ? 'modalEditarPiezaArq' : 'modalEditarPieza');
+        if (!modalEl) {
+          toastr.error('No tienes permisos para editar piezas de este acervo.', 'Acceso Denegado');
+          return;
+        }
+        const modal = new bootstrap.Modal(modalEl);
         modal.show();
       } else {
         toastr.error('No se pudo obtener la información de la pieza', 'Error');
@@ -1054,6 +1121,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
             const searchTerm = $('#buscar-registro').val() || '';
             mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
+            if (typeof window.cargarMisRegistros === 'function') {
+              window.cargarMisRegistros();
+            }
             // Cerrar el modal
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarPieza'));
             if (modal) modal.hide();
@@ -1117,6 +1187,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
             const searchTerm = $('#buscar-registro').val() || '';
             mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
+            if (typeof window.cargarMisRegistros === 'function') {
+              window.cargarMisRegistros();
+            }
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarPiezaArq'));
             if (modal) modal.hide();
           } else {
@@ -1172,6 +1245,9 @@ document.addEventListener('DOMContentLoaded', function () {
             const perPage = parseInt($('#numeroRegistros').val(), 10) || 10;
             const searchTerm = $('#buscar-registro').val() || '';
             mostrarListaPaginada(1, perPage, searchTerm, tipoAcervo);
+            if (typeof window.cargarMisRegistros === 'function') {
+              window.cargarMisRegistros();
+            }
             const modal = bootstrap.Modal.getInstance(document.getElementById('modalEditarPiezaNum'));
             if (modal) modal.hide();
           } else {
@@ -1190,6 +1266,14 @@ document.addEventListener('DOMContentLoaded', function () {
 // Eliminar pieza por ID
 function eliminarPieza(id) {
   const tipoAcervo = $('#tipo_registro').val() || 'general';
+  const permisos = (window.permisosAcervo && window.permisosAcervo[tipoAcervo])
+    ? window.permisosAcervo[tipoAcervo]
+    : { editar: false, eliminar: false };
+  if (!permisos.eliminar) {
+    toastr.error('No tienes permisos suficientes para eliminar registros de este acervo.', 'Acceso Denegado');
+    return;
+  }
+
   const config = obtenerConfiguracionAcervo(tipoAcervo);
   let formData = new FormData();
   formData.append('id', id);
@@ -1431,3 +1515,248 @@ function cargarAniosDinamicos() {
     }
   });
 }
+
+// ==========================================================
+// MÓDULO: MIS REGISTROS EN REVISIÓN (SEMÁFORO CAPTURISTA)
+// ==========================================================
+
+let estadoMisRegistros = {
+  tipo: 'todos',
+  semaforo: 'todos',
+  search: '',
+  cargando: false
+};
+
+window.cargarMisRegistros = function () {
+  const tbody = document.getElementById('tbody-mis-registros');
+  if (!tbody) return;
+
+  tbody.innerHTML = `
+    <tr>
+      <td colspan="8" class="text-center py-4 text-muted">
+        <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+        Cargando mis registros...
+      </td>
+    </tr>
+  `;
+
+  const params = new URLSearchParams({
+    tipo: estadoMisRegistros.tipo,
+    semaforo: estadoMisRegistros.semaforo,
+    search: estadoMisRegistros.search
+  });
+
+  fetch(`admin/get_mis_registros?${params.toString()}`, {
+    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+  })
+    .then(res => res.json())
+    .then(resp => {
+      if (resp.status === 200) {
+        actualizarMisKpis(resp.kpis);
+        renderizarTablaMisRegistros(resp.data);
+      } else {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" class="text-center py-4 text-danger">
+              <i class='bx bx-error'></i> ${resp.msg || 'Error al obtener mis registros.'}
+            </td>
+          </tr>
+        `;
+      }
+    })
+    .catch(err => {
+      console.error(err);
+      tbody.innerHTML = `
+        <tr>
+          <td colspan="8" class="text-center py-4 text-danger">
+            <i class='bx bx-wifi-off'></i> Error de conexión con el servidor.
+          </td>
+        </tr>
+      `;
+    });
+};
+
+function actualizarMisKpis(kpis) {
+  if (!kpis) return;
+  const elPend = document.getElementById('mis-kpi-pendientes');
+  const elCamb = document.getElementById('mis-kpi-cambios');
+  const elRech = document.getElementById('mis-kpi-rechazados');
+  const elApro = document.getElementById('mis-kpi-aprobados');
+  const badgeCambios = document.getElementById('badge-mis-cambios-pendientes');
+
+  if (elPend) elPend.textContent = Number(kpis.pendientes || 0).toLocaleString();
+  if (elCamb) elCamb.textContent = Number(kpis.cambios || 0).toLocaleString();
+  if (elRech) elRech.textContent = Number(kpis.rechazados || 0).toLocaleString();
+  if (elApro) elApro.textContent = Number(kpis.aprobados || 0).toLocaleString();
+
+  if (badgeCambios) {
+    const numCambios = Number(kpis.cambios || 0);
+    if (numCambios > 0) {
+      badgeCambios.textContent = `${numCambios} por corregir`;
+      badgeCambios.style.display = 'inline-block';
+    } else {
+      badgeCambios.style.display = 'none';
+    }
+  }
+}
+
+function renderizarTablaMisRegistros(filas) {
+  const tbody = document.getElementById('tbody-mis-registros');
+  if (!tbody) return;
+
+  if (!filas || filas.length === 0) {
+    tbody.innerHTML = `
+      <tr>
+        <td colspan="8" class="text-center py-5 text-muted">
+          <i class='bx bx-folder-open fa-3x d-block mb-2 text-gray-400'></i>
+          <strong>No se encontraron registros con los filtros seleccionados.</strong>
+        </td>
+      </tr>
+    `;
+    const badge = document.getElementById('badge-total-mis-registros');
+    if (badge) badge.textContent = '0 piezas';
+    return;
+  }
+
+  const badge = document.getElementById('badge-total-mis-registros');
+  if (badge) badge.textContent = `${filas.length} pieza${filas.length === 1 ? '' : 's'}`;
+
+  let html = '';
+  filas.forEach(p => {
+    const fotoUrl = p.fotografia_url ? p.fotografia_url : 'assets/images/preview.svg';
+    const badgeTipo = p.tipo === 'arqueologico' 
+      ? '<span class="badge bg-light text-info border border-info">Arqueológico</span>'
+      : (p.tipo === 'numismatica' ? '<span class="badge bg-light text-warning border border-warning">Numismática</span>' : '<span class="badge bg-light text-primary border border-primary">General</span>');
+
+    let semaforoBadge = '';
+    let obsBox = '';
+
+    if (p.estatus_revision === 'aprobado') {
+      semaforoBadge = `<span class="badge bg-success text-white py-1 px-2"><i class='bx bxs-check-circle me-1'></i> Aprobado (Verde)</span>`;
+      obsBox = `<div class="small text-success"><i class='bx bx-check-double'></i> Aprobado y publicado en el catálogo oficial</div>`;
+    } else if (p.estatus_revision === 'cambios_solicitados') {
+      semaforoBadge = `<span class="badge bg-warning text-dark py-1 px-2"><i class='bx bxs-error me-1'></i> Cambios (Amarillo)</span>`;
+      obsBox = `
+        <div class="p-2 rounded bg-warning bg-opacity-10 border border-warning small text-dark">
+          <strong class="d-block text-warning-emphasis"><i class='bx bx-edit-alt'></i> Correcciones del Administrador:</strong>
+          <span>${escapeHtmlAcervo(p.observacion_revision || 'Favor de corregir ortografía o datos señalados.')}</span>
+        </div>
+      `;
+    } else if (p.estatus_revision === 'rechazado') {
+      semaforoBadge = `<span class="badge bg-danger text-white py-1 px-2"><i class='bx bxs-x-circle me-1'></i> Rechazado (Rojo)</span>`;
+      obsBox = `
+        <div class="p-2 rounded bg-danger bg-opacity-10 border border-danger small text-danger">
+          <strong class="d-block"><i class='bx bx-x-circle'></i> Motivo de Rechazo:</strong>
+          <span>${escapeHtmlAcervo(p.observacion_revision || 'Registro no admitido.')}</span>
+        </div>
+      `;
+    } else {
+      semaforoBadge = `<span class="badge bg-primary text-white py-1 px-2"><i class='bx bxs-time-five me-1'></i> En Revisión</span>`;
+      obsBox = `<span class="text-muted small fst-italic">En espera de evaluación por el administrador</span>`;
+    }
+
+    const fecha = p.created_at ? p.created_at.substring(0, 16) : 'S/F';
+
+    html += `
+      <tr>
+        <td class="text-center">
+          <img src="${fotoUrl}" alt="Miniatura" class="rounded border" style="width: 48px; height: 48px; object-fit: cover;">
+        </td>
+        <td><span class="fw-bold font-monospace">${escapeHtmlAcervo(p.codigo_interno || 'S/C')}</span></td>
+        <td>
+          <span class="fw-semibold text-dark">${escapeHtmlAcervo(p.titulo || 'Sin Título')}</span>
+        </td>
+        <td>${badgeTipo}</td>
+        <td><small class="text-muted"><i class='bx bx-calendar'></i> ${escapeHtmlAcervo(fecha)}</small></td>
+        <td>${semaforoBadge}</td>
+        <td>${obsBox}</td>
+        <td class="text-center">
+          <div class="d-flex justify-content-center gap-1">
+            <button type="button" class="btn btn-sm btn-outline-info" title="Ver Detalle" onclick="window.verMiPieza('${p.tipo}', ${p.id})">
+              <i class='bx bx-show'></i> Ver
+            </button>
+            ${p.estatus_revision === 'cambios_solicitados' ? `
+              <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" title="Corregir y Reenviar a Revisión" onclick="window.corregirMiPieza('${p.tipo}', ${p.id})">
+                <i class='bx bx-edit'></i> Corregir y Reenviar
+              </button>
+            ` : ''}
+          </div>
+        </td>
+      </tr>
+    `;
+  });
+
+  tbody.innerHTML = html;
+}
+
+window.verMiPieza = function (tipo, id) {
+  abrirModalVerPieza(id, tipo);
+};
+
+window.corregirMiPieza = function (tipo, id) {
+  if (tipo === 'general') {
+    abrirModalEditarPieza(id, 'general', true);
+  } else if (tipo === 'arqueologico') {
+    abrirModalEditarPiezaArq(id, true);
+  } else if (tipo === 'numismatica') {
+    abrirModalEditarPiezaNum(id, true);
+  }
+};
+
+function escapeHtmlAcervo(text) {
+  if (text === null || text === undefined) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// Inicializar listeners de "Mis Registros en Revisión"
+document.addEventListener('DOMContentLoaded', function () {
+  const tabMisRegistros = document.getElementById('tab-mis-registros');
+  if (tabMisRegistros) {
+    tabMisRegistros.addEventListener('shown.bs.tab', function () {
+      window.cargarMisRegistros();
+    });
+  }
+
+  const btnRecargar = document.getElementById('btn-recargar-mis-registros');
+  if (btnRecargar) {
+    btnRecargar.addEventListener('click', function () {
+      window.cargarMisRegistros();
+    });
+  }
+
+  const filtroTipo = document.getElementById('filtro_mis_tipo');
+  if (filtroTipo) {
+    filtroTipo.addEventListener('change', function () {
+      estadoMisRegistros.tipo = this.value;
+      window.cargarMisRegistros();
+    });
+  }
+
+  const filtroSemaforo = document.getElementById('filtro_mis_semaforo');
+  if (filtroSemaforo) {
+    filtroSemaforo.addEventListener('change', function () {
+      estadoMisRegistros.semaforo = this.value;
+      window.cargarMisRegistros();
+    });
+  }
+
+  const searchInput = document.getElementById('busqueda_mis_registros');
+  let timeoutMisSearch = null;
+  if (searchInput) {
+    searchInput.addEventListener('input', function () {
+      clearTimeout(timeoutMisSearch);
+      timeoutMisSearch = setTimeout(function () {
+        estadoMisRegistros.search = searchInput.value.trim();
+        window.cargarMisRegistros();
+      }, 350);
+    });
+  }
+
+  // Pre-cargar contador de cambios al entrar
+  window.cargarMisRegistros();
+});

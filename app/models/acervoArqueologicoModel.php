@@ -7,30 +7,7 @@ class AcervoArqueologicoModel extends Model
 
     public static function getById($id)
     {
-        $sql = "SELECT 
-            id_acervo_arq,
-            codigo_interno,
-            no_inventario_scyt,
-            no_registro_inah,
-            otros,
-            nombre_titulo_pieza,
-            fotografia,
-            numero_pieza_por_lote,
-            epoca,
-            procedencia,
-            material,
-            medidas,
-            forma,
-            tecnica_manufactura,
-            tecnica_decorativa,
-            coleccion,
-            obtencion,
-            ubicacion_fisica,
-            estado_conservacion,
-            observaciones,
-            descripcion,
-            representacion
-        FROM " . self::$table . " WHERE " . self::$primaryKey . " = :id LIMIT 1";
+        $sql = "SELECT * FROM " . self::$table . " WHERE " . self::$primaryKey . " = :id LIMIT 1";
         $params = ['id' => $id];
         $rows = parent::query($sql, $params);
         return $rows ? $rows : [];
@@ -52,7 +29,15 @@ class AcervoArqueologicoModel extends Model
 
     public static function addPieza($data)
     {
-        $data['status'] = 1;
+        if (!isset($data['status'])) {
+            $data['status'] = 0;
+        }
+        if (!isset($data['estatus_revision'])) {
+            $data['estatus_revision'] = 'pendiente';
+        }
+        if (!isset($data['id_usuario_creador'])) {
+            $data['id_usuario_creador'] = get_user('id') ?: null;
+        }
         $data['created_at'] = now();
         return parent::add(self::$table, $data);
     }
@@ -80,7 +65,7 @@ class AcervoArqueologicoModel extends Model
      */
     public static function getAll($limit = null, $offset = null)
     {
-        $sql = "SELECT * FROM " . self::$table . " WHERE status = 1 ORDER BY id_acervo_arq DESC";
+        $sql = "SELECT * FROM " . self::$table . " WHERE status = 1 AND estatus_revision = 'aprobado' ORDER BY id_acervo_arq DESC";
         $params = [];
         if ($limit !== null && $offset !== null) {
             $sql .= " LIMIT :offset, :limit";
@@ -97,9 +82,8 @@ class AcervoArqueologicoModel extends Model
      */
     public static function getTotal()
     {
-        $sql = "SELECT COUNT(*) as total FROM " . self::$table . " WHERE status = 1";
+        $sql = "SELECT COUNT(*) as total FROM " . self::$table . " WHERE status = 1 AND estatus_revision = 'aprobado'";
         $rows = parent::query($sql);
         return $rows && isset($rows[0]['total']) ? (int)$rows[0]['total'] : 0;
     }
-
 }

@@ -1,35 +1,62 @@
 <?php require_once INCLUDES . 'admin/dashboardTop.php'; ?>
 
 <div class="col-12 d-flex flex-direction-column flex-wrap">
-  <!-- Formulario para agregar usuario -->
-  <div class="container-fluid mb-4">
-    <div class="row g-2 align-items-end flex-wrap">
 
+  <!-- Selector de Pestañas: Catálogo Oficial Autorizado vs Mis Registros en Revisión -->
+  <div class="container-fluid mb-3">
+    <ul class="nav nav-pills custom-acervo-pills bg-white p-2 rounded shadow-sm border" id="pills-acervo-tabs" role="tablist">
+      <li class="nav-item" role="presentation">
+        <button class="nav-link active font-weight-bold" id="tab-catalogo-autorizado" data-bs-toggle="pill" data-bs-target="#panel-catalogo-autorizado" type="button" role="tab" aria-controls="panel-catalogo-autorizado" aria-selected="true">
+          <i class='bx bx-check-double text-success'></i> Catálogo Oficial Autorizado
+        </button>
+      </li>
+      <li class="nav-item" role="presentation">
+        <button class="nav-link font-weight-bold position-relative" id="tab-mis-registros" data-bs-toggle="pill" data-bs-target="#panel-mis-registros" type="button" role="tab" aria-controls="panel-mis-registros" aria-selected="false">
+          <i class='bx bx-time-five text-warning'></i> Mis Registros en Revisión
+          <span class="badge rounded-pill bg-warning text-dark ms-1" id="badge-mis-cambios-pendientes" style="display: none;">0</span>
+        </button>
+      </li>
+      <?php if (is_admin_user()): ?>
+      <li class="nav-item ms-auto" role="presentation">
+        <a href="admin/revision" class="btn btn-outline-primary btn-sm my-1 font-weight-bold">
+          <i class='bx bx-shield-quarter'></i> Ir a Estación de Revisión Admin
+        </a>
+      </li>
+      <?php endif; ?>
+    </ul>
+  </div>
 
-      <!-- Filtro: Tipo de registro -->
-      <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-        <div class="card shadow h-100">
-          <div class="card-header py-2">
-            <h6 class="m-0 font-weight-bold text-primary title__card">
-              <i class='bx bx-arch'></i> Tipo de acervo
-            </h6>
+  <div class="tab-content w-100" id="acervoTabsContent">
+    <!-- PANEL 1: Catálogo Oficial Autorizado -->
+    <div class="tab-pane fade show active" id="panel-catalogo-autorizado" role="tabpanel" aria-labelledby="tab-catalogo-autorizado">
+      <!-- Filtros de catálogo -->
+      <div class="container-fluid mb-4">
+        <div class="row g-2 align-items-end flex-wrap">
+
+          <!-- Filtro: Tipo de registro -->
+          <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+            <div class="card shadow h-100">
+              <div class="card-header py-2">
+                <h6 class="m-0 font-weight-bold text-primary title__card">
+                  <i class='bx bx-arch'></i> Tipo de acervo
+                </h6>
+              </div>
+              <div class="card-body">
+                <select name="tipo_registro" id="tipo_registro" class="form-select">
+                  <option value="" hidden>Seleccione...</option>
+                  <?php if (user_can('ver_acervo_general')): ?>
+                    <option value="general">Acervo General</option>
+                  <?php endif; ?>
+                  <?php if (user_can('ver_acervo_arqueologico')): ?>
+                    <option value="arqueologico">Acervo Arqueológico</option>
+                  <?php endif; ?>
+                  <?php if (user_can('ver_acervo_numismatica')): ?>
+                    <option value="numismatica">Acervo Numismático</option>
+                  <?php endif; ?>
+                </select>
+              </div>
+            </div>
           </div>
-          <div class="card-body">
-            <select name="tipo_registro" id="tipo_registro" class="form-select">
-              <option value="" hidden>Seleccione...</option>
-              <?php if (user_can('ver_acervo_general')): ?>
-                <option value="general">Acervo General</option>
-              <?php endif; ?>
-              <?php if (user_can('ver_acervo_arqueologico')): ?>
-                <option value="arqueologico">Acervo Arqueológico</option>
-              <?php endif; ?>
-              <?php if (user_can('ver_acervo_numismatica')): ?>
-                <option value="numismatica">Acervo Numismático</option>
-              <?php endif; ?>
-            </select>
-          </div>
-        </div>
-      </div>
 
 
 
@@ -135,9 +162,151 @@
       </div>
     </div>
   </div>
+    </div>
+    <!-- FIN PANEL 1 -->
+
+    <!-- PANEL 2: Mis Registros en Revisión (Semáforo) -->
+    <div class="tab-pane fade" id="panel-mis-registros" role="tabpanel" aria-labelledby="tab-mis-registros">
+      <div class="container-fluid px-0 mb-4">
+        <!-- Banner Informativo -->
+        <div class="alert alert-light border shadow-sm mb-4">
+          <div class="d-flex align-items-center">
+            <div class="me-3">
+              <i class='bx bx-shield-quarter text-primary' style="font-size: 2.3rem;"></i>
+            </div>
+            <div>
+              <h6 class="font-weight-bold text-gray-800 mb-1">
+                Estado de Revisión de Mis Piezas Registradas (Semáforo Institucional)
+              </h6>
+              <p class="text-muted small mb-0">
+                Consulte el dictamen del administrador para cada una de las piezas que ha registrado. Si el administrador solicita cambios (<span class="badge bg-warning text-dark">Amarillo</span>), revise las observaciones de corrección y pulse en <strong>"Corregir y Reenviar"</strong> para reenviar la pieza a revisión.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tarjetas Resumen Semáforo de Mis Registros -->
+        <div class="row g-3 mb-4">
+          <div class="col-6 col-md-3">
+            <div class="card border-left-primary shadow-sm h-100 py-2">
+              <div class="card-body py-2">
+                <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">En Revisión</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800" id="mis-kpi-pendientes">0</div>
+                <small class="text-muted">Esperando dictamen</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card border-left-warning shadow-sm h-100 py-2">
+              <div class="card-body py-2">
+                <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Requieren Cambios (Amarillo)</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800" id="mis-kpi-cambios">0</div>
+                <small class="text-muted">Por corregir y reenviar</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card border-left-danger shadow-sm h-100 py-2">
+              <div class="card-body py-2">
+                <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Rechazados (Rojo)</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800" id="mis-kpi-rechazados">0</div>
+                <small class="text-muted">No aprobados</small>
+              </div>
+            </div>
+          </div>
+          <div class="col-6 col-md-3">
+            <div class="card border-left-success shadow-sm h-100 py-2">
+              <div class="card-body py-2">
+                <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Aprobados (Verde)</div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800" id="mis-kpi-aprobados">0</div>
+                <small class="text-muted">Publicados en catálogo</small>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filtros y Búsqueda en Mis Registros -->
+        <div class="card shadow-sm mb-4">
+          <div class="card-body py-3">
+            <div class="row g-2 align-items-center">
+              <div class="col-12 col-md-5">
+                <div class="input-group input-group-sm">
+                  <span class="input-group-text bg-white"><i class='bx bx-search'></i></span>
+                  <input type="text" id="busqueda_mis_registros" class="form-control" placeholder="Buscar por código, título o motivo...">
+                </div>
+              </div>
+              <div class="col-6 col-md-3">
+                <select id="filtro_mis_tipo" class="form-select form-select-sm">
+                  <option value="todos">Todos los acervos</option>
+                  <option value="general">Acervo General</option>
+                  <option value="arqueologico">Acervo Arqueológico</option>
+                  <option value="numismatica">Acervo Numismático</option>
+                </select>
+              </div>
+              <div class="col-6 col-md-3">
+                <select id="filtro_mis_semaforo" class="form-select form-select-sm">
+                  <option value="todos">Todos los semáforos</option>
+                  <option value="cambios_solicitados">Amarillo - Cambios Solicitados</option>
+                  <option value="pendiente">Pendientes de revisión</option>
+                  <option value="rechazado">Rojo - Rechazados</option>
+                  <option value="aprobado">Verde - Aprobados</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-1 text-end">
+                <button type="button" class="btn btn-sm btn-outline-primary w-100" id="btn-recargar-mis-registros" title="Actualizar">
+                  <i class='bx bx-refresh'></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabla de Mis Registros -->
+        <div class="card shadow mb-4">
+          <div class="card-header py-3 bg-white d-flex justify-content-between align-items-center border-bottom">
+            <h6 class="m-0 font-weight-bold text-primary">
+              <i class='bx bx-list-check'></i> Mis Piezas Registradas
+              <span class="badge bg-light text-dark ms-2 font-weight-normal" id="badge-total-mis-registros">0 piezas</span>
+            </h6>
+          </div>
+          <div class="card-body p-0">
+            <div class="table-responsive">
+              <table class="table table-hover align-middle mb-0" id="tabla-mis-registros">
+                <thead class="table-light">
+                  <tr>
+                    <th style="width: 65px;">Foto</th>
+                    <th style="width: 140px;">Código</th>
+                    <th>Título / Denominación</th>
+                    <th style="width: 130px;">Acervo</th>
+                    <th style="width: 140px;">Fecha Registro</th>
+                    <th style="width: 170px;">Semáforo</th>
+                    <th style="width: 250px;">Observaciones del Administrador</th>
+                    <th class="text-center" style="width: 170px;">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody id="tbody-mis-registros">
+                  <tr>
+                    <td colspan="8" class="text-center py-4 text-muted">
+                      <div class="spinner-border spinner-border-sm text-primary me-2" role="status"></div>
+                      Cargando mis registros...
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- FIN PANEL 2 -->
+  </div>
+  <!-- FIN TAB-CONTENT -->
+
 </div>
+<!-- FIN COL-12 -->
 
 <!-- Modal para editar pieza -->
+<?php if (user_can('editar_acervo_general') || user_can('registrar_acervo_general') || is_admin_user()): ?>
 <div class="modal fade" id="modalEditarPieza" tabindex="-1" aria-labelledby="modalEditarPiezaLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -324,8 +493,10 @@
     </div>
   </div>
 </div>
+<?php endif; ?>
 
 <!-- Modal para editar pieza de acervo arqueológico -->
+<?php if (user_can('editar_acervo_arqueologico') || user_can('registrar_acervo_arqueologico') || is_admin_user()): ?>
 <div class="modal fade" id="modalEditarPiezaArq" tabindex="-1" aria-labelledby="modalEditarPiezaArqLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -498,8 +669,10 @@
     </div>
   </div>
 </div>
+<?php endif; ?>
 
 <!-- Modal para editar pieza de acervo numismático -->
+<?php if (user_can('editar_acervo_numismatica') || user_can('registrar_acervo_numismatica') || is_admin_user()): ?>
 <div class="modal fade" id="modalEditarPiezaNum" tabindex="-1" aria-labelledby="modalEditarPiezaNumLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -639,6 +812,7 @@
     </div>
   </div>
 </div>
+<?php endif; ?>
 
 <!-- Modal para ver detalles de la pieza -->
 <div class="modal fade" id="modalVerPieza" tabindex="-1" aria-labelledby="modalVerPiezaLabel" aria-hidden="true">
@@ -1020,5 +1194,26 @@
     </div>
   </div>
 </div>
+
+<script>
+  window.permisosAcervo = {
+    general: {
+      editar: <?php echo user_can('editar_acervo_general') ? 'true' : 'false'; ?>,
+      eliminar: <?php echo user_can('eliminar_acervo_general') ? 'true' : 'false'; ?>
+    },
+    arqueologico: {
+      editar: <?php echo user_can('editar_acervo_arqueologico') ? 'true' : 'false'; ?>,
+      eliminar: <?php echo user_can('eliminar_acervo_arqueologico') ? 'true' : 'false'; ?>
+    },
+    numismatica: {
+      editar: <?php echo user_can('editar_acervo_numismatica') ? 'true' : 'false'; ?>,
+      eliminar: <?php echo user_can('eliminar_acervo_numismatica') ? 'true' : 'false'; ?>
+    }
+  };
+  window.currentUser = {
+    id: <?php echo (int)(get_user('id') ?: 0); ?>,
+    isAdmin: <?php echo is_admin_user() ? 'true' : 'false'; ?>
+  };
+</script>
 
 <?php require_once INCLUDES . 'admin/dashboardBottom.php'; ?>

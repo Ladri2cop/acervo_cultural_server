@@ -54,6 +54,15 @@
   <?php endif; ?>
 
   <?php if (is_admin_user()): ?>
+  <li class="nav-item" data-page="revision">
+    <a class="nav-link" href="admin/revision">
+      <i class='bx bx-check-shield'></i>
+      <span>Revisión de Acervo</span>
+    </a>
+  </li>
+  <?php endif; ?>
+
+  <?php if (is_admin_user()): ?>
     <!-- Divider -->
     <hr class="sidebar-divider">
 

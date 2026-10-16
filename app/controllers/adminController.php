@@ -1068,7 +1068,7 @@ class adminController extends Controller implements ControllerInterface
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 200,
-        'msg' => 'Registro guardado correctamente',
+        'msg' => 'Registro guardado exitosamente. La pieza ha sido enviada para revisión y autorización del administrador.',
         'id' => $id
       ]);
     } else {
@@ -1136,7 +1136,7 @@ class adminController extends Controller implements ControllerInterface
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 200,
-        'msg' => 'Registro guardado correctamente',
+        'msg' => 'Registro guardado exitosamente. La pieza ha sido enviada para revisión y autorización del administrador.',
         'id' => $id
       ]);
     } else {
@@ -1197,7 +1197,7 @@ class adminController extends Controller implements ControllerInterface
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 200,
-        'msg' => 'Registro guardado correctamente',
+        'msg' => 'Registro guardado exitosamente. La pieza ha sido enviada para revisión y autorización del administrador.',
         'id' => $id
       ]);
     } else {
@@ -1898,7 +1898,6 @@ class adminController extends Controller implements ControllerInterface
   // Editar pieza de acervo general (AJAX)
   public function acervo_general_editar()
   {
-    $this->check_user_permission('editar_acervo_general');
     $id = isset($_POST['id_acervo_general']) ? (int)$_POST['id_acervo_general'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
@@ -1906,7 +1905,21 @@ class adminController extends Controller implements ControllerInterface
     }
     require_once APP . 'models/acervoGeneralModel.php';
     $piezaActual = AcervoGeneralModel::getById($id);
-    $fotoActual = ($piezaActual && isset($piezaActual[0]['fotografia'])) ? $piezaActual[0]['fotografia'] : '';
+    if (!$piezaActual || !isset($piezaActual[0])) {
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+    $piezaRow = $piezaActual[0];
+    $userId = get_user('id');
+    $puedeEditar = is_admin_user() || user_can('editar_acervo_general');
+    $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+
+    if (!$puedeEditar && !$esCreadorEnRevision) {
+      echo json_encode(['status' => 403, 'msg' => 'No tienes permisos para editar esta pieza.']);
+      exit;
+    }
+
+    $fotoActual = $piezaRow['fotografia'] ?? '';
 
     $data = $_POST;
     unset($data['id_acervo_general']);
@@ -1935,13 +1948,29 @@ class adminController extends Controller implements ControllerInterface
       $data['fotografia'] = $fotoActual;
     }
 
+    $reingresaRevision = ($esCreadorEnRevision || ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+    if ($reingresaRevision) {
+      $data['estatus_revision'] = 'pendiente';
+      $data['status'] = 0;
+      $data['observacion_revision'] = null;
+    }
+
     $ok = AcervoGeneralModel::updatePieza($id, $data);
     if ($ok) {
       $piezaDespues = AcervoGeneralModel::getById($id);
-      $datosAntesJson = ($piezaActual && isset($piezaActual[0])) ? $piezaActual[0] : $piezaActual;
+      $datosAntesJson = $piezaRow;
       $datosDespuesJson = ($piezaDespues && isset($piezaDespues[0])) ? $piezaDespues[0] : $piezaDespues;
-      registrar_auditoria('UPDATE', 'acervo_general', $id, 'Edición de pieza de acervo general', 5, null, $datosAntesJson, $datosDespuesJson);
-      echo json_encode(['status' => 200, 'msg' => 'Pieza actualizada correctamente']);
+      
+      $accionAuditoria = $reingresaRevision ? 'REENVIAR_REVISION' : 'UPDATE';
+      $descAuditoria = $reingresaRevision 
+        ? 'Corrección y reenvío a revisión de pieza de acervo general' 
+        : 'Edición de pieza de acervo general';
+      registrar_auditoria($accionAuditoria, 'acervo_general', $id, $descAuditoria, 5, null, $datosAntesJson, $datosDespuesJson);
+
+      $msgExito = $reingresaRevision
+        ? 'Registro corregido y reenviado a revisión del administrador exitosamente.'
+        : 'Pieza actualizada correctamente';
+      echo json_encode(['status' => 200, 'msg' => $msgExito]);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
     }
@@ -1951,7 +1980,6 @@ class adminController extends Controller implements ControllerInterface
   // Editar pieza de acervo arqueológico (AJAX)
   public function acervo_arq_editar()
   {
-    $this->check_user_permission('editar_acervo_arqueologico');
     $id = isset($_POST['id_acervo_arq']) ? (int)$_POST['id_acervo_arq'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
@@ -1959,7 +1987,21 @@ class adminController extends Controller implements ControllerInterface
     }
     require_once APP . 'models/acervoArqueologicoModel.php';
     $piezaActual = AcervoArqueologicoModel::getById($id);
-    $fotoActual = ($piezaActual && isset($piezaActual[0]['fotografia'])) ? $piezaActual[0]['fotografia'] : '';
+    if (!$piezaActual || !isset($piezaActual[0])) {
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+    $piezaRow = $piezaActual[0];
+    $userId = get_user('id');
+    $puedeEditar = is_admin_user() || user_can('editar_acervo_arqueologico');
+    $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+
+    if (!$puedeEditar && !$esCreadorEnRevision) {
+      echo json_encode(['status' => 403, 'msg' => 'No tienes permisos para editar esta pieza.']);
+      exit;
+    }
+
+    $fotoActual = $piezaRow['fotografia'] ?? '';
 
     $data = $_POST;
     unset($data['id_acervo_arq']);
@@ -1988,13 +2030,29 @@ class adminController extends Controller implements ControllerInterface
       $data['fotografia'] = $fotoActual;
     }
 
+    $reingresaRevision = ($esCreadorEnRevision || ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+    if ($reingresaRevision) {
+      $data['estatus_revision'] = 'pendiente';
+      $data['status'] = 0;
+      $data['observacion_revision'] = null;
+    }
+
     $ok = AcervoArqueologicoModel::updatePieza($id, $data);
     if ($ok) {
       $piezaDespues = AcervoArqueologicoModel::getById($id);
-      $datosAntesJson = ($piezaActual && isset($piezaActual[0])) ? $piezaActual[0] : $piezaActual;
+      $datosAntesJson = $piezaRow;
       $datosDespuesJson = ($piezaDespues && isset($piezaDespues[0])) ? $piezaDespues[0] : $piezaDespues;
-      registrar_auditoria('UPDATE', 'acervo_arqueologico', $id, 'Edición de pieza de acervo arqueológico', 3, null, $datosAntesJson, $datosDespuesJson);
-      echo json_encode(['status' => 200, 'msg' => 'Pieza actualizada correctamente']);
+      
+      $accionAuditoria = $reingresaRevision ? 'REENVIAR_REVISION' : 'UPDATE';
+      $descAuditoria = $reingresaRevision 
+        ? 'Corrección y reenvío a revisión de pieza de acervo arqueológico' 
+        : 'Edición de pieza de acervo arqueológico';
+      registrar_auditoria($accionAuditoria, 'acervo_arqueologico', $id, $descAuditoria, 3, null, $datosAntesJson, $datosDespuesJson);
+
+      $msgExito = $reingresaRevision
+        ? 'Registro corregido y reenviado a revisión del administrador exitosamente.'
+        : 'Pieza actualizada correctamente';
+      echo json_encode(['status' => 200, 'msg' => $msgExito]);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
     }
@@ -2004,7 +2062,6 @@ class adminController extends Controller implements ControllerInterface
   // Editar pieza de acervo numismático (AJAX)
   public function acervo_numismatica_editar()
   {
-    $this->check_user_permission('editar_acervo_numismatica');
     $id = isset($_POST['id_acervo_numismatica']) ? (int)$_POST['id_acervo_numismatica'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
@@ -2012,7 +2069,21 @@ class adminController extends Controller implements ControllerInterface
     }
     require_once APP . 'models/acervoNumismaticaModel.php';
     $piezaActual = AcervoNumismaticaModel::getById($id);
-    $fotoActual = ($piezaActual && isset($piezaActual[0]['fotografia'])) ? $piezaActual[0]['fotografia'] : '';
+    if (!$piezaActual || !isset($piezaActual[0])) {
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+    $piezaRow = $piezaActual[0];
+    $userId = get_user('id');
+    $puedeEditar = is_admin_user() || user_can('editar_acervo_numismatica');
+    $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+
+    if (!$puedeEditar && !$esCreadorEnRevision) {
+      echo json_encode(['status' => 403, 'msg' => 'No tienes permisos para editar esta pieza.']);
+      exit;
+    }
+
+    $fotoActual = $piezaRow['fotografia'] ?? '';
 
     $data = $_POST;
     unset($data['id_acervo_numismatica']);
@@ -2041,13 +2112,29 @@ class adminController extends Controller implements ControllerInterface
       $data['fotografia'] = $fotoActual;
     }
 
+    $reingresaRevision = ($esCreadorEnRevision || ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+    if ($reingresaRevision) {
+      $data['estatus_revision'] = 'pendiente';
+      $data['status'] = 0;
+      $data['observacion_revision'] = null;
+    }
+
     $ok = AcervoNumismaticaModel::updatePieza($id, $data);
     if ($ok) {
       $piezaDespues = AcervoNumismaticaModel::getById($id);
-      $datosAntesJson = ($piezaActual && isset($piezaActual[0])) ? $piezaActual[0] : $piezaActual;
+      $datosAntesJson = $piezaRow;
       $datosDespuesJson = ($piezaDespues && isset($piezaDespues[0])) ? $piezaDespues[0] : $piezaDespues;
-      registrar_auditoria('UPDATE', 'acervo_numismatica', $id, 'Edición de pieza numismática', 4, null, $datosAntesJson, $datosDespuesJson);
-      echo json_encode(['status' => 200, 'msg' => 'Pieza actualizada correctamente']);
+      
+      $accionAuditoria = $reingresaRevision ? 'REENVIAR_REVISION' : 'UPDATE';
+      $descAuditoria = $reingresaRevision 
+        ? 'Corrección y reenvío a revisión de pieza numismática' 
+        : 'Edición de pieza numismática';
+      registrar_auditoria($accionAuditoria, 'acervo_numismatica', $id, $descAuditoria, 4, null, $datosAntesJson, $datosDespuesJson);
+
+      $msgExito = $reingresaRevision
+        ? 'Registro corregido y reenviado a revisión del administrador exitosamente.'
+        : 'Pieza actualizada correctamente';
+      echo json_encode(['status' => 200, 'msg' => $msgExito]);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
     }
@@ -2449,6 +2536,574 @@ class adminController extends Controller implements ControllerInterface
     $pdf->streamPdf(true);
     $pdf->setOrientation('portrait');
     $pdf->create('ficha_tecnica_' . $tipo . '_' . $id, $html, false);
+    exit;
+  }
+
+  // ==========================================================
+  // MÓDULO DE REVISIÓN Y SEMÁFORO DE ACERVO
+  // ==========================================================
+
+  private function resolverTablaAcervo($tipo)
+  {
+    switch ($tipo) {
+      case 'arqueologico':
+        return [
+          'tabla' => 'acervo_arqueologico',
+          'pk' => 'id_acervo_arq',
+          'modulo' => 3,
+          'nombre' => 'Acervo Arqueológico',
+          'model' => 'AcervoArqueologicoModel'
+        ];
+      case 'numismatica':
+        return [
+          'tabla' => 'acervo_numismatica',
+          'pk' => 'id_acervo_numismatica',
+          'modulo' => 4,
+          'nombre' => 'Acervo Numismático',
+          'model' => 'AcervoNumismaticaModel'
+        ];
+      case 'general':
+      default:
+        return [
+          'tabla' => 'acervo_general',
+          'pk' => 'id_acervo_general',
+          'modulo' => 5,
+          'nombre' => 'Acervo General',
+          'model' => 'AcervoGeneralModel'
+        ];
+    }
+  }
+
+  public function revision()
+  {
+    if (!is_admin_user()) {
+      Flasher::error('Acceso denegado. Solo administradores pueden gestionar la revisión.');
+      Redirect::to(user_can_view_acervo() ? 'admin/acervo' : 'admin');
+      exit;
+    }
+
+    $this->setTitle('Revisión y Autorización de Acervo');
+    $this->addToData('slug', 'revision');
+    $this->setView('revision/revision');
+    $this->render();
+  }
+
+  public function get_revision_data()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    $tipo = isset($_REQUEST['tipo']) ? trim($_REQUEST['tipo']) : 'todos';
+    $semaforo = isset($_REQUEST['semaforo']) ? trim($_REQUEST['semaforo']) : 'todos';
+    $search = isset($_REQUEST['search']) ? trim($_REQUEST['search']) : '';
+    $page = isset($_REQUEST['page']) ? max(1, (int)$_REQUEST['page']) : 1;
+    $perPage = isset($_REQUEST['per_page']) ? max(5, (int)$_REQUEST['per_page']) : 10;
+    $offset = ($page - 1) * $perPage;
+
+    $db = Db::connect();
+
+    // KPIs globales (o filtrados por tipo si no es 'todos')
+    $kpiGeneralSql = ($tipo === 'arqueologico' || $tipo === 'numismatica') ? '' : "SELECT estatus_revision FROM acervo_general";
+    $kpiArqSql = ($tipo === 'general' || $tipo === 'numismatica') ? '' : "SELECT estatus_revision FROM acervo_arqueologico";
+    $kpiNumSql = ($tipo === 'general' || $tipo === 'arqueologico') ? '' : "SELECT estatus_revision FROM acervo_numismatica";
+
+    $kpiSubqueries = array_filter([$kpiGeneralSql, $kpiArqSql, $kpiNumSql]);
+    $kpiUnion = implode(' UNION ALL ', $kpiSubqueries);
+
+    $kpis = [
+      'pendientes' => 0,
+      'cambios' => 0,
+      'rechazados' => 0,
+      'aprobados' => 0,
+      'total' => 0
+    ];
+
+    if (!empty($kpiUnion)) {
+      $stmtKpi = $db->query("
+        SELECT 
+          SUM(CASE WHEN estatus_revision = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
+          SUM(CASE WHEN estatus_revision = 'cambios_solicitados' THEN 1 ELSE 0 END) AS cambios,
+          SUM(CASE WHEN estatus_revision = 'rechazado' THEN 1 ELSE 0 END) AS rechazados,
+          SUM(CASE WHEN estatus_revision = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
+          COUNT(*) AS total
+        FROM ({$kpiUnion}) AS t_kpi
+      ");
+      $kpiRow = $stmtKpi ? $stmtKpi->fetch(PDO::FETCH_ASSOC) : null;
+      if ($kpiRow) {
+        $kpis = [
+          'pendientes' => (int)($kpiRow['pendientes'] ?? 0),
+          'cambios' => (int)($kpiRow['cambios'] ?? 0),
+          'rechazados' => (int)($kpiRow['rechazados'] ?? 0),
+          'aprobados' => (int)($kpiRow['aprobados'] ?? 0),
+          'total' => (int)($kpiRow['total'] ?? 0)
+        ];
+      }
+    }
+
+    // Armar subconsultas para listado
+    $listSubqueries = [];
+    if ($tipo === 'todos' || $tipo === 'general') {
+      $listSubqueries[] = "SELECT 'general' AS tipo, id_acervo_general AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_general";
+    }
+    if ($tipo === 'todos' || $tipo === 'arqueologico') {
+      $listSubqueries[] = "SELECT 'arqueologico' AS tipo, id_acervo_arq AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_arqueologico";
+    }
+    if ($tipo === 'todos' || $tipo === 'numismatica') {
+      $listSubqueries[] = "SELECT 'numismatica' AS tipo, id_acervo_numismatica AS id, codigo_interno, denominacion AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_numismatica";
+    }
+
+    $subQuery = implode(' UNION ALL ', $listSubqueries);
+
+    $whereParts = [];
+    $params = [];
+
+    try {
+      if ($semaforo !== 'todos' && in_array($semaforo, ['pendiente', 'cambios_solicitados', 'rechazado', 'aprobado'])) {
+        $whereParts[] = "t.estatus_revision = :semaforo";
+        $params['semaforo'] = $semaforo;
+      }
+
+      if ($search !== '') {
+        $whereParts[] = "(t.codigo_interno LIKE :s1 OR t.titulo LIKE :s2 OR uc.username LIKE :s3 OR t.observacion_revision LIKE :s4)";
+        $term = '%' . $search . '%';
+        $params['s1'] = $term;
+        $params['s2'] = $term;
+        $params['s3'] = $term;
+        $params['s4'] = $term;
+      }
+
+      $whereSql = !empty($whereParts) ? 'WHERE ' . implode(' AND ', $whereParts) : '';
+
+      $countSql = "SELECT COUNT(*) FROM ({$subQuery}) AS t LEFT JOIN bee_users uc ON t.id_usuario_creador = uc.id {$whereSql}";
+      $stmtCount = $db->prepare($countSql);
+      $stmtCount->execute($params);
+      $totalRecords = (int)$stmtCount->fetchColumn();
+
+      $sql = "
+        SELECT t.*, uc.username AS creador_username, ur.username AS revisor_username
+        FROM ({$subQuery}) AS t
+        LEFT JOIN bee_users uc ON t.id_usuario_creador = uc.id
+        LEFT JOIN bee_users ur ON t.id_usuario_revisor = ur.id
+        {$whereSql}
+        ORDER BY 
+          CASE t.estatus_revision 
+            WHEN 'pendiente' THEN 1 
+            WHEN 'cambios_solicitados' THEN 2 
+            WHEN 'rechazado' THEN 3 
+            ELSE 4 
+          END, 
+          t.created_at DESC, 
+          t.id DESC
+        LIMIT :offset, :limit
+      ";
+      $stmt = $db->prepare($sql);
+      foreach ($params as $k => $v) {
+        $stmt->bindValue(':' . $k, $v);
+      }
+      $stmt->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+      $stmt->bindValue(':limit', (int)$perPage, PDO::PARAM_INT);
+      $stmt->execute();
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+      foreach ($rows as &$r) {
+        $r['fotografia_url'] = !empty($r['fotografia']) ? 'assets/uploads/' . $r['fotografia'] : '';
+      }
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'data' => $rows,
+        'kpis' => $kpis,
+        'total' => $totalRecords,
+        'page' => $page,
+        'per_page' => $perPage,
+        'total_pages' => ceil($totalRecords / $perPage)
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al obtener datos de revisión: ' . $e->getMessage()
+      ]);
+    }
+    exit;
+  }
+
+  public function get_pieza_detalle_revision()
+  {
+    $tipo = $_REQUEST['tipo'] ?? 'general';
+    $id = isset($_REQUEST['id']) ? (int)$_REQUEST['id'] : 0;
+    if ($id <= 0) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+
+    $info = $this->resolverTablaAcervo($tipo);
+    $db = Db::connect();
+    $sql = "
+      SELECT t.*, uc.username AS creador_username, uc.email AS creador_email, ur.username AS revisor_username
+      FROM {$info['tabla']} t
+      LEFT JOIN bee_users uc ON t.id_usuario_creador = uc.id
+      LEFT JOIN bee_users ur ON t.id_usuario_revisor = ur.id
+      WHERE t.{$info['pk']} = :id
+      LIMIT 1
+    ";
+    $stmt = $db->prepare($sql);
+    $stmt->execute(['id' => $id]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    if ($row) {
+      $row['fotografia_url'] = !empty($row['fotografia']) ? 'assets/uploads/' . $row['fotografia'] : '';
+      $row['tipo_acervo_label'] = $info['nombre'];
+      $row['tipo_acervo'] = $tipo;
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 200, 'data' => $row]);
+    } else {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+    }
+    exit;
+  }
+
+  public function autorizar_pieza()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    $tipo = $_POST['tipo'] ?? 'general';
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    if ($id <= 0) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+
+    $info = $this->resolverTablaAcervo($tipo);
+    $db = Db::connect();
+
+    $stmtAntes = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
+    $stmtAntes->execute(['id' => $id]);
+    $datosAntes = $stmtAntes->fetch(PDO::FETCH_ASSOC);
+
+    if (!$datosAntes) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+
+    $user_id = get_user('id');
+    $stmt = $db->prepare("
+      UPDATE {$info['tabla']} 
+      SET status = 1, 
+          estatus_revision = 'aprobado', 
+          id_usuario_revisor = :revisor, 
+          fecha_revision = NOW(),
+          updated_at = NOW()
+      WHERE {$info['pk']} = :id
+    ");
+    $stmt->execute([
+      'revisor' => $user_id,
+      'id' => $id
+    ]);
+
+    $stmtDespues = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
+    $stmtDespues->execute(['id' => $id]);
+    $datosDespues = $stmtDespues->fetch(PDO::FETCH_ASSOC);
+
+    $tituloPieza = $datosAntes['nombre_titulo_pieza'] ?? ($datosAntes['denominacion'] ?? ('ID ' . $id));
+    registrar_auditoria(
+      'APROBAR_PIEZA',
+      $info['tabla'],
+      $id,
+      "Aprobación y autorización de pieza ({$info['nombre']}): {$tituloPieza}",
+      $info['modulo'],
+      null,
+      $datosAntes,
+      $datosDespues
+    );
+
+    header('Content-Type: application/json');
+    echo json_encode([
+      'status' => 200,
+      'msg' => 'La pieza ha sido autorizada y aprobada correctamente. Ahora está reflejada en el catálogo oficial.'
+    ]);
+    exit;
+  }
+
+  public function solicitar_cambios_pieza()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    $tipo = $_POST['tipo'] ?? 'general';
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    $observacion = isset($_POST['observacion']) ? trim($_POST['observacion']) : '';
+
+    if ($id <= 0) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    if (empty($observacion)) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 400, 'msg' => 'Debe ingresar una observación detallando los cambios o correcciones requeridas.']);
+      exit;
+    }
+
+    $info = $this->resolverTablaAcervo($tipo);
+    $db = Db::connect();
+
+    $stmtAntes = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
+    $stmtAntes->execute(['id' => $id]);
+    $datosAntes = $stmtAntes->fetch(PDO::FETCH_ASSOC);
+
+    if (!$datosAntes) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+
+    $user_id = get_user('id');
+    $stmt = $db->prepare("
+      UPDATE {$info['tabla']} 
+      SET status = 0, 
+          estatus_revision = 'cambios_solicitados', 
+          observacion_revision = :observacion,
+          id_usuario_revisor = :revisor, 
+          fecha_revision = NOW(),
+          updated_at = NOW()
+      WHERE {$info['pk']} = :id
+    ");
+    $stmt->execute([
+      'observacion' => $observacion,
+      'revisor' => $user_id,
+      'id' => $id
+    ]);
+
+    $stmtDespues = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
+    $stmtDespues->execute(['id' => $id]);
+    $datosDespues = $stmtDespues->fetch(PDO::FETCH_ASSOC);
+
+    $tituloPieza = $datosAntes['nombre_titulo_pieza'] ?? ($datosAntes['denominacion'] ?? ('ID ' . $id));
+    registrar_auditoria(
+      'SOLICITAR_CAMBIOS_PIEZA',
+      $info['tabla'],
+      $id,
+      "Solicitud de cambios en pieza ({$info['nombre']}): {$tituloPieza}. Observaciones: {$observacion}",
+      $info['modulo'],
+      null,
+      $datosAntes,
+      $datosDespues
+    );
+
+    header('Content-Type: application/json');
+    echo json_encode([
+      'status' => 200,
+      'msg' => 'Se han solicitado las correcciones para la pieza. El capturista podrá corregir y reenviarla.'
+    ]);
+    exit;
+  }
+
+  public function rechazar_pieza()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    $tipo = $_POST['tipo'] ?? 'general';
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
+    $observacion = isset($_POST['observacion']) ? trim($_POST['observacion']) : '';
+
+    if ($id <= 0) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
+      exit;
+    }
+    if (empty($observacion)) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 400, 'msg' => 'Debe ingresar el motivo por el cual se rechaza el registro (ortografía, datos incorrectos, etc.).']);
+      exit;
+    }
+
+    $info = $this->resolverTablaAcervo($tipo);
+    $db = Db::connect();
+
+    $stmtAntes = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
+    $stmtAntes->execute(['id' => $id]);
+    $datosAntes = $stmtAntes->fetch(PDO::FETCH_ASSOC);
+
+    if (!$datosAntes) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+
+    $user_id = get_user('id');
+    $stmt = $db->prepare("
+      UPDATE {$info['tabla']} 
+      SET status = 0, 
+          estatus_revision = 'rechazado', 
+          observacion_revision = :observacion,
+          id_usuario_revisor = :revisor, 
+          fecha_revision = NOW(),
+          updated_at = NOW()
+      WHERE {$info['pk']} = :id
+    ");
+    $stmt->execute([
+      'observacion' => $observacion,
+      'revisor' => $user_id,
+      'id' => $id
+    ]);
+
+    $stmtDespues = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
+    $stmtDespues->execute(['id' => $id]);
+    $datosDespues = $stmtDespues->fetch(PDO::FETCH_ASSOC);
+
+    $tituloPieza = $datosAntes['nombre_titulo_pieza'] ?? ($datosAntes['denominacion'] ?? ('ID ' . $id));
+    registrar_auditoria(
+      'RECHAZAR_PIEZA',
+      $info['tabla'],
+      $id,
+      "Rechazo de registro de pieza ({$info['nombre']}): {$tituloPieza}. Motivo: {$observacion}",
+      $info['modulo'],
+      null,
+      $datosAntes,
+      $datosDespues
+    );
+
+    header('Content-Type: application/json');
+    echo json_encode([
+      'status' => 200,
+      'msg' => 'El registro ha sido marcado como rechazado.'
+    ]);
+    exit;
+  }
+
+  public function get_mis_registros()
+  {
+    $userId = (int)(get_user('id') ?: 0);
+    if ($userId <= 0) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 401, 'msg' => 'Sesión expirada']);
+      exit;
+    }
+
+    $tipo = isset($_REQUEST['tipo']) ? trim($_REQUEST['tipo']) : 'todos';
+    $search = isset($_REQUEST['search']) ? trim($_REQUEST['search']) : '';
+    $semaforo = isset($_REQUEST['semaforo']) ? trim($_REQUEST['semaforo']) : 'todos';
+
+    try {
+      $db = Db::connect();
+
+      $subqueries = [];
+      if ($tipo === 'todos' || $tipo === 'general') {
+        $subqueries[] = "SELECT 'general' AS tipo, id_acervo_general AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor FROM acervo_general WHERE id_usuario_creador = " . $userId;
+      }
+      if ($tipo === 'todos' || $tipo === 'arqueologico') {
+        $subqueries[] = "SELECT 'arqueologico' AS tipo, id_acervo_arq AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor FROM acervo_arqueologico WHERE id_usuario_creador = " . $userId;
+      }
+      if ($tipo === 'todos' || $tipo === 'numismatica') {
+        $subqueries[] = "SELECT 'numismatica' AS tipo, id_acervo_numismatica AS id, codigo_interno, denominacion AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor FROM acervo_numismatica WHERE id_usuario_creador = " . $userId;
+      }
+
+      $unionSql = implode(' UNION ALL ', $subqueries);
+
+      $kpis = [
+        'pendientes' => 0,
+        'cambios' => 0,
+        'rechazados' => 0,
+        'aprobados' => 0,
+        'total' => 0
+      ];
+
+      if (!empty($unionSql)) {
+        $stmtKpi = $db->query("
+          SELECT 
+            SUM(CASE WHEN estatus_revision = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
+            SUM(CASE WHEN estatus_revision = 'cambios_solicitados' THEN 1 ELSE 0 END) AS cambios,
+            SUM(CASE WHEN estatus_revision = 'rechazado' THEN 1 ELSE 0 END) AS rechazados,
+            SUM(CASE WHEN estatus_revision = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
+            COUNT(*) AS total
+          FROM ({$unionSql}) AS t_kpi
+        ");
+        $kpiRow = $stmtKpi ? $stmtKpi->fetch(PDO::FETCH_ASSOC) : null;
+        if ($kpiRow) {
+          $kpis = [
+            'pendientes' => (int)($kpiRow['pendientes'] ?? 0),
+            'cambios' => (int)($kpiRow['cambios'] ?? 0),
+            'rechazados' => (int)($kpiRow['rechazados'] ?? 0),
+            'aprobados' => (int)($kpiRow['aprobados'] ?? 0),
+            'total' => (int)($kpiRow['total'] ?? 0)
+          ];
+        }
+      }
+
+      $whereParts = [];
+      $params = [];
+
+      if ($semaforo !== 'todos' && in_array($semaforo, ['pendiente', 'cambios_solicitados', 'rechazado', 'aprobado'])) {
+        $whereParts[] = "t.estatus_revision = :semaforo";
+        $params['semaforo'] = $semaforo;
+      }
+
+      if ($search !== '') {
+        $whereParts[] = "(t.codigo_interno LIKE :s1 OR t.titulo LIKE :s2 OR t.observacion_revision LIKE :s3)";
+        $term = '%' . $search . '%';
+        $params['s1'] = $term;
+        $params['s2'] = $term;
+        $params['s3'] = $term;
+      }
+
+      $whereSql = !empty($whereParts) ? 'WHERE ' . implode(' AND ', $whereParts) : '';
+
+      $sql = "
+        SELECT t.*, ur.username AS revisor_username
+        FROM ({$unionSql}) AS t
+        LEFT JOIN bee_users ur ON t.id_usuario_revisor = ur.id
+        {$whereSql}
+        ORDER BY 
+          CASE t.estatus_revision 
+            WHEN 'cambios_solicitados' THEN 1 
+            WHEN 'pendiente' THEN 2 
+            WHEN 'rechazado' THEN 3 
+            ELSE 4 
+          END, 
+          t.created_at DESC
+      ";
+
+      $stmt = $db->prepare($sql);
+      $stmt->execute($params);
+      $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+      foreach ($rows as &$r) {
+        $r['fotografia_url'] = !empty($r['fotografia']) ? 'assets/uploads/' . $r['fotografia'] : '';
+      }
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'data' => $rows,
+        'kpis' => $kpis
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al consultar registros: ' . $e->getMessage()
+      ]);
+    }
     exit;
   }
 

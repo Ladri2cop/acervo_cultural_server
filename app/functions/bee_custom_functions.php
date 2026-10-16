@@ -256,4 +256,46 @@ function user_can_view_acervo(): bool
   return user_can('ver_acervo_general')
     || user_can('ver_acervo_arqueologico')
     || user_can('ver_acervo_numismatica');
+}
+
+/**
+ * Determina si el usuario en sesión tiene permisos para editar un tipo de acervo específico o al menos uno
+ *
+ * @param string|null $tipo 'general', 'arqueologico', 'numismatica' o null
+ * @return bool
+ */
+function user_can_edit_acervo(?string $tipo = null): bool
+{
+  if (is_admin_user()) {
+    return true;
+  }
+
+  if ($tipo !== null) {
+    return user_can('editar_acervo_' . $tipo);
+  }
+
+  return user_can('editar_acervo_general')
+    || user_can('editar_acervo_arqueologico')
+    || user_can('editar_acervo_numismatica');
+}
+
+/**
+ * Determina si el usuario en sesión tiene permisos para eliminar piezas de un tipo de acervo específico o al menos uno
+ *
+ * @param string|null $tipo 'general', 'arqueologico', 'numismatica' o null
+ * @return bool
+ */
+function user_can_delete_acervo(?string $tipo = null): bool
+{
+  if (is_admin_user()) {
+    return true;
+  }
+
+  if ($tipo !== null) {
+    return user_can('eliminar_acervo_' . $tipo);
+  }
+
+  return user_can('eliminar_acervo_general')
+    || user_can('eliminar_acervo_arqueologico')
+    || user_can('eliminar_acervo_numismatica');
 }
