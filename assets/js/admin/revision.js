@@ -206,7 +206,9 @@ document.addEventListener('DOMContentLoaded', function () {
       const badgeTipo = obtenerBadgeTipo(p.tipo);
       const semaforoBadge = obtenerSemaforoBadge(p.estatus_revision);
       const obsHtml = renderizarObservacionSnippet(p.observacion_revision, p.revisor_username, p.fecha_revision);
-      const fechaFormateada = p.created_at ? p.created_at.substring(0, 16) : 'S/F';
+      const esEdicion = !!(p.updated_at && p.created_at && p.updated_at !== p.created_at);
+      const fechaMostrar = p.updated_at || p.created_at;
+      const fechaFormateada = fechaMostrar ? fechaMostrar.substring(0, 16) : 'S/F';
 
       html += `
         <tr data-id="${p.id}" data-tipo="${p.tipo}">
@@ -233,10 +235,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
           <!-- Capturista y Fecha -->
           <td>
-            <div class="small fw-semibold text-gray-800">
-              <i class='bx bx-user text-muted'></i> ${escapeHtml(p.creador_username || 'Sistema / Desconocido')}
+            <div class="small fw-semibold text-gray-800 d-flex align-items-center flex-wrap gap-1">
+              <span><i class='bx bx-user text-muted'></i> ${escapeHtml(p.creador_username || 'Sistema / Desconocido')}</span>
+              ${esEdicion ? '<span class="badge bg-warning text-dark border border-warning" title="Registro modificado pendiente de aprobación"><i class="bx bx-edit-alt"></i> Edición</span>' : '<span class="badge bg-light text-secondary border" title="Nuevo registro"><i class="bx bx-plus-circle"></i> Nuevo</span>'}
             </div>
-            <div class="small text-muted">
+            <div class="small text-muted mt-1">
               <i class='bx bx-calendar'></i> ${escapeHtml(fechaFormateada)}
             </div>
           </td>
@@ -605,10 +608,10 @@ document.addEventListener('DOMContentLoaded', function () {
             }
 
             Swal.fire({
-              title: 'Registro Rechazado (Rojo)',
+              title: resp.restaurado ? 'Edición Rechazada y Restaurada' : 'Registro Rechazado (Rojo)',
               text: resp.msg,
-              icon: 'error',
-              confirmButtonColor: '#dc3545',
+              icon: resp.restaurado ? 'info' : 'error',
+              confirmButtonColor: resp.restaurado ? '#4e73df' : '#dc3545',
               confirmButtonText: 'Entendido'
             });
             cargarDatos();

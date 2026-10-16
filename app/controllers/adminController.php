@@ -1912,7 +1912,7 @@ class adminController extends Controller implements ControllerInterface
     $piezaRow = $piezaActual[0];
     $userId = get_user('id');
     $puedeEditar = is_admin_user() || user_can('editar_acervo_general');
-    $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+    $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && in_array($piezaRow['estatus_revision'] ?? '', ['cambios_solicitados', 'pendiente']));
 
     if (!$puedeEditar && !$esCreadorEnRevision) {
       echo json_encode(['status' => 403, 'msg' => 'No tienes permisos para editar esta pieza.']);
@@ -1938,21 +1938,27 @@ class adminController extends Controller implements ControllerInterface
       }
 
       $data['fotografia'] = $newName;
-
-      if (!empty($fotoActual) && is_file(UPLOADS . $fotoActual)) {
-        unlink(UPLOADS . $fotoActual);
-      }
     } elseif (!empty($_POST['fotografia_actual'])) {
       $data['fotografia'] = $_POST['fotografia_actual'];
     } elseif (!empty($fotoActual)) {
       $data['fotografia'] = $fotoActual;
     }
 
-    $reingresaRevision = ($esCreadorEnRevision || ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
-    if ($reingresaRevision) {
-      $data['estatus_revision'] = 'pendiente';
-      $data['status'] = 0;
-      $data['observacion_revision'] = null;
+    // Si la pieza ya estaba aprobada o tiene respaldo previo, resguardar el estado original anterior
+    if (!empty($piezaRow['datos_anteriores_edicion'])) {
+      $data['datos_anteriores_edicion'] = $piezaRow['datos_anteriores_edicion'];
+    } elseif (($piezaRow['estatus_revision'] ?? '') === 'aprobado' || (int)($piezaRow['status'] ?? 0) === 1) {
+      $data['datos_anteriores_edicion'] = json_encode($piezaRow, JSON_UNESCAPED_UNICODE);
+    }
+
+    // Toda edición requiere revisión y autorización de un administrador para verse reflejada en el catálogo oficial
+    $data['estatus_revision'] = 'pendiente';
+    $data['status'] = 0;
+    $data['observacion_revision'] = null;
+    $data['fecha_revision'] = null;
+    $data['id_usuario_revisor'] = null;
+    if ($userId) {
+      $data['id_usuario_creador'] = $userId;
     }
 
     $ok = AcervoGeneralModel::updatePieza($id, $data);
@@ -1961,15 +1967,16 @@ class adminController extends Controller implements ControllerInterface
       $datosAntesJson = $piezaRow;
       $datosDespuesJson = ($piezaDespues && isset($piezaDespues[0])) ? $piezaDespues[0] : $piezaDespues;
       
-      $accionAuditoria = $reingresaRevision ? 'REENVIAR_REVISION' : 'UPDATE';
-      $descAuditoria = $reingresaRevision 
+      $eraCambioSolicitado = (($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+      $accionAuditoria = $eraCambioSolicitado ? 'REENVIAR_REVISION' : 'EDICION_ENVIADA_REVISION';
+      $descAuditoria = $eraCambioSolicitado 
         ? 'Corrección y reenvío a revisión de pieza de acervo general' 
-        : 'Edición de pieza de acervo general';
+        : 'Edición de pieza de acervo general enviada a revisión y autorización';
       registrar_auditoria($accionAuditoria, 'acervo_general', $id, $descAuditoria, 5, null, $datosAntesJson, $datosDespuesJson);
 
-      $msgExito = $reingresaRevision
+      $msgExito = $eraCambioSolicitado
         ? 'Registro corregido y reenviado a revisión del administrador exitosamente.'
-        : 'Pieza actualizada correctamente';
+        : 'Los cambios fueron guardados y enviados a revisión. La pieza se reflejará en el catálogo oficial una vez que sea autorizada por un administrador.';
       echo json_encode(['status' => 200, 'msg' => $msgExito]);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
@@ -1994,7 +2001,7 @@ class adminController extends Controller implements ControllerInterface
     $piezaRow = $piezaActual[0];
     $userId = get_user('id');
     $puedeEditar = is_admin_user() || user_can('editar_acervo_arqueologico');
-    $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+    $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && in_array($piezaRow['estatus_revision'] ?? '', ['cambios_solicitados', 'pendiente']));
 
     if (!$puedeEditar && !$esCreadorEnRevision) {
       echo json_encode(['status' => 403, 'msg' => 'No tienes permisos para editar esta pieza.']);
@@ -2020,21 +2027,27 @@ class adminController extends Controller implements ControllerInterface
       }
 
       $data['fotografia'] = $newName;
-
-      if (!empty($fotoActual) && is_file(UPLOADS . $fotoActual)) {
-        unlink(UPLOADS . $fotoActual);
-      }
     } elseif (!empty($_POST['fotografia_actual'])) {
       $data['fotografia'] = $_POST['fotografia_actual'];
     } elseif (!empty($fotoActual)) {
       $data['fotografia'] = $fotoActual;
     }
 
-    $reingresaRevision = ($esCreadorEnRevision || ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
-    if ($reingresaRevision) {
-      $data['estatus_revision'] = 'pendiente';
-      $data['status'] = 0;
-      $data['observacion_revision'] = null;
+    // Si la pieza ya estaba aprobada o tiene respaldo previo, resguardar el estado original anterior
+    if (!empty($piezaRow['datos_anteriores_edicion'])) {
+      $data['datos_anteriores_edicion'] = $piezaRow['datos_anteriores_edicion'];
+    } elseif (($piezaRow['estatus_revision'] ?? '') === 'aprobado' || (int)($piezaRow['status'] ?? 0) === 1) {
+      $data['datos_anteriores_edicion'] = json_encode($piezaRow, JSON_UNESCAPED_UNICODE);
+    }
+
+    // Toda edición requiere revisión y autorización de un administrador para verse reflejada en el catálogo oficial
+    $data['estatus_revision'] = 'pendiente';
+    $data['status'] = 0;
+    $data['observacion_revision'] = null;
+    $data['fecha_revision'] = null;
+    $data['id_usuario_revisor'] = null;
+    if ($userId) {
+      $data['id_usuario_creador'] = $userId;
     }
 
     $ok = AcervoArqueologicoModel::updatePieza($id, $data);
@@ -2043,15 +2056,16 @@ class adminController extends Controller implements ControllerInterface
       $datosAntesJson = $piezaRow;
       $datosDespuesJson = ($piezaDespues && isset($piezaDespues[0])) ? $piezaDespues[0] : $piezaDespues;
       
-      $accionAuditoria = $reingresaRevision ? 'REENVIAR_REVISION' : 'UPDATE';
-      $descAuditoria = $reingresaRevision 
+      $eraCambioSolicitado = (($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+      $accionAuditoria = $eraCambioSolicitado ? 'REENVIAR_REVISION' : 'EDICION_ENVIADA_REVISION';
+      $descAuditoria = $eraCambioSolicitado 
         ? 'Corrección y reenvío a revisión de pieza de acervo arqueológico' 
-        : 'Edición de pieza de acervo arqueológico';
+        : 'Edición de pieza de acervo arqueológico enviada a revisión y autorización';
       registrar_auditoria($accionAuditoria, 'acervo_arqueologico', $id, $descAuditoria, 3, null, $datosAntesJson, $datosDespuesJson);
 
-      $msgExito = $reingresaRevision
+      $msgExito = $eraCambioSolicitado
         ? 'Registro corregido y reenviado a revisión del administrador exitosamente.'
-        : 'Pieza actualizada correctamente';
+        : 'Los cambios fueron guardados y enviados a revisión. La pieza se reflejará en el catálogo oficial una vez que sea autorizada por un administrador.';
       echo json_encode(['status' => 200, 'msg' => $msgExito]);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
@@ -2076,7 +2090,7 @@ class adminController extends Controller implements ControllerInterface
     $piezaRow = $piezaActual[0];
     $userId = get_user('id');
     $puedeEditar = is_admin_user() || user_can('editar_acervo_numismatica');
-    $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+    $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && in_array($piezaRow['estatus_revision'] ?? '', ['cambios_solicitados', 'pendiente']));
 
     if (!$puedeEditar && !$esCreadorEnRevision) {
       echo json_encode(['status' => 403, 'msg' => 'No tienes permisos para editar esta pieza.']);
@@ -2102,21 +2116,27 @@ class adminController extends Controller implements ControllerInterface
       }
 
       $data['fotografia'] = $newName;
-
-      if (!empty($fotoActual) && is_file(UPLOADS . $fotoActual)) {
-        unlink(UPLOADS . $fotoActual);
-      }
     } elseif (!empty($_POST['fotografia_actual'])) {
       $data['fotografia'] = $_POST['fotografia_actual'];
     } elseif (!empty($fotoActual)) {
       $data['fotografia'] = $fotoActual;
     }
 
-    $reingresaRevision = ($esCreadorEnRevision || ($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
-    if ($reingresaRevision) {
-      $data['estatus_revision'] = 'pendiente';
-      $data['status'] = 0;
-      $data['observacion_revision'] = null;
+    // Si la pieza ya estaba aprobada o tiene respaldo previo, resguardar el estado original anterior
+    if (!empty($piezaRow['datos_anteriores_edicion'])) {
+      $data['datos_anteriores_edicion'] = $piezaRow['datos_anteriores_edicion'];
+    } elseif (($piezaRow['estatus_revision'] ?? '') === 'aprobado' || (int)($piezaRow['status'] ?? 0) === 1) {
+      $data['datos_anteriores_edicion'] = json_encode($piezaRow, JSON_UNESCAPED_UNICODE);
+    }
+
+    // Toda edición requiere revisión y autorización de un administrador para verse reflejada en el catálogo oficial
+    $data['estatus_revision'] = 'pendiente';
+    $data['status'] = 0;
+    $data['observacion_revision'] = null;
+    $data['fecha_revision'] = null;
+    $data['id_usuario_revisor'] = null;
+    if ($userId) {
+      $data['id_usuario_creador'] = $userId;
     }
 
     $ok = AcervoNumismaticaModel::updatePieza($id, $data);
@@ -2125,15 +2145,16 @@ class adminController extends Controller implements ControllerInterface
       $datosAntesJson = $piezaRow;
       $datosDespuesJson = ($piezaDespues && isset($piezaDespues[0])) ? $piezaDespues[0] : $piezaDespues;
       
-      $accionAuditoria = $reingresaRevision ? 'REENVIAR_REVISION' : 'UPDATE';
-      $descAuditoria = $reingresaRevision 
+      $eraCambioSolicitado = (($piezaRow['estatus_revision'] ?? '') === 'cambios_solicitados');
+      $accionAuditoria = $eraCambioSolicitado ? 'REENVIAR_REVISION' : 'EDICION_ENVIADA_REVISION';
+      $descAuditoria = $eraCambioSolicitado 
         ? 'Corrección y reenvío a revisión de pieza numismática' 
-        : 'Edición de pieza numismática';
+        : 'Edición de pieza numismática enviada a revisión y autorización';
       registrar_auditoria($accionAuditoria, 'acervo_numismatica', $id, $descAuditoria, 4, null, $datosAntesJson, $datosDespuesJson);
 
-      $msgExito = $reingresaRevision
+      $msgExito = $eraCambioSolicitado
         ? 'Registro corregido y reenviado a revisión del administrador exitosamente.'
-        : 'Pieza actualizada correctamente';
+        : 'Los cambios fueron guardados y enviados a revisión. La pieza se reflejará en el catálogo oficial una vez que sea autorizada por un administrador.';
       echo json_encode(['status' => 200, 'msg' => $msgExito]);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al actualizar la pieza']);
@@ -2646,13 +2667,13 @@ class adminController extends Controller implements ControllerInterface
     // Armar subconsultas para listado
     $listSubqueries = [];
     if ($tipo === 'todos' || $tipo === 'general') {
-      $listSubqueries[] = "SELECT 'general' AS tipo, id_acervo_general AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_general";
+      $listSubqueries[] = "SELECT 'general' AS tipo, id_acervo_general AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_general";
     }
     if ($tipo === 'todos' || $tipo === 'arqueologico') {
-      $listSubqueries[] = "SELECT 'arqueologico' AS tipo, id_acervo_arq AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_arqueologico";
+      $listSubqueries[] = "SELECT 'arqueologico' AS tipo, id_acervo_arq AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_arqueologico";
     }
     if ($tipo === 'todos' || $tipo === 'numismatica') {
-      $listSubqueries[] = "SELECT 'numismatica' AS tipo, id_acervo_numismatica AS id, codigo_interno, denominacion AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_numismatica";
+      $listSubqueries[] = "SELECT 'numismatica' AS tipo, id_acervo_numismatica AS id, codigo_interno, denominacion AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_numismatica";
     }
 
     $subQuery = implode(' UNION ALL ', $listSubqueries);
@@ -2695,7 +2716,7 @@ class adminController extends Controller implements ControllerInterface
             WHEN 'rechazado' THEN 3 
             ELSE 4 
           END, 
-          t.created_at DESC, 
+          COALESCE(t.updated_at, t.created_at) DESC, 
           t.id DESC
         LIMIT :offset, :limit
       ";
@@ -2799,10 +2820,22 @@ class adminController extends Controller implements ControllerInterface
     }
 
     $user_id = get_user('id');
+
+    // Si era una edición y cambió la fotografía, limpiamos la foto previa que fue reemplazada
+    if (!empty($datosAntes['datos_anteriores_edicion'])) {
+      $datosOrig = json_decode($datosAntes['datos_anteriores_edicion'], true);
+      if (!empty($datosOrig['fotografia']) && !empty($datosAntes['fotografia']) && $datosOrig['fotografia'] !== $datosAntes['fotografia']) {
+        if (is_file(UPLOADS . $datosOrig['fotografia'])) {
+          @unlink(UPLOADS . $datosOrig['fotografia']);
+        }
+      }
+    }
+
     $stmt = $db->prepare("
       UPDATE {$info['tabla']} 
       SET status = 1, 
           estatus_revision = 'aprobado', 
+          datos_anteriores_edicion = NULL,
           id_usuario_revisor = :revisor, 
           fecha_revision = NOW(),
           updated_at = NOW()
@@ -2951,6 +2984,68 @@ class adminController extends Controller implements ControllerInterface
     }
 
     $user_id = get_user('id');
+    $tituloPieza = $datosAntes['nombre_titulo_pieza'] ?? ($datosAntes['denominacion'] ?? ('ID ' . $id));
+
+    // Si es una edición de una pieza preexistente, revertir los datos al estado previo tal y como estaba y volver a publicarla en acervo
+    if (!empty($datosAntes['datos_anteriores_edicion'])) {
+      $datosOriginales = json_decode($datosAntes['datos_anteriores_edicion'], true);
+      if (is_array($datosOriginales) && !empty($datosOriginales)) {
+        // Eliminar del disco la foto rechazada si se subió una nueva durante la edición
+        if (!empty($datosAntes['fotografia']) && !empty($datosOriginales['fotografia']) && $datosAntes['fotografia'] !== $datosOriginales['fotografia']) {
+          if (is_file(UPLOADS . $datosAntes['fotografia'])) {
+            @unlink(UPLOADS . $datosAntes['fotografia']);
+          }
+        }
+
+        // Excluir la clave primaria del set de datos
+        unset($datosOriginales[$info['pk']]);
+        $datosOriginales['status'] = 1;
+        $datosOriginales['estatus_revision'] = 'aprobado';
+        $datosOriginales['datos_anteriores_edicion'] = null;
+        $datosOriginales['observacion_revision'] = null;
+        $datosOriginales['id_usuario_revisor'] = $user_id;
+        $datosOriginales['fecha_revision'] = date('Y-m-d H:i:s');
+        $datosOriginales['updated_at'] = date('Y-m-d H:i:s');
+
+        $setClauses = [];
+        $paramsRestore = ['pk_id' => $id];
+        $i = 0;
+        foreach ($datosOriginales as $col => $val) {
+          $paramKey = 'c_' . $i++;
+          $setClauses[] = "`{$col}` = :{$paramKey}";
+          $paramsRestore[$paramKey] = $val;
+        }
+
+        $sqlRestore = "UPDATE {$info['tabla']} SET " . implode(', ', $setClauses) . " WHERE {$info['pk']} = :pk_id";
+        $stmtRestore = $db->prepare($sqlRestore);
+        $stmtRestore->execute($paramsRestore);
+
+        $stmtDespues = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
+        $stmtDespues->execute(['id' => $id]);
+        $datosDespues = $stmtDespues->fetch(PDO::FETCH_ASSOC);
+
+        registrar_auditoria(
+          'RECHAZAR_EDICION_Y_RESTAURAR',
+          $info['tabla'],
+          $id,
+          "Rechazo de edición y restauración de pieza ({$info['nombre']}) al estado original anterior: {$tituloPieza}. Motivo: {$observacion}",
+          $info['modulo'],
+          null,
+          $datosAntes,
+          $datosDespues
+        );
+
+        header('Content-Type: application/json');
+        echo json_encode([
+          'status' => 200,
+          'restaurado' => true,
+          'msg' => 'La edición ha sido rechazada. El registro fue restaurado exactamente a su estado anterior y permanece visible en el catálogo de Acervo.'
+        ]);
+        exit;
+      }
+    }
+
+    // Si es un registro nuevo que nunca estuvo publicado:
     $stmt = $db->prepare("
       UPDATE {$info['tabla']} 
       SET status = 0, 
@@ -2958,7 +3053,7 @@ class adminController extends Controller implements ControllerInterface
           observacion_revision = :observacion,
           id_usuario_revisor = :revisor, 
           fecha_revision = NOW(),
-          updated_at = NOW()
+          updated_at = NOW() 
       WHERE {$info['pk']} = :id
     ");
     $stmt->execute([
@@ -2971,7 +3066,6 @@ class adminController extends Controller implements ControllerInterface
     $stmtDespues->execute(['id' => $id]);
     $datosDespues = $stmtDespues->fetch(PDO::FETCH_ASSOC);
 
-    $tituloPieza = $datosAntes['nombre_titulo_pieza'] ?? ($datosAntes['denominacion'] ?? ('ID ' . $id));
     registrar_auditoria(
       'RECHAZAR_PIEZA',
       $info['tabla'],
@@ -2986,6 +3080,7 @@ class adminController extends Controller implements ControllerInterface
     header('Content-Type: application/json');
     echo json_encode([
       'status' => 200,
+      'restaurado' => false,
       'msg' => 'El registro ha sido marcado como rechazado.'
     ]);
     exit;
@@ -3009,13 +3104,13 @@ class adminController extends Controller implements ControllerInterface
 
       $subqueries = [];
       if ($tipo === 'todos' || $tipo === 'general') {
-        $subqueries[] = "SELECT 'general' AS tipo, id_acervo_general AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor FROM acervo_general WHERE id_usuario_creador = " . $userId;
+        $subqueries[] = "SELECT 'general' AS tipo, id_acervo_general AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor FROM acervo_general WHERE id_usuario_creador = " . $userId;
       }
       if ($tipo === 'todos' || $tipo === 'arqueologico') {
-        $subqueries[] = "SELECT 'arqueologico' AS tipo, id_acervo_arq AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor FROM acervo_arqueologico WHERE id_usuario_creador = " . $userId;
+        $subqueries[] = "SELECT 'arqueologico' AS tipo, id_acervo_arq AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor FROM acervo_arqueologico WHERE id_usuario_creador = " . $userId;
       }
       if ($tipo === 'todos' || $tipo === 'numismatica') {
-        $subqueries[] = "SELECT 'numismatica' AS tipo, id_acervo_numismatica AS id, codigo_interno, denominacion AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, id_usuario_creador, id_usuario_revisor FROM acervo_numismatica WHERE id_usuario_creador = " . $userId;
+        $subqueries[] = "SELECT 'numismatica' AS tipo, id_acervo_numismatica AS id, codigo_interno, denominacion AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor FROM acervo_numismatica WHERE id_usuario_creador = " . $userId;
       }
 
       $unionSql = implode(' UNION ALL ', $subqueries);
@@ -3080,7 +3175,7 @@ class adminController extends Controller implements ControllerInterface
             WHEN 'rechazado' THEN 3 
             ELSE 4 
           END, 
-          t.created_at DESC
+          COALESCE(t.updated_at, t.created_at) DESC
       ";
 
       $stmt = $db->prepare($sql);

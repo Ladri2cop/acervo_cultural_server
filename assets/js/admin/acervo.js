@@ -1655,7 +1655,9 @@ function renderizarTablaMisRegistros(filas) {
       obsBox = `<span class="text-muted small fst-italic">En espera de evaluación por el administrador</span>`;
     }
 
-    const fecha = p.created_at ? p.created_at.substring(0, 16) : 'S/F';
+    const esEdicion = !!(p.updated_at && p.created_at && p.updated_at !== p.created_at);
+    const fechaMostrar = p.updated_at || p.created_at;
+    const fecha = fechaMostrar ? fechaMostrar.substring(0, 16) : 'S/F';
 
     html += `
       <tr>
@@ -1667,7 +1669,10 @@ function renderizarTablaMisRegistros(filas) {
           <span class="fw-semibold text-dark">${escapeHtmlAcervo(p.titulo || 'Sin Título')}</span>
         </td>
         <td>${badgeTipo}</td>
-        <td><small class="text-muted"><i class='bx bx-calendar'></i> ${escapeHtmlAcervo(fecha)}</small></td>
+        <td>
+          <small class="text-muted d-block"><i class='bx bx-calendar'></i> ${escapeHtmlAcervo(fecha)}</small>
+          ${esEdicion ? '<span class="badge bg-warning text-dark border border-warning" style="font-size: 0.7rem;"><i class="bx bx-edit-alt"></i> Modificada</span>' : '<span class="badge bg-light text-muted border" style="font-size: 0.7rem;"><i class="bx bx-plus"></i> Nueva</span>'}
+        </td>
         <td>${semaforoBadge}</td>
         <td>${obsBox}</td>
         <td class="text-center">
@@ -1675,9 +1680,9 @@ function renderizarTablaMisRegistros(filas) {
             <button type="button" class="btn btn-sm btn-outline-info" title="Ver Detalle" onclick="window.verMiPieza('${p.tipo}', ${p.id})">
               <i class='bx bx-show'></i> Ver
             </button>
-            ${p.estatus_revision === 'cambios_solicitados' ? `
-              <button type="button" class="btn btn-sm btn-warning text-dark fw-bold" title="Corregir y Reenviar a Revisión" onclick="window.corregirMiPieza('${p.tipo}', ${p.id})">
-                <i class='bx bx-edit'></i> Corregir y Reenviar
+            ${(p.estatus_revision === 'cambios_solicitados' || p.estatus_revision === 'pendiente') ? `
+              <button type="button" class="btn btn-sm ${p.estatus_revision === 'cambios_solicitados' ? 'btn-warning text-dark fw-bold' : 'btn-outline-primary'}" title="${p.estatus_revision === 'cambios_solicitados' ? 'Corregir y Reenviar a Revisión' : 'Editar Pieza en Revisión'}" onclick="window.corregirMiPieza('${p.tipo}', ${p.id})">
+                <i class='bx bx-edit'></i> ${p.estatus_revision === 'cambios_solicitados' ? 'Corregir y Reenviar' : 'Editar'}
               </button>
             ` : ''}
           </div>
