@@ -2,7 +2,7 @@
 <ul class="navbar-nav bg-gradient-primary sidebar sidebar-dark accordion" id="accordionSidebar">
 
   <!-- Sidebar - Brand -->
-  <a class="sidebar-brand d-flex align-items-center justify-content-center" href="<?php echo get_base_url() . 'admin'; ?>">
+  <a class="sidebar-brand d-flex align-items-center justify-content-center" href="<?php echo get_base_url() . (is_admin_user() ? 'admin' : 'admin/acervo'); ?>">
     <img src="<?php echo IMAGES . 'LogoAdminWhite.png' ?>" alt="<?php echo get_bee_name(); ?>" width="100px" class="logo-full">
     <img src="<?php echo IMAGES . 'ColibriWhite.png'; ?>" alt="<?php echo get_bee_name(); ?>" width="50px" class="logo-icon">
   </a>
@@ -10,6 +10,7 @@
   <!-- Divider -->
   <hr class="sidebar-divider my-0">
 
+  <?php if (is_admin_user()): ?>
   <!-- Nav Item - Dashboard -->
   <li class="nav-item" data-page="dashboard">
     <a class="nav-link" href="admin">
@@ -20,6 +21,7 @@
 
   <!-- Divider -->
   <hr class="sidebar-divider">
+  <?php endif; ?>
 
   <!-- Heading -->
   <div class="sidebar-heading">
@@ -33,26 +35,25 @@
     </a>
   </li> -->
 
+  <?php if (user_can_register() && !user_has_only_view_permissions()): ?>
   <li class="nav-item" data-page="registrar">
     <a class="nav-link" href="admin/registrar">
       <i class='bx  bx-plus-square'></i>
       <span>Registrar</span>
     </a>
   </li>
+  <?php endif; ?>
 
+  <?php if (user_can_view_acervo()): ?>
   <li class="nav-item" data-page="acervo">
     <a class="nav-link" href="admin/acervo">
       <i class='bx  bx-database-alt'></i>
       <span>Acervo</span>
     </a>
   </li>
+  <?php endif; ?>
 
-  <?php 
-    $userRole = get_user('id_role');
-    $roleRow = userModel::query("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1", ['id' => $userRole]);
-    $roleSlug = ($roleRow && isset($roleRow[0]['slug'])) ? $roleRow[0]['slug'] : '';
-    if (in_array($userRole, [1, 2, 4]) || in_array($roleSlug, ['super-admin', 'admin', 'administrador'])): 
-  ?>
+  <?php if (is_admin_user()): ?>
     <!-- Divider -->
     <hr class="sidebar-divider">
 

@@ -43,7 +43,7 @@ class adminController extends Controller implements ControllerInterface
         exit;
       }
       Flasher::error('No tienes permisos suficientes para acceder a esta sección.');
-      Redirect::to('admin');
+      Redirect::to(is_admin_user() ? 'admin' : 'admin/acervo');
       exit;
     }
   }
@@ -63,6 +63,11 @@ class adminController extends Controller implements ControllerInterface
 
   function index()
   {
+    if (!is_admin_user()) {
+      Redirect::to('admin/acervo');
+      exit;
+    }
+
     register_scripts([JS . 'admin/demo.js'], 'Chartjs gráficas para administración');
 
     require_once APP . 'models/acervoGeneralModel.php';
@@ -626,6 +631,12 @@ class adminController extends Controller implements ControllerInterface
   ////////////////////////////////////////////////////
   function acervo()
   {
+    if (!user_can_view_acervo()) {
+      Flasher::error('No tienes permisos suficientes para visualizar el acervo.');
+      Redirect::to(is_admin_user() ? 'admin' : 'login');
+      exit;
+    }
+
     $this->setTitle('Acervo');
     $this->addToData('acervo', acervoModel::all_paginated());
     $this->addToData('slug', 'acervo');
@@ -950,6 +961,12 @@ class adminController extends Controller implements ControllerInterface
 
   function registrar()
   {
+    if (!user_can_register() || user_has_only_view_permissions()) {
+      Flasher::error('No tienes permisos suficientes para registrar piezas.');
+      Redirect::to('admin/acervo');
+      exit;
+    }
+
     $form = new BeeFormBuilder('nuevo-registro', 'nuevo-registro', ['needs-validation'], 'admin/post_registro', true, false);
 
     $campos = [

@@ -2,7 +2,7 @@
 
 <?php
   $isLoggedIn = Auth::validate();
-  $targetUrl = $isLoggedIn ? 'admin' : 'login';
+  $targetUrl = $isLoggedIn ? (is_admin_user() ? 'admin' : 'admin/acervo') : 'login';
   $buttonText = $isLoggedIn ? 'Regresar al Inicio' : 'Iniciar Sesión';
 ?>
 

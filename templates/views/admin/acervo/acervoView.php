@@ -17,9 +17,15 @@
           <div class="card-body">
             <select name="tipo_registro" id="tipo_registro" class="form-select">
               <option value="" hidden>Seleccione...</option>
-              <option value="general">Acervo General</option>
-              <option value="arqueologico">Acervo Arqueológico</option>
-              <option value="numismatica">Acervo Numismático</option>
+              <?php if (user_can('ver_acervo_general')): ?>
+                <option value="general">Acervo General</option>
+              <?php endif; ?>
+              <?php if (user_can('ver_acervo_arqueologico')): ?>
+                <option value="arqueologico">Acervo Arqueológico</option>
+              <?php endif; ?>
+              <?php if (user_can('ver_acervo_numismatica')): ?>
+                <option value="numismatica">Acervo Numismático</option>
+              <?php endif; ?>
             </select>
           </div>
         </div>
@@ -70,12 +76,16 @@
           <i class='bx bx-database-alt'></i> Registros
         </h6>
         <div>
+          <?php if (user_can('exportar_excel')): ?>
           <button type="button" id="btn-exportar-excel" class="btn btn-sm btn-success shadow-sm me-2">
             <i class="fas fa-file-excel fa-sm text-white-50 me-1"></i> Exportar Excel
           </button>
+          <?php endif; ?>
+          <?php if (user_can('exportar_pdf')): ?>
           <button type="button" id="btn-exportar-pdf" class="btn btn-sm btn-danger shadow-sm">
             <i class="fas fa-file-pdf fa-sm text-white-50 me-1"></i> Exportar PDF
           </button>
+          <?php endif; ?>
         </div>
       </div>
       <div class="card-body p-0">

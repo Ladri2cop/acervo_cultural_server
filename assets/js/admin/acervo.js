@@ -26,6 +26,15 @@ $(document).ready(function () {
     dropdownCssClass: "select2-scroll-limit",
   });
 
+  // Si solo hay una opción de acervo permitida para visualizar, seleccionarla automáticamente
+  const tipoRegistroSelect = document.getElementById("tipo_registro");
+  if (tipoRegistroSelect) {
+    const validOptions = Array.from(tipoRegistroSelect.options).filter(opt => opt.value !== "");
+    if (validOptions.length === 1) {
+      $('#tipo_registro').val(validOptions[0].value).trigger('change');
+    }
+  }
+
   // Funcionalidad de búsqueda con debounce
   $("#buscar-registro").on("input", function () {
     clearTimeout(searchTimeout);

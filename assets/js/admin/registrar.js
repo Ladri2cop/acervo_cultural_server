@@ -86,6 +86,15 @@ select.addEventListener("change", function () {
     });
 });
 
+// Si solo hay una opción de acervo permitida para el rol, seleccionarla y cargar formulario
+if (select) {
+  const validOptions = Array.from(select.options).filter(opt => opt.value !== "");
+  if (validOptions.length === 1) {
+    select.value = validOptions[0].value;
+    select.dispatchEvent(new Event("change"));
+  }
+}
+
 function inicializarVistaPrevia() {
   const imageInput = document.querySelector('input[type="file"]');
   const previewContainer = document.getElementById("previewContainer");

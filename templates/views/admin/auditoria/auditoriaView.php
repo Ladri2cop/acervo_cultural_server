@@ -69,6 +69,7 @@
                   <th>Tabla / Sección</th>
                   <th>ID Registro</th>
                   <th>IP</th>
+                  <th>MAC</th>
                   <th>Observaciones / Comparación</th>
                 </tr>
               </thead>
@@ -113,6 +114,7 @@
                     <td><code><?php echo htmlspecialchars($row['nombre_tabla']); ?></code></td>
                     <td><?php echo $row['id_pieza'] ? '#' . $row['id_pieza'] : '-'; ?></td>
                     <td><small class="text-muted"><?php echo htmlspecialchars($row['ip_address'] ?? '-'); ?></small></td>
+                    <td><small class="text-muted"><code><?php echo htmlspecialchars($row['mac_address'] ?? '-'); ?></code></small></td>
                     <td>
                       <div><?php echo htmlspecialchars($row['observaciones'] ?? ''); ?></div>
                       <?php if ($tieneDiff): ?>
@@ -138,7 +140,9 @@
                                   <strong>Acción:</strong> <?php echo htmlspecialchars($row['tipo_accion']); ?> | 
                                   <strong>Tabla:</strong> <?php echo htmlspecialchars($row['nombre_tabla']); ?> | 
                                   <strong>ID Registro:</strong> <?php echo $row['id_pieza'] ?? 'N/A'; ?> | 
-                                  <strong>Usuario:</strong> <?php echo htmlspecialchars($row['username'] ?? 'N/A'); ?>
+                                  <strong>Usuario:</strong> <?php echo htmlspecialchars($row['username'] ?? 'N/A'); ?> | 
+                                  <strong>IP:</strong> <?php echo htmlspecialchars($row['ip_address'] ?? '-'); ?> | 
+                                  <strong>MAC:</strong> <?php echo htmlspecialchars($row['mac_address'] ?? '-'); ?>
                                 </div>
 
                                 <?php

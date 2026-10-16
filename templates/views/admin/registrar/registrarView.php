@@ -37,9 +37,15 @@
         <label for="select-acervo" class="label">Selecciona el tipo de acervo que deseas registrar</label>
         <select name="select-acervo" id="select-acervo" class="form-select">
             <option value="" hidden>Seleccione...</option>
-            <option value="1">Acervo General</option>
-            <option value="2">Acervo Arqueológico</option>
-            <option value="3">Acervo Numismático</option>
+            <?php if (user_can('registrar_acervo_general')): ?>
+                <option value="1">Acervo General</option>
+            <?php endif; ?>
+            <?php if (user_can('registrar_acervo_arqueologico')): ?>
+                <option value="2">Acervo Arqueológico</option>
+            <?php endif; ?>
+            <?php if (user_can('registrar_acervo_numismatica')): ?>
+                <option value="3">Acervo Numismático</option>
+            <?php endif; ?>
         </select>
     </div>
 </div>

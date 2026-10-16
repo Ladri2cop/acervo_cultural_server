@@ -11,7 +11,11 @@ class homeController extends Controller implements ControllerInterface
   function index()
   {
     if (Auth::validate()) {
-      Redirect::to('admin');
+      if (is_admin_user()) {
+        Redirect::to('admin');
+      } else {
+        Redirect::to('admin/acervo');
+      }
     } else {
       Redirect::to('login');
     }

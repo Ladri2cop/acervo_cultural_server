@@ -71,7 +71,11 @@ class loginController extends Controller implements ControllerInterface
 
       registrar_auditoria('LOGIN', 'bee_users', null, 'Inicio de sesión exitoso', null, (int)$user['id']);
 
-      Redirect::to('admin');
+      if (is_admin_user()) {
+        Redirect::to('admin');
+      } else {
+        Redirect::to('admin/acervo');
+      }
     } catch (Exception $e) {
       Flasher::error($e->getMessage());
       Redirect::back();
