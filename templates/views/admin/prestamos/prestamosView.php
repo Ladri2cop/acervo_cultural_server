@@ -3,6 +3,42 @@
 <!-- Contenedor Principal: Préstamos y Transferencias -->
 <div class="container-fluid px-3 py-2">
 
+  <style>
+    #modalNuevoMovimiento .modal-body,
+    #modalDevolucionPrestamo .modal-body,
+    #modalDetalleMovimiento .modal-body {
+      overflow-y: auto !important;
+      max-height: calc(100vh - 210px) !important;
+      scrollbar-width: thin;
+      scrollbar-color: #adb5bd #f8f9fa;
+    }
+
+    #modalNuevoMovimiento .modal-body::-webkit-scrollbar,
+    #modalDevolucionPrestamo .modal-body::-webkit-scrollbar,
+    #modalDetalleMovimiento .modal-body::-webkit-scrollbar {
+      width: 7px;
+    }
+
+    #modalNuevoMovimiento .modal-body::-webkit-scrollbar-track,
+    #modalDevolucionPrestamo .modal-body::-webkit-scrollbar-track,
+    #modalDetalleMovimiento .modal-body::-webkit-scrollbar-track {
+      background: #f8f9fa;
+    }
+
+    #modalNuevoMovimiento .modal-body::-webkit-scrollbar-thumb,
+    #modalDevolucionPrestamo .modal-body::-webkit-scrollbar-thumb,
+    #modalDetalleMovimiento .modal-body::-webkit-scrollbar-thumb {
+      background-color: #adb5bd;
+      border-radius: 4px;
+    }
+
+    #modalNuevoMovimiento .modal-body::-webkit-scrollbar-thumb:hover,
+    #modalDevolucionPrestamo .modal-body::-webkit-scrollbar-thumb:hover,
+    #modalDetalleMovimiento .modal-body::-webkit-scrollbar-thumb:hover {
+      background-color: #6c757d;
+    }
+  </style>
+
   <!-- Encabezado Institucional -->
   <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
@@ -222,8 +258,8 @@
 <!-- MODAL: REGISTRAR NUEVO PRÉSTAMO O TRANSFERENCIA                           -->
 <!-- ========================================================================= -->
 <div class="modal fade" id="modalNuevoMovimiento" tabindex="-1" aria-labelledby="modalNuevoMovimientoLabel" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-    <div class="modal-content border-0 shadow-lg">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <form id="formNuevoMovimiento" class="modal-content border-0 shadow-lg" novalidate>
       <div class="modal-header bg-primary text-white py-3">
         <h5 class="modal-title font-weight-bold d-flex align-items-center" id="modalNuevoMovimientoLabel">
           <i class='bx bx-transfer-alt me-2' style="font-size: 1.4rem;"></i>
@@ -232,8 +268,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
-      <form id="formNuevoMovimiento" novalidate>
-        <div class="modal-body p-4">
+      <div class="modal-body p-4" style="overflow-y: auto; max-height: calc(100vh - 210px);">
           <!-- Alerta explicativa -->
           <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4 py-2 px-3">
             <i class='bx bx-info-circle fs-4 me-2 text-info'></i>
@@ -535,14 +570,13 @@
       </form>
     </div>
   </div>
-</div>
 
 <!-- ========================================================================= -->
 <!-- MODAL: REGISTRAR DEVOLUCIÓN DE PRÉSTAMO                                   -->
 <!-- ========================================================================= -->
 <div class="modal fade" id="modalDevolucionPrestamo" tabindex="-1" aria-labelledby="modalDevolucionPrestamoLabel" aria-hidden="true" data-bs-backdrop="static">
-  <div class="modal-dialog modal-lg modal-dialog-centered">
-    <div class="modal-content border-0 shadow-lg">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
+    <form id="formDevolverPrestamo" class="modal-content border-0 shadow-lg" novalidate>
       <div class="modal-header bg-success text-white py-3">
         <h5 class="modal-title font-weight-bold d-flex align-items-center" id="modalDevolucionPrestamoLabel">
           <i class='bx bx-check-shield me-2' style="font-size: 1.4rem;"></i>
@@ -551,8 +585,7 @@
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
       </div>
 
-      <form id="formDevolverPrestamo" novalidate>
-        <div class="modal-body p-4">
+      <div class="modal-body p-4" style="overflow-y: auto; max-height: calc(100vh - 210px);">
           <input type="hidden" name="id_movimiento" id="dev_id_movimiento" value="">
 
           <!-- Tarjeta de Resumen del Préstamo -->
@@ -627,13 +660,12 @@
       </form>
     </div>
   </div>
-</div>
 
 <!-- ========================================================================= -->
 <!-- MODAL: DETALLE / EXPEDIENTE DEL MOVIMIENTO                                -->
 <!-- ========================================================================= -->
 <div class="modal fade" id="modalDetalleMovimiento" tabindex="-1" aria-labelledby="modalDetalleMovimientoLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+  <div class="modal-dialog modal-lg modal-dialog-scrollable">
     <div class="modal-content border-0 shadow-lg">
       <div class="modal-header bg-dark text-white py-3">
         <div class="d-flex align-items-center">
@@ -653,7 +685,7 @@
         </div>
       </div>
 
-      <div class="modal-body p-4" id="printable-expediente-body">
+      <div class="modal-body p-4" id="printable-expediente-body" style="overflow-y: auto; max-height: calc(100vh - 210px);">
         <!-- Encabezado del Expediente -->
         <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
           <div>
