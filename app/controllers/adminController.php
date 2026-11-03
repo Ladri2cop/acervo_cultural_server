@@ -640,6 +640,16 @@ class adminController extends Controller implements ControllerInterface
     $this->setTitle('Acervo');
     $this->addToData('acervo', acervoModel::all_paginated());
     $this->addToData('slug', 'acervo');
+
+    try {
+      $db = Db::connect();
+      $stmt = $db->query("SELECT nombre_museo FROM museos WHERE status = 1 ORDER BY nombre_museo ASC");
+      $museos = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+      $this->addToData('museos', $museos);
+    } catch (Exception $e) {
+      $this->addToData('museos', []);
+    }
+
     $this->setView('acervo/acervo');
     $this->render();
   }
@@ -1016,13 +1026,24 @@ class adminController extends Controller implements ControllerInterface
   function post_registro()
   {
     $this->check_user_permission('registrar_acervo_general');
+
+    $ubicacionFisica = trim($_POST['ubicacion_fisica'] ?? '');
+    if ($ubicacionFisica === 'Otro' && !empty($_POST['ubicacion_fisica_otro'])) {
+      $ubicacionFisica = trim($_POST['ubicacion_fisica_otro']);
+    }
+    $ubicacionTopografica = trim($_POST['ubicacion_topografica'] ?? '');
+
+    $tipoDimension = $_POST['tipo_dimension'] ?? 'bidimensional';
+    $cm = ($tipoDimension === 'bidimensional') ? ($_POST['cm'] ?? '') : '';
+    $medidas = ($tipoDimension === 'tridimensional') ? ($_POST['medidas'] ?? '') : '';
+
     // Procesar y guardar los datos del formulario de acervoGeneral
     $data = [
       'codigo_interno'        => $_POST['codigo_interno'] ?? '',
       'no_inventario'         => $_POST['no_inventario'] ?? '',
       'nombre_titulo_pieza'   => $_POST['nombre_titulo_pieza'] ?? '',
-      'cm'                    => $_POST['cm'] ?? '',
-      'materia'               => $_POST['materia'] ?? '',
+      'cm'                    => $cm,
+      'materia'               => '', // Campo removido según requerimiento
       'fotografia'            => '', // Se actualizará si se sube archivo
       'autor'                 => $_POST['autor'] ?? '',
       'anio'                  => $_POST['anio'] ?? '',
@@ -1030,12 +1051,13 @@ class adminController extends Controller implements ControllerInterface
       'tecnica'               => $_POST['tecnica'] ?? '',
       'origen'                => $_POST['origen'] ?? '',
       'material'              => $_POST['material'] ?? '',
-      'medidas'               => $_POST['medidas'] ?? '',
+      'medidas'               => $medidas,
       'lote'                  => $_POST['lote'] ?? '',
       'peso'                  => $_POST['peso'] ?? '',
-      'coleccion'             => $_POST['coleccion'] ?? '',
+      'coleccion'             => '', // Campo removido según requerimiento
       'tipo'                  => $_POST['tipo'] ?? '',
-      'ubicacion_fisica'      => $_POST['ubicacion_fisica'] ?? '',
+      'ubicacion_fisica'      => $ubicacionFisica,
+      'ubicacion_topografica' => $ubicacionTopografica,
       'estado_conservacion'   => $_POST['estado_conservacion'] ?? '',
       'observaciones'         => $_POST['observaciones'] ?? '',
       'descripcion'           => $_POST['descripcion'] ?? '',
@@ -1084,7 +1106,14 @@ class adminController extends Controller implements ControllerInterface
   function post_registro_arq()
   {
     $this->check_user_permission('registrar_acervo_arqueologico');
-    // Procesar y guardar los datos del formulario de acervoGeneral
+
+    $ubicacionFisica = trim($_POST['ubicacion_fisica'] ?? '');
+    if ($ubicacionFisica === 'Otro' && !empty($_POST['ubicacion_fisica_otro'])) {
+      $ubicacionFisica = trim($_POST['ubicacion_fisica_otro']);
+    }
+    $ubicacionTopografica = trim($_POST['ubicacion_topografica'] ?? '');
+
+    // Procesar y guardar los datos del formulario de acervoArqueologico
     $data = [
       'codigo_interno'          => $_POST['codigo_interno'] ?? '',
       'no_inventario_scyt'      => $_POST['no_inventario_scyt'] ?? '',
@@ -1102,7 +1131,8 @@ class adminController extends Controller implements ControllerInterface
       'tecnica_decorativa'      => $_POST['tecnica_decorativa'] ?? '',
       'coleccion'               => $_POST['coleccion'] ?? '',
       'obtencion'               => $_POST['obtencion'] ?? '',
-      'ubicacion_fisica'        => $_POST['ubicacion_fisica'] ?? '',
+      'ubicacion_fisica'        => $ubicacionFisica,
+      'ubicacion_topografica'   => $ubicacionTopografica,
       'estado_conservacion'     => $_POST['estado_conservacion'] ?? '',
       'observaciones'           => $_POST['observaciones'] ?? '',
       'descripcion'             => $_POST['descripcion'] ?? '',
@@ -1152,6 +1182,13 @@ class adminController extends Controller implements ControllerInterface
   function post_registro_numismatica()
   {
     $this->check_user_permission('registrar_acervo_numismatica');
+
+    $ubicacionFisica = trim($_POST['ubicacion_fisica'] ?? '');
+    if ($ubicacionFisica === 'Otro' && !empty($_POST['ubicacion_fisica_otro'])) {
+      $ubicacionFisica = trim($_POST['ubicacion_fisica_otro']);
+    }
+    $ubicacionTopografica = trim($_POST['ubicacion_topografica'] ?? '');
+
     // Procesar y guardar los datos del formulario de acervoNumismatica
     $data = [
       'codigo_interno'        => $_POST['codigo_interno'] ?? '',
@@ -1163,7 +1200,8 @@ class adminController extends Controller implements ControllerInterface
       'material'              => $_POST['material'] ?? '',
       'fecha_epoca'           => $_POST['fecha_epoca'] ?? '',
       'dimensiones'           => $_POST['dimensiones'] ?? '',
-      'ubicacion_fisica'      => $_POST['ubicacion_fisica'] ?? '',
+      'ubicacion_fisica'      => $ubicacionFisica,
+      'ubicacion_topografica' => $ubicacionTopografica,
       'estado_conservacion'   => $_POST['estado_conservacion'] ?? '',
       'observaciones'         => $_POST['observaciones'] ?? '',
       'descripcion_cara_a'    => $_POST['descripcion_cara_a'] ?? '',
@@ -1927,6 +1965,23 @@ class adminController extends Controller implements ControllerInterface
     unset($data['csrf']);
     unset($data['fotografia_actual']);
 
+    // Resolver Ubicación Física (si eligió 'Otro') y Ubicación Topográfica
+    $ubicacionFisica = trim($data['ubicacion_fisica'] ?? '');
+    if ($ubicacionFisica === 'Otro' && !empty($data['ubicacion_fisica_otro'])) {
+      $ubicacionFisica = trim($data['ubicacion_fisica_otro']);
+    }
+    $data['ubicacion_fisica'] = $ubicacionFisica;
+    unset($data['ubicacion_fisica_otro']);
+
+    if (isset($data['editar_tipo_dimension'])) {
+      if ($data['editar_tipo_dimension'] === 'bidimensional') {
+        $data['medidas'] = '';
+      } elseif ($data['editar_tipo_dimension'] === 'tridimensional') {
+        $data['cm'] = '';
+      }
+      unset($data['editar_tipo_dimension']);
+    }
+
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
       $tmpName = $_FILES['fotografia']['tmp_name'];
       $fileName = $_FILES['fotografia']['name'];
@@ -2016,6 +2071,14 @@ class adminController extends Controller implements ControllerInterface
     unset($data['csrf']);
     unset($data['fotografia_actual']);
 
+    // Resolver Ubicación Física (si eligió 'Otro') y Ubicación Topográfica
+    $ubicacionFisica = trim($data['ubicacion_fisica'] ?? '');
+    if ($ubicacionFisica === 'Otro' && !empty($data['ubicacion_fisica_otro'])) {
+      $ubicacionFisica = trim($data['ubicacion_fisica_otro']);
+    }
+    $data['ubicacion_fisica'] = $ubicacionFisica;
+    unset($data['ubicacion_fisica_otro']);
+
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
       $tmpName = $_FILES['fotografia']['tmp_name'];
       $fileName = $_FILES['fotografia']['name'];
@@ -2104,6 +2167,14 @@ class adminController extends Controller implements ControllerInterface
     unset($data['id']);
     unset($data['csrf']);
     unset($data['fotografia_actual']);
+
+    // Resolver Ubicación Física (si eligió 'Otro') y Ubicación Topográfica
+    $ubicacionFisica = trim($data['ubicacion_fisica'] ?? '');
+    if ($ubicacionFisica === 'Otro' && !empty($data['ubicacion_fisica_otro'])) {
+      $ubicacionFisica = trim($data['ubicacion_fisica_otro']);
+    }
+    $data['ubicacion_fisica'] = $ubicacionFisica;
+    unset($data['ubicacion_fisica_otro']);
 
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
       $tmpName = $_FILES['fotografia']['tmp_name'];
@@ -2402,6 +2473,7 @@ class adminController extends Controller implements ControllerInterface
         'Colección' => $pieza['coleccion'] ?? '-',
         'Forma de Obtención' => $pieza['obtencion'] ?? '-',
         'Ubicación Física' => $pieza['ubicacion_fisica'] ?? '-',
+        'Ubicación Topográfica' => $pieza['ubicacion_topografica'] ?? '-',
         'Estado de Conservación' => $pieza['estado_conservacion'] ?? '-',
       ];
       $descripciones = [
@@ -2420,6 +2492,7 @@ class adminController extends Controller implements ControllerInterface
         'Época' => $pieza['fecha_epoca'] ?? '-',
         'Dimensiones (cm)' => $pieza['dimensiones'] ?? '-',
         'Ubicación Física' => $pieza['ubicacion_fisica'] ?? '-',
+        'Ubicación Topográfica' => $pieza['ubicacion_topografica'] ?? '-',
         'Estado de Conservación' => $pieza['estado_conservacion'] ?? '-',
       ];
       $descripciones = [
@@ -2432,19 +2505,19 @@ class adminController extends Controller implements ControllerInterface
       $propiedades = [
         'Código Interno' => $pieza['codigo_interno'] ?? '-',
         'No. Inventario' => $pieza['no_inventario'] ?? '-',
-        'Materia' => $pieza['materia'] ?? '-',
         'Autor' => $pieza['autor'] ?? '-',
         'Año' => $pieza['anio'] ?? '-',
         'Época' => $pieza['epoca'] ?? '-',
         'Técnica' => $pieza['tecnica'] ?? '-',
         'Origen' => $pieza['origen'] ?? '-',
         'Material' => $pieza['material'] ?? '-',
+        'Centímetros' => $pieza['cm'] ?? '-',
         'Medidas' => $pieza['medidas'] ?? '-',
         'Lote' => $pieza['lote'] ?? '-',
         'Peso' => $pieza['peso'] ?? '-',
-        'Colección' => $pieza['coleccion'] ?? '-',
         'Tipo de obra' => $pieza['tipo'] ?? '-',
         'Ubicación Física' => $pieza['ubicacion_fisica'] ?? '-',
+        'Ubicación Topográfica' => $pieza['ubicacion_topografica'] ?? '-',
         'Estado de Conservación' => $pieza['estado_conservacion'] ?? '-',
       ];
       $descripciones = [
@@ -3635,8 +3708,30 @@ class adminController extends Controller implements ControllerInterface
 
 }
 
+function obtenerOpcionesMuseos()
+{
+  $opciones = ['' => 'Seleccione una ubicación...'];
+  try {
+    $db = Db::connect();
+    $stmt = $db->query("SELECT nombre_museo FROM museos WHERE status = 1 ORDER BY nombre_museo ASC");
+    $museos = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+    foreach ($museos as $m) {
+      $nombre = trim($m);
+      if (!empty($nombre)) {
+        $opciones[$nombre] = $nombre;
+      }
+    }
+  } catch (Exception $e) {
+    // Si falla consulta
+  }
+  $opciones['Otro'] = 'Otro (Especificar sede externa o dependencia)';
+  return $opciones;
+}
+
 function obtenerCamposAcervoGeneral()
 {
+  $opcionesMuseos = obtenerOpcionesMuseos();
+
   $campos = [
     [
       'type' => 'text',
@@ -3672,28 +3767,54 @@ function obtenerCamposAcervoGeneral()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'text',
-      'name' => 'cm',
-      'label' => 'Centímetros (idk)',
-      'id' => 'cm',
-      'class' => 'form-control',
-      'required' => true,
-      'default_value' => '',
-      'placeholder' => 'Ej. 100',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+      'type' => 'custom',
+      'name' => 'tipo_dimension_container',
+      'label' => null,
+      'required' => false,
+      'id' => 'tipo_dimension_container',
+      'class' => '',
+      'content' => '
+        <div class="col-12 col-sm-6 col-lg-4 mb-3">
+          <label class="form-label font-weight-bold text-gray-800 d-block">Tipo de dimensiones <span class="text-danger">*</span></label>
+          <div class="d-flex align-items-center gap-4 mt-2">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo_dimension" id="dimension_bidimensional" value="bidimensional" checked>
+              <label class="form-check-label fw-semibold text-dark" for="dimension_bidimensional">
+                <i class="bx bx-shape-square me-1 text-primary"></i> Bidimensional
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo_dimension" id="dimension_tridimensional" value="tridimensional">
+              <label class="form-check-label fw-semibold text-dark" for="dimension_tridimensional">
+                <i class="bx bx-cube me-1 text-primary"></i> Tridimensional
+              </label>
+            </div>
+          </div>
+        </div>
+      '
     ],
     [
       'type' => 'text',
-      'name' => 'materia',
-      'label' => 'Materia',
-      'id' => 'materia',
+      'name' => 'cm',
+      'label' => 'Centímetros (Bidimensional)',
+      'id' => 'cm',
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
-      'placeholder' => 'Ej. Óleo sobre lienzo',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+      'placeholder' => 'Ej. 50 x 70 cm',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3 container-campo-cm'
     ],
-
+    [
+      'type' => 'text',
+      'name' => 'medidas',
+      'label' => 'Medidas (Tridimensional)',
+      'id' => 'medidas',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Ej. 20 x 15 x 10 cm',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3 container-campo-medidas'
+    ],
     [
       'type' => 'text',
       'name' => 'autor',
@@ -3757,20 +3878,6 @@ function obtenerCamposAcervoGeneral()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'number',
-      'name' => 'medidas',
-      'label' => 'Medidas (cm)',
-      'id' => 'medidas',
-      'class' => 'form-control',
-      'required' => false,
-      'default_value' => '',
-      'min' => 0,
-      'max' => 9999,
-      'step' => 'any',
-      'placeholder' => ' 1cm x 1cm x 1cm',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
       'type' => 'text',
       'name' => 'lote',
       'label' => 'Lote',
@@ -3794,16 +3901,6 @@ function obtenerCamposAcervoGeneral()
     ],
     [
       'type' => 'select',
-      'name' => 'coleccion',
-      'label' => 'Colección',
-      'id' => 'coleccion',
-      'class' => 'form-select',
-      'required' => false,
-      'options' => ['Colección permanente', 'Colección temporal', 'Donación'],
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
-      'type' => 'select',
       'name' => 'tipo',
       'label' => 'Tipo de obra',
       'id' => 'tipo',
@@ -3813,10 +3910,31 @@ function obtenerCamposAcervoGeneral()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'text',
+      'type' => 'select',
       'name' => 'ubicacion_fisica',
       'label' => 'Ubicación física',
       'id' => 'ubicacion-fisica',
+      'class' => 'form-select select-ubicacion-fisica',
+      'required' => true,
+      'options' => $opcionesMuseos,
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'ubicacion_fisica_otro',
+      'label' => 'Especificar sede o dependencia externa',
+      'id' => 'ubicacion-fisica-otro',
+      'class' => 'form-control input-ubicacion-fisica-otro',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Ej. Sede Central, Secretaría de Cultura y Turismo / Palacio de Gobierno',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3 container-ubicacion-otro'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'ubicacion_topografica',
+      'label' => 'Ubicación topográfica',
+      'id' => 'ubicacion-topografica',
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
@@ -3866,6 +3984,8 @@ function obtenerCamposAcervoGeneral()
 
 function obtenerCamposAcervoArqueologico()
 {
+  $opcionesMuseos = obtenerOpcionesMuseos();
+
   $campos = [
     [
       'type' => 'text',
@@ -4034,10 +4154,31 @@ function obtenerCamposAcervoArqueologico()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'text',
+      'type' => 'select',
       'name' => 'ubicacion_fisica',
       'label' => 'Ubicación física',
       'id' => 'ubicacion-fisica',
+      'class' => 'form-select select-ubicacion-fisica',
+      'required' => true,
+      'options' => $opcionesMuseos,
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'ubicacion_fisica_otro',
+      'label' => 'Especificar sede o dependencia externa',
+      'id' => 'ubicacion-fisica-otro',
+      'class' => 'form-control input-ubicacion-fisica-otro',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Ej. Sede Central, Secretaría de Cultura y Turismo / Palacio de Gobierno',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3 container-ubicacion-otro'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'ubicacion_topografica',
+      'label' => 'Ubicación topográfica',
+      'id' => 'ubicacion-topografica',
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
@@ -4100,6 +4241,8 @@ function obtenerCamposAcervoArqueologico()
 
 function obtenerCamposAcervoNumismatica()
 {
+  $opcionesMuseos = obtenerOpcionesMuseos();
+
   $campos = [
     [
       'type' => 'text',
@@ -4190,10 +4333,31 @@ function obtenerCamposAcervoNumismatica()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'text',
+      'type' => 'select',
       'name' => 'ubicacion_fisica',
       'label' => 'Ubicación física',
       'id' => 'ubicacion-fisica',
+      'class' => 'form-select select-ubicacion-fisica',
+      'required' => true,
+      'options' => $opcionesMuseos,
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'ubicacion_fisica_otro',
+      'label' => 'Especificar sede o dependencia externa',
+      'id' => 'ubicacion-fisica-otro',
+      'class' => 'form-control input-ubicacion-fisica-otro',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Ej. Sede Central, Secretaría de Cultura y Turismo / Palacio de Gobierno',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3 container-ubicacion-otro'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'ubicacion_topografica',
+      'label' => 'Ubicación topográfica',
+      'id' => 'ubicacion-topografica',
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',

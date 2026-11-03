@@ -35,12 +35,12 @@
 <!-- Custom scripts for all pages-->
 <script src="<?php echo JS . 'admin/sb-admin-2.min.js'; ?>"></script>
 
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
 <!-- Custom scripts for all pages-->
 <script src="<?php echo JS . 'admin/admin.js'; ?>"></script>
 <script src="<?php if (getCurrentPage()) { echo JS . 'admin/' . getCurrentPage() . '.js?v=' . time(); } ?>"></script>
-
-<!-- Select2 JS -->
-<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
 <!-- Scripts registrados manualmente -->
 <?php echo load_scripts(); ?>

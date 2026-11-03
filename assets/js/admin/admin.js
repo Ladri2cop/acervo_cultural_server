@@ -68,3 +68,17 @@ function getCurrentPage() {
   const segments = window.location.pathname.split("/").filter(Boolean);
   return segments.pop() || "";
 }
+
+/**
+ * Control global para evitar que los menús dropdown dentro de tablas (.table-responsive)
+ * queden atrapados por el overflow o generen scrollbars verticales innecesarios.
+ */
+document.addEventListener("DOMContentLoaded", function () {
+  $(document).on("show.bs.dropdown", ".table-responsive", function () {
+    $(this).css("overflow", "inherit");
+  });
+
+  $(document).on("hidden.bs.dropdown", ".table-responsive", function () {
+    $(this).css("overflow", "");
+  });
+});

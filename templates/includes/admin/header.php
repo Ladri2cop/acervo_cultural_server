@@ -55,10 +55,9 @@
   <link href='https://cdn.boxicons.com/fonts/basic/boxicons.min.css' rel='stylesheet'>
   <link href='https://cdn.boxicons.com/fonts/brands/boxicons-brands.min.css' rel='stylesheet'>
 
-  <!-- Custom CSS Admin -->
-  <link rel="stylesheet" href="<?php echo CSS . 'admin/custom-admin.css?v=' . get_asset_version(); ?>">
-
   <!-- Select2 CSS -->
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
-  
+
+  <!-- Custom CSS Admin -->
+  <link rel="stylesheet" href="<?php echo CSS . 'admin/custom-admin.css?v=' . time(); ?>">
 </head>

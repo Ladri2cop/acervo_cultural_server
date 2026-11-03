@@ -210,6 +210,45 @@ document.addEventListener('DOMContentLoaded', function () {
       const fechaMostrar = p.updated_at || p.created_at;
       const fechaFormateada = fechaMostrar ? fechaMostrar.substring(0, 16) : 'S/F';
 
+      let opcionesDropdown = `
+        <li>
+          <a class="dropdown-item" href="javascript:void(0);" onclick="window.abrirModalDetalleRevision('${p.tipo}', ${p.id})">
+            <i class='bx text-info bx__iconmenu bx-eye-alt'></i> Ver Expediente
+          </a>
+        </li>
+      `;
+
+      if (p.estatus_revision !== 'aprobado') {
+        opcionesDropdown += `
+          <li>
+            <a class="dropdown-item" href="javascript:void(0);" onclick="window.confirmarAprobacion('${p.tipo}', ${p.id}, '${escapeJs(p.titulo || p.codigo_interno)}')">
+              <i class='bx text-success bx__iconmenu bx-check-circle'></i> Aprobar Registro
+            </a>
+          </li>
+        `;
+      }
+
+      if (p.estatus_revision !== 'cambios_solicitados') {
+        opcionesDropdown += `
+          <li>
+            <a class="dropdown-item" href="javascript:void(0);" onclick="window.abrirModalCambios('${p.tipo}', ${p.id}, '${escapeJs(p.codigo_interno)}', '${escapeJs(p.titulo)}')">
+              <i class='bx text-warning bx__iconmenu bx-edit-alt'></i> Solicitar Cambios
+            </a>
+          </li>
+        `;
+      }
+
+      if (p.estatus_revision !== 'rechazado') {
+        opcionesDropdown += `
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item text-danger" href="javascript:void(0);" onclick="window.abrirModalRechazo('${p.tipo}', ${p.id}, '${escapeJs(p.codigo_interno)}', '${escapeJs(p.titulo)}')">
+              <i class='bx text-danger bx__iconmenu bx-x-circle'></i> Rechazar Registro
+            </a>
+          </li>
+        `;
+      }
+
       html += `
         <tr data-id="${p.id}" data-tipo="${p.tipo}">
           <!-- Fotografía / Miniatura -->
@@ -251,26 +290,14 @@ document.addEventListener('DOMContentLoaded', function () {
           <td>${obsHtml}</td>
 
           <!-- Botones de Acción -->
-          <td class="text-center">
-            <div class="btn-group btn-group-sm" role="group">
-              <button type="button" class="btn btn-outline-info" title="Ver Expediente Completo" onclick="window.abrirModalDetalleRevision('${p.tipo}', ${p.id})">
-                <i class='bx bx-show'></i>
+          <td class="text-center align-middle">
+            <div class="dropdown">
+              <button class="btn btn__actions btn-sm btn-outline-primary" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Acciones">
+                <i class='bx bx-caret-down'></i>
               </button>
-              ${p.estatus_revision !== 'aprobado' ? `
-                <button type="button" class="btn btn-outline-success" title="Aprobar y Autorizar (Verde)" onclick="window.confirmarAprobacion('${p.tipo}', ${p.id}, '${escapeJs(p.titulo || p.codigo_interno)}')">
-                  <i class='bx bx-check'></i>
-                </button>
-              ` : ''}
-              ${p.estatus_revision !== 'cambios_solicitados' ? `
-                <button type="button" class="btn btn-outline-warning" title="Solicitar Correcciones (Amarillo)" onclick="window.abrirModalCambios('${p.tipo}', ${p.id}, '${escapeJs(p.codigo_interno)}', '${escapeJs(p.titulo)}')">
-                  <i class='bx bx-edit-alt'></i>
-                </button>
-              ` : ''}
-              ${p.estatus_revision !== 'rechazado' ? `
-                <button type="button" class="btn btn-outline-danger" title="Rechazar Registro (Rojo)" onclick="window.abrirModalRechazo('${p.tipo}', ${p.id}, '${escapeJs(p.codigo_interno)}', '${escapeJs(p.titulo)}')">
-                  <i class='bx bx-x'></i>
-                </button>
-              ` : ''}
+              <ul class="dropdown-menu dropdown-menu-end shadow">
+                ${opcionesDropdown}
+              </ul>
             </div>
           </td>
         </tr>
@@ -813,10 +840,28 @@ document.addEventListener('DOMContentLoaded', function () {
                   <span>${escapeHtml(p.tecnica || p.tecnica_manufactura)}</span>
                 </div>` : ''}
 
-                ${p.medidas || p.dimensiones || p.cm ? `
+                ${p.cm ? `
                 <div class="col-sm-6">
-                  <span class="text-muted d-block">Dimensiones / Medidas:</span>
-                  <span>${escapeHtml(p.medidas || p.dimensiones || p.cm)}</span>
+                  <span class="text-muted d-block">Centímetros (Bidimensional):</span>
+                  <span class="fw-bold text-dark">${escapeHtml(p.cm)}</span>
+                </div>` : ''}
+
+                ${p.medidas ? `
+                <div class="col-sm-6">
+                  <span class="text-muted d-block">Medidas (Tridimensional):</span>
+                  <span class="fw-bold text-dark">${escapeHtml(p.medidas)}</span>
+                </div>` : ''}
+
+                ${p.dimensiones ? `
+                <div class="col-sm-6">
+                  <span class="text-muted d-block">Dimensiones:</span>
+                  <span class="fw-bold text-dark">${escapeHtml(p.dimensiones)}</span>
+                </div>` : ''}
+
+                ${p.ubicacion_topografica ? `
+                <div class="col-sm-6">
+                  <span class="text-muted d-block">Ubicación Topográfica:</span>
+                  <span><i class='bx bx-map text-primary'></i> ${escapeHtml(p.ubicacion_topografica)}</span>
                 </div>` : ''}
 
                 ${p.ubicacion_fisica ? `
@@ -874,20 +919,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Botones de acción en el footer del modal
     footerAcciones.innerHTML = `
-      <div class="btn-group" role="group">
+      <div class="d-inline-flex align-items-center gap-2 flex-wrap" role="group">
         ${p.estatus_revision !== 'rechazado' ? `
-          <button type="button" class="btn btn-danger btn-sm" onclick="window.abrirModalRechazo('${p.tipo_acervo}', ${p.id_acervo_general || p.id_acervo_arq || p.id_acervo_numismatica}, '${escapeJs(p.codigo_interno)}', '${escapeJs(titulo)}')">
-            <i class='bx bx-x-circle'></i> Rechazar (Rojo)
+          <button type="button" class="btn btn-danger btn-sm px-3 shadow-sm d-inline-flex align-items-center" onclick="window.abrirModalRechazo('${p.tipo_acervo}', ${p.id_acervo_general || p.id_acervo_arq || p.id_acervo_numismatica}, '${escapeJs(p.codigo_interno)}', '${escapeJs(titulo)}')">
+            <i class='bx bx-x-circle me-1 fs-6'></i> Rechazar (Rojo)
           </button>
         ` : ''}
         ${p.estatus_revision !== 'cambios_solicitados' ? `
-          <button type="button" class="btn btn-warning btn-sm font-weight-bold" onclick="window.abrirModalCambios('${p.tipo_acervo}', ${p.id_acervo_general || p.id_acervo_arq || p.id_acervo_numismatica}, '${escapeJs(p.codigo_interno)}', '${escapeJs(titulo)}')">
-            <i class='bx bx-edit-alt'></i> Solicitar Cambios (Amarillo)
+          <button type="button" class="btn btn-warning btn-sm text-dark font-weight-bold px-3 shadow-sm d-inline-flex align-items-center" onclick="window.abrirModalCambios('${p.tipo_acervo}', ${p.id_acervo_general || p.id_acervo_arq || p.id_acervo_numismatica}, '${escapeJs(p.codigo_interno)}', '${escapeJs(titulo)}')">
+            <i class='bx bx-edit-alt me-1 fs-6'></i> Solicitar Cambios (Amarillo)
           </button>
         ` : ''}
         ${p.estatus_revision !== 'aprobado' ? `
-          <button type="button" class="btn btn-success btn-sm font-weight-bold" onclick="window.confirmarAprobacion('${p.tipo_acervo}', ${p.id_acervo_general || p.id_acervo_arq || p.id_acervo_numismatica}, '${escapeJs(titulo)}')">
-            <i class='bx bx-check-double'></i> Aprobar y Publicar (Verde)
+          <button type="button" class="btn btn-success btn-sm font-weight-bold px-3 shadow-sm d-inline-flex align-items-center" onclick="window.confirmarAprobacion('${p.tipo_acervo}', ${p.id_acervo_general || p.id_acervo_arq || p.id_acervo_numismatica}, '${escapeJs(titulo)}')">
+            <i class='bx bx-check-double me-1 fs-6'></i> Aprobar y Publicar (Verde)
           </button>
         ` : ''}
       </div>

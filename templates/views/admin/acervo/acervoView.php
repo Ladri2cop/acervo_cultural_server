@@ -320,7 +320,6 @@
         <div class="modal-body p-4">
           <input type="hidden" id="editar-id" name="id">
           <input type="hidden" id="editar-fotografia_actual" name="fotografia_actual">
-          <input type="hidden" id="editar-cm" name="cm">
 
           <!-- Fotografía a todo lo ancho arriba -->
           <div class="row mb-4">
@@ -339,21 +338,17 @@
             <i class="bx bx-info-circle me-1"></i>Información General e Identificación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label for="editar-codigo_interno" class="form-label fw-semibold">Código Interno</label>
               <input type="text" class="form-control" id="editar-codigo_interno" name="codigo_interno">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label for="editar-no_inventario" class="form-label fw-semibold">No. Inventario</label>
               <input type="text" class="form-control" id="editar-no_inventario" name="no_inventario">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label for="editar-nombre" class="form-label fw-semibold">Nombre / Título de la Pieza</label>
               <input type="text" class="form-control" id="editar-nombre" name="nombre_titulo_pieza" required>
-            </div>
-            <div class="col-md-3">
-              <label for="editar-materia" class="form-label fw-semibold">Materia</label>
-              <input type="text" class="form-control" id="editar-materia" name="materia">
             </div>
           </div>
 
@@ -412,27 +407,35 @@
               </select>
             </div>
             <div class="col-md-4">
-              <label for="editar-medidas" class="form-label fw-semibold">Medidas</label>
-              <input type="text" class="form-control" id="editar-medidas" name="medidas">
+              <label class="form-label fw-semibold d-block">Tipo de Dimensiones</label>
+              <div class="d-flex align-items-center gap-3 mt-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="editar_tipo_dimension" id="editar_dimension_bidimensional" value="bidimensional" checked>
+                  <label class="form-check-label fw-semibold" for="editar_dimension_bidimensional">Bidimensional</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="editar_tipo_dimension" id="editar_dimension_tridimensional" value="tridimensional">
+                  <label class="form-check-label fw-semibold" for="editar_dimension_tridimensional">Tridimensional</label>
+                </div>
+              </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4" id="container-editar-cm">
+              <label for="editar-cm" class="form-label fw-semibold">Centímetros</label>
+              <input type="text" class="form-control" id="editar-cm" name="cm" placeholder="Ej. 50 x 70 cm">
+            </div>
+            <div class="col-md-4" id="container-editar-medidas" style="display: none;">
+              <label for="editar-medidas" class="form-label fw-semibold">Medidas</label>
+              <input type="text" class="form-control" id="editar-medidas" name="medidas" placeholder="Ej. 20 x 15 x 10 cm">
+            </div>
+            <div class="col-md-4">
               <label for="editar-lote" class="form-label fw-semibold">Lote</label>
               <input type="text" class="form-control" id="editar-lote" name="lote">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label for="editar-peso" class="form-label fw-semibold">Peso</label>
               <input type="text" class="form-control" id="editar-peso" name="peso">
             </div>
-            <div class="col-md-3">
-              <label for="editar-coleccion" class="form-label fw-semibold">Colección</label>
-              <select class="form-select" id="editar-coleccion" name="coleccion">
-                <option value="" hidden>Seleccione...</option>
-                <option value="Colección permanente">Colección permanente</option>
-                <option value="Colección temporal">Colección temporal</option>
-                <option value="Donación">Donación</option>
-              </select>
-            </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label for="editar-tipo" class="form-label fw-semibold">Tipo</label>
               <select class="form-select" id="editar-tipo" name="tipo">
                 <option value="" hidden>Seleccione...</option>
@@ -449,11 +452,25 @@
             <i class="bx bx-map-pin me-1"></i>Ubicación y Estado de Conservación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-6">
-              <label for="editar-ubicacion" class="form-label fw-semibold">Ubicación Física</label>
-              <input type="text" class="form-control" id="editar-ubicacion" name="ubicacion_fisica">
+            <div class="col-md-4">
+              <label for="editar-ubicacion_fisica" class="form-label fw-semibold">Ubicación Física</label>
+              <select class="form-select select-editar-ubicacion_fisica" id="editar-ubicacion_fisica" name="ubicacion_fisica">
+                <option value="">Seleccione ubicación...</option>
+                <?php if (!empty($d->museos)): foreach ($d->museos as $m): ?>
+                  <option value="<?php echo htmlspecialchars($m); ?>"><?php echo htmlspecialchars($m); ?></option>
+                <?php endforeach; endif; ?>
+                <option value="Otro">Otro (Especificar sede externa o dependencia)</option>
+              </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4 container-editar-ubicacion_otro" id="container-editar-ubicacion_otro" style="display: none;">
+              <label for="editar-ubicacion_fisica_otro" class="form-label fw-semibold">Sede o Dependencia Externa</label>
+              <input type="text" class="form-control" id="editar-ubicacion_fisica_otro" name="ubicacion_fisica_otro" placeholder="Ej. Sede Central / Dependencia">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-ubicacion_topografica" class="form-label fw-semibold">Ubicación Topográfica</label>
+              <input type="text" class="form-control" id="editar-ubicacion_topografica" name="ubicacion_topografica" placeholder="Ej. Sala 3, vitrina 5">
+            </div>
+            <div class="col-md-4">
               <label for="editar-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
               <select class="form-select" id="editar-estado_conservacion" name="estado_conservacion">
                 <option value="" hidden>Seleccione...</option>
@@ -621,11 +638,25 @@
             <i class="bx bx-map-pin me-1"></i>Ubicación y Estado de Conservación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label for="editar-arq-ubicacion_fisica" class="form-label fw-semibold">Ubicación Física</label>
-              <input type="text" class="form-control" id="editar-arq-ubicacion_fisica" name="ubicacion_fisica">
+              <select class="form-select select-editar-ubicacion_fisica" id="editar-arq-ubicacion_fisica" name="ubicacion_fisica">
+                <option value="">Seleccione ubicación...</option>
+                <?php if (!empty($d->museos)): foreach ($d->museos as $m): ?>
+                  <option value="<?php echo htmlspecialchars($m); ?>"><?php echo htmlspecialchars($m); ?></option>
+                <?php endforeach; endif; ?>
+                <option value="Otro">Otro (Especificar sede externa o dependencia)</option>
+              </select>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4 container-editar-arq-ubicacion_otro" id="container-editar-arq-ubicacion_otro" style="display: none;">
+              <label for="editar-arq-ubicacion_fisica_otro" class="form-label fw-semibold">Sede o Dependencia Externa</label>
+              <input type="text" class="form-control" id="editar-arq-ubicacion_fisica_otro" name="ubicacion_fisica_otro" placeholder="Ej. Sede Central / Dependencia">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-arq-ubicacion_topografica" class="form-label fw-semibold">Ubicación Topográfica</label>
+              <input type="text" class="form-control" id="editar-arq-ubicacion_topografica" name="ubicacion_topografica" placeholder="Ej. Sala 3, vitrina 5">
+            </div>
+            <div class="col-md-4">
               <label for="editar-arq-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
               <select class="form-select" id="editar-arq-estado_conservacion" name="estado_conservacion">
                 <option value="" hidden>Seleccione...</option>
@@ -761,15 +792,29 @@
             <i class="bx bx-map-pin me-1"></i>Dimensiones, Ubicación y Conservación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="editar-num-dimensiones" class="form-label fw-semibold">Dimensiones (cm)</label>
               <input type="text" class="form-control" id="editar-num-dimensiones" name="dimensiones">
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label for="editar-num-ubicacion_fisica" class="form-label fw-semibold">Ubicación Física</label>
-              <input type="text" class="form-control" id="editar-num-ubicacion_fisica" name="ubicacion_fisica">
+              <select class="form-select select-editar-ubicacion_fisica" id="editar-num-ubicacion_fisica" name="ubicacion_fisica">
+                <option value="">Seleccione ubicación...</option>
+                <?php if (!empty($d->museos)): foreach ($d->museos as $m): ?>
+                  <option value="<?php echo htmlspecialchars($m); ?>"><?php echo htmlspecialchars($m); ?></option>
+                <?php endforeach; endif; ?>
+                <option value="Otro">Otro (Especificar sede externa o dependencia)</option>
+              </select>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3 container-editar-num-ubicacion_otro" id="container-editar-num-ubicacion_otro" style="display: none;">
+              <label for="editar-num-ubicacion_fisica_otro" class="form-label fw-semibold">Sede Externa / Dependencia</label>
+              <input type="text" class="form-control" id="editar-num-ubicacion_fisica_otro" name="ubicacion_fisica_otro" placeholder="Ej. Sede Central / Dependencia">
+            </div>
+            <div class="col-md-3">
+              <label for="editar-num-ubicacion_topografica" class="form-label fw-semibold">Ubicación Topográfica</label>
+              <input type="text" class="form-control" id="editar-num-ubicacion_topografica" name="ubicacion_topografica" placeholder="Ej. Sala 3, vitrina 5">
+            </div>
+            <div class="col-md-3">
               <label for="editar-num-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
               <select class="form-select" id="editar-num-estado_conservacion" name="estado_conservacion">
                 <option value="Excelente">Excelente</option>
@@ -847,21 +892,17 @@
             <i class="bx bx-info-circle me-1"></i>Información General e Identificación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Código Interno</label>
               <div class="form-control bg-light" id="ver-gen-codigo_interno">-</div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label class="form-label fw-semibold">No. Inventario</label>
               <div class="form-control bg-light" id="ver-gen-no_inventario">-</div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Nombre / Título de la Pieza</label>
               <div class="form-control bg-light" id="ver-gen-nombre">-</div>
-            </div>
-            <div class="col-md-3">
-              <label class="form-label fw-semibold">Materia</label>
-              <div class="form-control bg-light" id="ver-gen-materia">-</div>
             </div>
           </div>
 
@@ -902,22 +943,22 @@
               <div class="form-control bg-light" id="ver-gen-material">-</div>
             </div>
             <div class="col-md-4">
-              <label class="form-label fw-semibold">Medidas</label>
+              <label class="form-label fw-semibold">Centímetros (Bidimensional)</label>
+              <div class="form-control bg-light" id="ver-gen-cm">-</div>
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Medidas (Tridimensional)</label>
               <div class="form-control bg-light" id="ver-gen-medidas">-</div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Lote</label>
               <div class="form-control bg-light" id="ver-gen-lote">-</div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Peso</label>
               <div class="form-control bg-light" id="ver-gen-peso">-</div>
             </div>
-            <div class="col-md-3">
-              <label class="form-label fw-semibold">Colección</label>
-              <div class="form-control bg-light" id="ver-gen-coleccion">-</div>
-            </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Tipo</label>
               <div class="form-control bg-light" id="ver-gen-tipo">-</div>
             </div>
@@ -928,11 +969,15 @@
             <i class="bx bx-map-pin me-1"></i>Ubicación y Estado de Conservación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Ubicación Física</label>
               <div class="form-control bg-light" id="ver-gen-ubicacion_fisica">-</div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Ubicación Topográfica</label>
+              <div class="form-control bg-light" id="ver-gen-ubicacion_topografica">-</div>
+            </div>
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Estado de Conservación</label>
               <div class="form-control bg-light" id="ver-gen-estado_conservacion">-</div>
             </div>
@@ -1057,11 +1102,15 @@
             <i class="bx bx-map-pin me-1"></i>Ubicación y Estado de Conservación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Ubicación Física</label>
               <div class="form-control bg-light" id="ver-arq-ubicacion_fisica">-</div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Ubicación Topográfica</label>
+              <div class="form-control bg-light" id="ver-arq-ubicacion_topografica">-</div>
+            </div>
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Estado de Conservación</label>
               <div class="form-control bg-light" id="ver-arq-estado_conservacion">-</div>
             </div>
@@ -1151,15 +1200,19 @@
             <i class="bx bx-map-pin me-1"></i>Dimensiones, Ubicación y Conservación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label fw-semibold">Dimensiones (cm)</label>
               <div class="form-control bg-light" id="ver-num-dimensiones">-</div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
               <label class="form-label fw-semibold">Ubicación Física</label>
               <div class="form-control bg-light" id="ver-num-ubicacion_fisica">-</div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
+              <label class="form-label fw-semibold">Ubicación Topográfica</label>
+              <div class="form-control bg-light" id="ver-num-ubicacion_topografica">-</div>
+            </div>
+            <div class="col-md-3">
               <label class="form-label fw-semibold">Estado de Conservación</label>
               <div class="form-control bg-light" id="ver-num-estado_conservacion">-</div>
             </div>

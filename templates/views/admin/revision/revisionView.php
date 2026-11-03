@@ -186,7 +186,7 @@
               <th scope="col" style="width: 160px;">Capturista / Fecha</th>
               <th scope="col" style="width: 170px;">Semáforo</th>
               <th scope="col" style="width: 210px;">Observaciones</th>
-              <th scope="col" class="text-center" style="width: 170px;">Acciones</th>
+              <th scope="col" class="text-center" style="width: 100px;">Acciones</th>
             </tr>
           </thead>
           <tbody id="tbody-revision">

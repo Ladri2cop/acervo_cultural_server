@@ -292,31 +292,46 @@ $(document).ready(function () {
         }
       }
 
-      // Botones de acción
-      let htmlAcciones = `
-        <div class="btn-group btn-group-sm" role="group">
-          <button type="button" class="btn btn-outline-primary btn-ver-detalle" data-id="${m.id_movimiento}" title="Ver Expediente Completo">
-            <i class='bx bx-file-blank'></i>
-          </button>
+      // Dropdown de acciones
+      let opcionesDropdown = `
+        <li>
+          <a class="dropdown-item btn-ver-detalle" href="javascript:void(0);" data-id="${m.id_movimiento}">
+            <i class='bx text-primary bx__iconmenu bx-eye-alt'></i> Ver Expediente
+          </a>
+        </li>
       `;
 
       if (esPrestamo && m.estatus === 'activo') {
-        htmlAcciones += `
-          <button type="button" class="btn btn-outline-success btn-devolver-prestamo" data-id="${m.id_movimiento}" title="Registrar Devolución de la Pieza">
-            <i class='bx bx-check-shield'></i> Devolver
-          </button>
+        opcionesDropdown += `
+          <li>
+            <a class="dropdown-item btn-devolver-prestamo" href="javascript:void(0);" data-id="${m.id_movimiento}">
+              <i class='bx text-success bx__iconmenu bx-undo'></i> Registrar Devolución
+            </a>
+          </li>
         `;
       }
 
       if (m.estatus === 'activo') {
-        htmlAcciones += `
-          <button type="button" class="btn btn-outline-danger btn-cancelar-movimiento" data-id="${m.id_movimiento}" title="Cancelar Movimiento">
-            <i class='bx bx-trash'></i>
-          </button>
+        opcionesDropdown += `
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item btn-cancelar-movimiento text-danger" href="javascript:void(0);" data-id="${m.id_movimiento}">
+              <i class='bx text-danger bx__iconmenu bx-trash'></i> Cancelar Movimiento
+            </a>
+          </li>
         `;
       }
 
-      htmlAcciones += `</div>`;
+      const htmlAcciones = `
+        <div class="dropdown">
+          <button class="btn btn__actions btn-sm btn-outline-primary" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Acciones">
+            <i class='bx bx-caret-down'></i>
+          </button>
+          <ul class="dropdown-menu dropdown-menu-end shadow">
+            ${opcionesDropdown}
+          </ul>
+        </div>
+      `;
 
       // Origen ➔ Destino
       const htmlTrayecto = `
@@ -362,17 +377,20 @@ $(document).ready(function () {
     });
 
     // Enlazar eventos de botones de acción
-    $('.btn-ver-detalle').on('click', function () {
+    $('.btn-ver-detalle').on('click', function (e) {
+      e.preventDefault();
       const id = $(this).data('id');
       mostrarDetalleMovimiento(id);
     });
 
-    $('.btn-devolver-prestamo').on('click', function () {
+    $('.btn-devolver-prestamo').on('click', function (e) {
+      e.preventDefault();
       const id = $(this).data('id');
       abrirModalDevolucion(id);
     });
 
-    $('.btn-cancelar-movimiento').on('click', function () {
+    $('.btn-cancelar-movimiento').on('click', function (e) {
+      e.preventDefault();
       const id = $(this).data('id');
       confirmarCancelarMovimiento(id);
     });

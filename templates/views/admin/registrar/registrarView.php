@@ -34,9 +34,9 @@
 
 <div class="card mb-4">
     <div class="card-header py-3">
-        <label for="select-acervo" class="label">Selecciona el tipo de acervo que deseas registrar</label>
-        <select name="select-acervo" id="select-acervo" class="form-select">
-            <option value="" hidden>Seleccione...</option>
+        <label for="select-acervo" class="form-label font-weight-bold text-gray-800">Selecciona el tipo de acervo que deseas registrar</label>
+        <select name="select-acervo" id="select-acervo" class="form-select text-dark font-weight-bold" style="color: #212529 !important; background-color: #fff !important;">
+            <option value="" selected disabled>Seleccione el tipo de acervo...</option>
             <?php if (user_can('registrar_acervo_general')): ?>
                 <option value="1">Acervo General</option>
             <?php endif; ?>

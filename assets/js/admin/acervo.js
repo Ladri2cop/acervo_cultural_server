@@ -536,10 +536,10 @@ function innerListaAcervo(piezas, pagination = null, config = null) {
         <td>${pieza.descripcion || '-'}</td>
         <td>
           <div class="dropdown">
-            <button class="btn btn__actions btn-sm btn-outline-primary" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <button class="btn btn__actions btn-sm btn-outline-primary" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Acciones">
               <i class='bx bx-caret-down'></i> 
             </button>
-            <ul class="dropdown-menu">
+            <ul class="dropdown-menu dropdown-menu-end shadow">
               ${opcionesDropdown}
             </ul>
           </div>
@@ -657,6 +657,62 @@ function setSelectValueOrAppend(selectId, value) {
   select.val(valToSet);
 }
 
+function setUbicacionFisicaSelect(selectSelector, containerOtroSelector, inputOtroSelector, valorUbi) {
+  const select = $(selectSelector);
+  const container = $(containerOtroSelector);
+  const input = $(inputOtroSelector);
+  valorUbi = (valorUbi || '').trim();
+
+  let encontrada = false;
+  select.find('option').each(function () {
+    const val = $(this).val();
+    if (val && val !== 'Otro' && val.toLowerCase() === valorUbi.toLowerCase()) {
+      encontrada = true;
+      select.val(val);
+      return false;
+    }
+  });
+
+  if (encontrada) {
+    container.hide();
+    input.val('').prop('required', false);
+  } else if (valorUbi !== '') {
+    select.val('Otro');
+    container.show();
+    input.val(valorUbi).prop('required', true);
+  } else {
+    select.val('');
+    container.hide();
+    input.val('').prop('required', false);
+  }
+}
+
+$(document).on('change', '.select-editar-ubicacion_fisica', function () {
+  const modal = $(this).closest('.modal');
+  const containerOtro = modal.find('[id*="ubicacion_otro"]');
+  const inputOtro = modal.find('[id*="ubicacion_fisica_otro"]');
+  if ($(this).val() === 'Otro') {
+    containerOtro.slideDown(200);
+    inputOtro.prop('required', true).focus();
+  } else {
+    containerOtro.slideUp(200);
+    inputOtro.prop('required', false).val('');
+  }
+});
+
+$(document).on('change', 'input[name="editar_tipo_dimension"]', function () {
+  const tipo = $('input[name="editar_tipo_dimension"]:checked').val();
+  if (tipo === 'tridimensional') {
+    $('#container-editar-cm').hide();
+    $('#editar-cm').val('');
+    $('#container-editar-medidas').show();
+  } else {
+    $('#container-editar-cm').show();
+    $('#container-editar-medidas').hide();
+    $('#editar-medidas').val('');
+  }
+});
+
 function abrirModalEditarPiezaNum(id, esCorreccion = false) {
   const permisos = (window.permisosAcervo && window.permisosAcervo.numismatica)
     ? window.permisosAcervo.numismatica
@@ -690,7 +746,8 @@ function abrirModalEditarPiezaNum(id, esCorreccion = false) {
         setSelectValueOrAppend('#editar-num-material', pieza.material);
         setSelectValueOrAppend('#editar-num-fecha_epoca', pieza.fecha_epoca);
         $('#editar-num-dimensiones').val(pieza.dimensiones || '');
-        $('#editar-num-ubicacion_fisica').val(pieza.ubicacion_fisica || '');
+        setUbicacionFisicaSelect('#editar-num-ubicacion_fisica', '#container-editar-num-ubicacion_otro', '#editar-num-ubicacion_fisica_otro', pieza.ubicacion_fisica);
+        $('#editar-num-ubicacion_topografica').val(pieza.ubicacion_topografica || '');
         setSelectValueOrAppend('#editar-num-estado_conservacion', pieza.estado_conservacion);
         $('#editar-num-observaciones').val(pieza.observaciones || '');
         $('#editar-num-descripcion_cara_a').val(pieza.descripcion_cara_a || '');
@@ -764,7 +821,8 @@ function abrirModalEditarPiezaArq(id, esCorreccion = false) {
         $('#editar-arq-tecnica_decorativa').val(pieza.tecnica_decorativa || '');
         $('#editar-arq-coleccion').val(pieza.coleccion || '');
         $('#editar-arq-obtencion').val(pieza.obtencion || '');
-        $('#editar-arq-ubicacion_fisica').val(pieza.ubicacion_fisica || '');
+        setUbicacionFisicaSelect('#editar-arq-ubicacion_fisica', '#container-editar-arq-ubicacion_otro', '#editar-arq-ubicacion_fisica_otro', pieza.ubicacion_fisica);
+        $('#editar-arq-ubicacion_topografica').val(pieza.ubicacion_topografica || '');
         setSelectValueOrAppend('#editar-arq-estado_conservacion', pieza.estado_conservacion);
         $('#editar-arq-observaciones').val(pieza.observaciones || '');
         $('#editar-arq-descripcion').val(pieza.descripcion || '');
@@ -852,6 +910,7 @@ function abrirModalVerPieza(id, tipoAcervo = 'general') {
           $('#ver-arq-coleccion').text(pieza.coleccion || '-');
 
           $('#ver-arq-ubicacion_fisica').text(pieza.ubicacion_fisica || '-');
+          $('#ver-arq-ubicacion_topografica').text(pieza.ubicacion_topografica || '-');
           $('#ver-arq-estado_conservacion').text(pieza.estado_conservacion || '-');
 
           $('#ver-arq-descripcion').text(pieza.descripcion || '-');
@@ -882,6 +941,7 @@ function abrirModalVerPieza(id, tipoAcervo = 'general') {
 
           $('#ver-num-dimensiones').text(pieza.dimensiones || '-');
           $('#ver-num-ubicacion_fisica').text(pieza.ubicacion_fisica || '-');
+          $('#ver-num-ubicacion_topografica').text(pieza.ubicacion_topografica || '-');
           $('#ver-num-estado_conservacion').text(pieza.estado_conservacion || '-');
 
           $('#ver-num-descripcion_cara_a').text(pieza.descripcion_cara_a || '-');
@@ -905,7 +965,6 @@ function abrirModalVerPieza(id, tipoAcervo = 'general') {
           $('#ver-gen-codigo_interno').text(pieza.codigo_interno || '-');
           $('#ver-gen-no_inventario').text(pieza.no_inventario || '-');
           $('#ver-gen-nombre').text(pieza.nombre_titulo_pieza || pieza.nombre || '-');
-          $('#ver-gen-materia').text(pieza.materia || '-');
 
           $('#ver-gen-autor').text(pieza.autor || '-');
           $('#ver-gen-anio').text(pieza.anio || '-');
@@ -914,13 +973,14 @@ function abrirModalVerPieza(id, tipoAcervo = 'general') {
           $('#ver-gen-tecnica').text(pieza.tecnica || '-');
           $('#ver-gen-origen').text(pieza.origen || '-');
           $('#ver-gen-material').text(pieza.material || '-');
+          $('#ver-gen-cm').text(pieza.cm || '-');
           $('#ver-gen-medidas').text(pieza.medidas || '-');
           $('#ver-gen-lote').text(pieza.lote || '-');
           $('#ver-gen-peso').text(pieza.peso || '-');
-          $('#ver-gen-coleccion').text(pieza.coleccion || '-');
           $('#ver-gen-tipo').text(pieza.tipo || '-');
 
           $('#ver-gen-ubicacion_fisica').text(pieza.ubicacion_fisica || '-');
+          $('#ver-gen-ubicacion_topografica').text(pieza.ubicacion_topografica || '-');
           $('#ver-gen-estado_conservacion').text(pieza.estado_conservacion || '-');
 
           $('#ver-gen-descripcion').text(pieza.descripcion || '-');
@@ -988,7 +1048,8 @@ function abrirModalEditarPieza(id, tipoAcervo = 'general', esCorreccion = false)
           $('#editar-arq-tecnica_decorativa').val(pieza.tecnica_decorativa);
           $('#editar-arq-coleccion').val(pieza.coleccion);
           $('#editar-arq-obtencion').val(pieza.obtencion);
-          $('#editar-arq-ubicacion_fisica').val(pieza.ubicacion_fisica);
+          setUbicacionFisicaSelect('#editar-arq-ubicacion_fisica', '#container-editar-arq-ubicacion_otro', '#editar-arq-ubicacion_fisica_otro', pieza.ubicacion_fisica);
+          $('#editar-arq-ubicacion_topografica').val(pieza.ubicacion_topografica || '');
           $('#editar-arq-estado_conservacion').val(pieza.estado_conservacion);
           $('#editar-arq-observaciones').val(pieza.observaciones);
           $('#editar-arq-descripcion').val(pieza.descripcion);
@@ -1014,20 +1075,30 @@ function abrirModalEditarPieza(id, tipoAcervo = 'general', esCorreccion = false)
         $('#editar-codigo_interno').val(pieza.codigo_interno);
         $('#editar-no_inventario').val(pieza.no_inventario);
         $('#editar-nombre').val(pieza.nombre_titulo_pieza);
-        $('#editar-cm').val(pieza.cm);
-        $('#editar-materia').val(pieza.materia);
+        
+        // Dimensiones: Bidimensional (cm) vs Tridimensional (medidas)
+        if (pieza.medidas && pieza.medidas.trim() !== '') {
+          $('#editar_dimension_tridimensional').prop('checked', true).trigger('change');
+          $('#editar-medidas').val(pieza.medidas);
+          $('#editar-cm').val('');
+        } else {
+          $('#editar_dimension_bidimensional').prop('checked', true).trigger('change');
+          $('#editar-cm').val(pieza.cm || '');
+          $('#editar-medidas').val('');
+        }
+
+        $('#editar-materia').val(pieza.materia || '');
         $('#editar-autor').val(pieza.autor);
         $('#editar-fecha').val(pieza.anio);
         setSelectValueOrAppend('#editar-epoca', pieza.epoca);
         setSelectValueOrAppend('#editar-tecnica', pieza.tecnica);
         $('#editar-origen').val(pieza.origen);
         setSelectValueOrAppend('#editar-material', pieza.material);
-        $('#editar-medidas').val(pieza.medidas);
         $('#editar-lote').val(pieza.lote);
         $('#editar-peso').val(pieza.peso);
-        setSelectValueOrAppend('#editar-coleccion', pieza.coleccion);
         setSelectValueOrAppend('#editar-tipo', pieza.tipo);
-        $('#editar-ubicacion').val(pieza.ubicacion_fisica);
+        setUbicacionFisicaSelect('#editar-ubicacion_fisica', '#container-editar-ubicacion_otro', '#editar-ubicacion_fisica_otro', pieza.ubicacion_fisica);
+        $('#editar-ubicacion_topografica').val(pieza.ubicacion_topografica || '');
         setSelectValueOrAppend('#editar-estado_conservacion', pieza.estado_conservacion);
         $('#editar-observaciones').val(pieza.observaciones);
         $('#editar-descripcion').val(pieza.descripcion);
@@ -1083,20 +1154,33 @@ document.addEventListener('DOMContentLoaded', function () {
       formData.append('codigo_interno', $('#editar-codigo_interno').val());
       formData.append('no_inventario', $('#editar-no_inventario').val());
       formData.append('nombre_titulo_pieza', $('#editar-nombre').val());
-      formData.append('cm', $('#editar-cm').val());
-      formData.append('materia', $('#editar-materia').val());
+
+      const tipoDim = $('input[name="editar_tipo_dimension"]:checked').val() || 'bidimensional';
+      formData.append('editar_tipo_dimension', tipoDim);
+      formData.append('cm', tipoDim === 'bidimensional' ? $('#editar-cm').val() : '');
+      formData.append('medidas', tipoDim === 'tridimensional' ? $('#editar-medidas').val() : '');
+      formData.append('materia', '');
       formData.append('autor', $('#editar-autor').val());
       formData.append('anio', $('#editar-fecha').val());
       formData.append('epoca', $('#editar-epoca').val());
       formData.append('tecnica', $('#editar-tecnica').val());
       formData.append('origen', $('#editar-origen').val());
       formData.append('material', $('#editar-material').val());
-      formData.append('medidas', $('#editar-medidas').val());
       formData.append('lote', $('#editar-lote').val());
       formData.append('peso', $('#editar-peso').val());
-      formData.append('coleccion', $('#editar-coleccion').val());
+      formData.append('coleccion', '');
       formData.append('tipo', $('#editar-tipo').val());
-      formData.append('ubicacion_fisica', $('#editar-ubicacion').val());
+
+      const ubiGenVal = $('#editar-ubicacion_fisica').val();
+      const ubiGenOtro = ($('#editar-ubicacion_fisica_otro').val() || '').trim();
+      if (ubiGenVal === 'Otro' && !ubiGenOtro) {
+        toastr.warning('Por favor especifica la sede o dependencia en Ubicación Física.', 'Campo Requerido');
+        $('#editar-ubicacion_fisica_otro').focus();
+        return;
+      }
+      formData.append('ubicacion_fisica', ubiGenVal === 'Otro' ? ubiGenOtro : ubiGenVal);
+      formData.append('ubicacion_fisica_otro', ubiGenOtro);
+      formData.append('ubicacion_topografica', $('#editar-ubicacion_topografica').val());
       formData.append('estado_conservacion', $('#editar-estado_conservacion').val());
       formData.append('observaciones', $('#editar-observaciones').val());
       formData.append('descripcion', $('#editar-descripcion').val());
@@ -1161,7 +1245,17 @@ document.addEventListener('DOMContentLoaded', function () {
       formData.append('tecnica_decorativa', $('#editar-arq-tecnica_decorativa').val());
       formData.append('coleccion', $('#editar-arq-coleccion').val());
       formData.append('obtencion', $('#editar-arq-obtencion').val());
-      formData.append('ubicacion_fisica', $('#editar-arq-ubicacion_fisica').val());
+
+      const ubiArqVal = $('#editar-arq-ubicacion_fisica').val();
+      const ubiArqOtro = ($('#editar-arq-ubicacion_fisica_otro').val() || '').trim();
+      if (ubiArqVal === 'Otro' && !ubiArqOtro) {
+        toastr.warning('Por favor especifica la sede o dependencia en Ubicación Física.', 'Campo Requerido');
+        $('#editar-arq-ubicacion_fisica_otro').focus();
+        return;
+      }
+      formData.append('ubicacion_fisica', ubiArqVal === 'Otro' ? ubiArqOtro : ubiArqVal);
+      formData.append('ubicacion_fisica_otro', ubiArqOtro);
+      formData.append('ubicacion_topografica', $('#editar-arq-ubicacion_topografica').val());
       formData.append('estado_conservacion', $('#editar-arq-estado_conservacion').val());
       formData.append('observaciones', $('#editar-arq-observaciones').val());
       formData.append('descripcion', $('#editar-arq-descripcion').val());
@@ -1219,7 +1313,17 @@ document.addEventListener('DOMContentLoaded', function () {
       formData.append('material', $('#editar-num-material').val());
       formData.append('fecha_epoca', $('#editar-num-fecha_epoca').val());
       formData.append('dimensiones', $('#editar-num-dimensiones').val());
-      formData.append('ubicacion_fisica', $('#editar-num-ubicacion_fisica').val());
+
+      const ubiNumVal = $('#editar-num-ubicacion_fisica').val();
+      const ubiNumOtro = ($('#editar-num-ubicacion_fisica_otro').val() || '').trim();
+      if (ubiNumVal === 'Otro' && !ubiNumOtro) {
+        toastr.warning('Por favor especifica la sede o dependencia en Ubicación Física.', 'Campo Requerido');
+        $('#editar-num-ubicacion_fisica_otro').focus();
+        return;
+      }
+      formData.append('ubicacion_fisica', ubiNumVal === 'Otro' ? ubiNumOtro : ubiNumVal);
+      formData.append('ubicacion_fisica_otro', ubiNumOtro);
+      formData.append('ubicacion_topografica', $('#editar-num-ubicacion_topografica').val());
       formData.append('estado_conservacion', $('#editar-num-estado_conservacion').val());
       formData.append('observaciones', $('#editar-num-observaciones').val());
       formData.append('descripcion_cara_a', $('#editar-num-descripcion_cara_a').val());
@@ -1659,6 +1763,24 @@ function renderizarTablaMisRegistros(filas) {
     const fechaMostrar = p.updated_at || p.created_at;
     const fecha = fechaMostrar ? fechaMostrar.substring(0, 16) : 'S/F';
 
+    let opcionesMisRegistros = `
+      <li>
+        <a class="dropdown-item" href="javascript:void(0);" onclick="window.verMiPieza('${p.tipo}', ${p.id})">
+          <i class='bx text-info bx__iconmenu bx-eye-alt me-1'></i> Ver Detalle
+        </a>
+      </li>
+    `;
+
+    if (p.estatus_revision === 'cambios_solicitados' || p.estatus_revision === 'pendiente') {
+      opcionesMisRegistros += `
+        <li>
+          <a class="dropdown-item" href="javascript:void(0);" onclick="window.corregirMiPieza('${p.tipo}', ${p.id})">
+            <i class='bx text-warning bx__iconmenu bx-pencil-circle me-1'></i> ${p.estatus_revision === 'cambios_solicitados' ? 'Corregir y Reenviar' : 'Editar Pieza'}
+          </a>
+        </li>
+      `;
+    }
+
     html += `
       <tr>
         <td class="text-center">
@@ -1675,16 +1797,14 @@ function renderizarTablaMisRegistros(filas) {
         </td>
         <td>${semaforoBadge}</td>
         <td>${obsBox}</td>
-        <td class="text-center">
-          <div class="d-flex justify-content-center gap-1">
-            <button type="button" class="btn btn-sm btn-outline-info" title="Ver Detalle" onclick="window.verMiPieza('${p.tipo}', ${p.id})">
-              <i class='bx bx-show'></i> Ver
+        <td class="text-center align-middle">
+          <div class="dropdown">
+            <button class="btn btn__actions btn-sm btn-outline-primary" type="button" data-bs-toggle="dropdown" data-bs-boundary="viewport" data-bs-popper-config='{"strategy":"fixed"}' aria-expanded="false" title="Acciones">
+              <i class='bx bx-caret-down'></i>
             </button>
-            ${(p.estatus_revision === 'cambios_solicitados' || p.estatus_revision === 'pendiente') ? `
-              <button type="button" class="btn btn-sm ${p.estatus_revision === 'cambios_solicitados' ? 'btn-warning text-dark fw-bold' : 'btn-outline-primary'}" title="${p.estatus_revision === 'cambios_solicitados' ? 'Corregir y Reenviar a Revisión' : 'Editar Pieza en Revisión'}" onclick="window.corregirMiPieza('${p.tipo}', ${p.id})">
-                <i class='bx bx-edit'></i> ${p.estatus_revision === 'cambios_solicitados' ? 'Corregir y Reenviar' : 'Editar'}
-              </button>
-            ` : ''}
+            <ul class="dropdown-menu dropdown-menu-end shadow">
+              ${opcionesMisRegistros}
+            </ul>
           </div>
         </td>
       </tr>

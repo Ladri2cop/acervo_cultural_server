@@ -209,7 +209,7 @@
               <th scope="col">Origen ➔ Destino</th>
               <th scope="col" style="width: 150px;">Fechas</th>
               <th scope="col" class="text-center" style="width: 110px;">Estatus</th>
-              <th scope="col" class="text-center pe-3" style="width: 140px;">Acciones</th>
+              <th scope="col" class="text-center pe-3" style="width: 100px;">Acciones</th>
             </tr>
           </thead>
           <tbody id="tbody-prestamos" style="font-size: 0.88rem;">

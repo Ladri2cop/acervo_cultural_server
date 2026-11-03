@@ -161,6 +161,8 @@ form.user .form-control-user {
   align-items: center;
   width: 2rem;
   height: 2rem;
+  margin: 0 auto;
+  border-radius: 6px;
   border: 2px solid var(--primary);
   transition: 0.3s ease-in-out;
 }
@@ -301,19 +303,52 @@ form.user .form-control-user {
   padding: 6px 12px !important;
   border: 1px solid #ced4da !important;
   border-radius: 0.375rem !important;
+  background-color: #ffffff !important;
 }
 
-.select2-container--default
-  .select2-selection--single
-  .select2-selection__arrow {
-  top: 7px !important;
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+  color: #212529 !important;
+  line-height: 28px !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+  color: #6c757d !important;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+  top: 8px !important;
+}
+
+.select2-dropdown {
+  background-color: #ffffff !important;
+  border: 1px solid #ced4da !important;
+  border-radius: 0.375rem !important;
+  box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+  z-index: 9999 !important;
+}
+
+.select2-container--default .select2-results__option {
+  color: #212529 !important;
+  background-color: #ffffff !important;
+  padding: 10px 14px !important;
+  font-size: 0.95rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+}
+
+.select2-container--default .select2-results__option--selected {
+  background-color: #e9ecef !important;
+  color: #212529 !important;
+  font-weight: 600 !important;
 }
 
 /* REGISTROS CSS */
 .select2-container--default
   .select2-results__option--highlighted.select2-results__option--selectable {
-  background-color: var(--primary) !important;
-  color: white;
+  background-color: var(--primary, #611735) !important;
+  color: #ffffff !important;
 }
 
 /* .select2-container .select2-dropdown.select2-scroll-limit {
@@ -487,4 +522,180 @@ form.user .form-control-user {
     text-overflow: ellipsis;
     overflow: hidden;
   }
+}
+
+/* Forzar tema claro para controles de formulario en el navegador */
+html, body, select, option, .form-select, .form-control {
+  color-scheme: light !important;
+}
+
+/* Estilos de legibilidad para select y options */
+select.form-select,
+select.form-control,
+#select-acervo {
+  color: #212529 !important;
+  background-color: #ffffff !important;
+  -webkit-text-fill-color: #212529 !important;
+}
+
+select.form-select option,
+select.form-control option,
+#select-acervo option {
+  color: #212529 !important;
+  background-color: #ffffff !important;
+  -webkit-text-fill-color: #212529 !important;
+}
+
+select.form-select option:disabled,
+select.form-control option:disabled,
+#select-acervo option:disabled {
+  color: #6c757d !important;
+  -webkit-text-fill-color: #6c757d !important;
+}
+
+/* Campos condicionales dinámicos */
+.container-ubicacion-otro {
+  display: none;
+}
+.container-campo-medidas {
+  display: none;
+}
+
+/* Alias de compatibilidad para íconos */
+.bx-show:before {
+  content: "\f384" !important; /* Mapeo a bx-eye */
+}
+
+/* ==========================================================================
+   BOTONES E ÍCONOS DE ACCIONES EN TABLAS (REVISIÓN, PRÉSTAMOS, ETC.)
+   ========================================================================== */
+.action-buttons-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+}
+
+.btn-action-table {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  min-height: 32px !important;
+  max-width: 32px !important;
+  max-height: 32px !important;
+  padding: 0 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  border-radius: 6px !important;
+  border-width: 1px !important;
+  border-style: solid !important;
+  line-height: 1 !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  cursor: pointer;
+  background-color: #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  position: relative;
+  vertical-align: middle;
+}
+
+.btn-action-table i {
+  font-size: 1.18rem !important;
+  line-height: 1 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: transform 0.15s ease-in-out;
+  pointer-events: none;
+}
+
+.btn-action-table:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.12);
+  z-index: 2;
+}
+
+.btn-action-table:hover i {
+  transform: scale(1.15);
+}
+
+.btn-action-table:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08);
+}
+
+/* Colores institucionales con contraste y fondo sutil en reposo */
+.btn-action-table.btn-outline-info {
+  color: #0891b2 !important;
+  border-color: #0891b2 !important;
+  background-color: rgba(8, 145, 178, 0.06) !important;
+}
+.btn-action-table.btn-outline-info:hover {
+  background-color: #0891b2 !important;
+  color: #ffffff !important;
+}
+
+.btn-action-table.btn-outline-primary {
+  color: #2563eb !important;
+  border-color: #2563eb !important;
+  background-color: rgba(37, 99, 235, 0.06) !important;
+}
+.btn-action-table.btn-outline-primary:hover {
+  background-color: #2563eb !important;
+  color: #ffffff !important;
+}
+
+.btn-action-table.btn-outline-success {
+  color: #16a34a !important;
+  border-color: #16a34a !important;
+  background-color: rgba(22, 163, 74, 0.06) !important;
+}
+.btn-action-table.btn-outline-success:hover {
+  background-color: #16a34a !important;
+  color: #ffffff !important;
+}
+
+.btn-action-table.btn-outline-warning {
+  color: #b45309 !important;
+  border-color: #d97706 !important;
+  background-color: rgba(217, 119, 6, 0.08) !important;
+}
+.btn-action-table.btn-outline-warning:hover {
+  background-color: #d97706 !important;
+  color: #ffffff !important;
+}
+
+.btn-action-table.btn-outline-danger {
+  color: #dc2626 !important;
+  border-color: #dc2626 !important;
+  background-color: rgba(220, 38, 38, 0.06) !important;
+}
+.btn-action-table.btn-outline-danger:hover {
+  background-color: #dc2626 !important;
+  color: #ffffff !important;
+}
+
+/* Normalización de botones en cualquier celda de tabla */
+td .btn-group.btn-group-sm > .btn {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+td .btn-group.btn-group-sm > .btn i {
+  font-size: 1.15rem;
+  line-height: 1;
+}
+
+/* Prevenir que los dropdowns dentro de tablas generen scrollbars o queden cortados */
+.table-responsive:has(.dropdown-menu.show) {
+  overflow-y: visible !important;
+}
+
+.table-responsive .dropdown-menu {
+  z-index: 1055 !important;
 }
