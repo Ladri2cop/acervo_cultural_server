@@ -122,3 +122,4 @@ graph LR
 Para más detalles sobre la implementación técnica de este mecanismo, consulta:
 - [[03 - Sistema de Roles y Permisos (RBAC)]]
 - [[01 - Inicio de Sesión y Perfiles de Usuario]]
+

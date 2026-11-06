@@ -101,3 +101,4 @@ En la esquina superior derecha del catálogo dispones de dos opciones de salida:
 - Guía para dar de alta una nueva obra: [[03 - Registro y Edición de Piezas Culturales]]
 - Conoce el semáforo curatorial: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
 - Guía de préstamos: [[05 - Gestión de Préstamos y Transferencias]]
+

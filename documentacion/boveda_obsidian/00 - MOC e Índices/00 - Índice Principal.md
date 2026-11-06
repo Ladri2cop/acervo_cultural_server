@@ -116,3 +116,4 @@ Información complementaria y material de consulta técnica:
 | **Préstamos y Traslados** | [[03 - Módulo de Préstamos y Transferencias]] | [[05 - Gestión de Préstamos y Transferencias]] |
 | **Seguridad y Auditoría** | [[04 - Sistema de Auditoría y Trazabilidad]] | [[06 - Fichas Técnicas, Exportaciones y Auditoría#Consulta de Auditoría]] |
 | **Roles y Permisos** | [[03 - Sistema de Roles y Permisos (RBAC)]] | [[01 - Inicio de Sesión y Perfiles de Usuario]] |
+

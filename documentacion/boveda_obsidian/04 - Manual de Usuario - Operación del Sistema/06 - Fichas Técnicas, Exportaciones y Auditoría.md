@@ -103,3 +103,4 @@ Al pulsar en **"Ver Detalle"** en cualquier fila de auditoría, se desplegará u
 - Conoce los filtros de catálogo en: [[02 - Exploración, Búsqueda y Filtrado del Acervo]]
 - Sistema técnico de auditoría: [[04 - Sistema de Auditoría y Trazabilidad]]
 - Inicio de sesión y roles: [[01 - Inicio de Sesión y Perfiles de Usuario]]
+

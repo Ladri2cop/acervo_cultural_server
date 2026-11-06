@@ -112,3 +112,4 @@ Para evitar la sobrecarga por apertura excesiva de sockets a la base de datos My
 - Conoce el stack completo en: [[03 - Stack Tecnológico y Dependencias]]
 - Profundiza en el modelo de datos en: [[01 - Diagrama Entidad-Relación (ERD)]]
 - Consulta los endpoints en: [[04 - Endpoints AJAX y API Interna]]
+

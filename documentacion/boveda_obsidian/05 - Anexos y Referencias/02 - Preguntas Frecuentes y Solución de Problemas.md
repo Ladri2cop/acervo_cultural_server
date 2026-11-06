@@ -103,3 +103,4 @@ Esta sección reúne las dudas operativas más comunes de los usuarios y una gu�
 - Conoce los requisitos del servidor: [[03 - Stack Tecnológico y Dependencias]]
 - Procedimiento de despliegue: [[06 - Despliegue, Servidor y Mantenimiento]]
 - Diccionario de tablas: [[01 - Diccionario de Datos Completo]]
+

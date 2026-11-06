@@ -104,3 +104,4 @@ Para actualizar tus datos o salir de la plataforma:
 - Aprende a buscar obras en: [[02 - Exploración, Búsqueda y Filtrado del Acervo]]
 - Guía de alta de obras: [[03 - Registro y Edición de Piezas Culturales]]
 - Guía curatorial: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
+

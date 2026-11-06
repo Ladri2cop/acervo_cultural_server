@@ -109,3 +109,4 @@ Esta columna `id_modulo` actúa como clave discriminadora en las tablas de acerv
 - Consulta cómo se vinculan los museos al dar de alta una pieza: [[03 - Registro y Edición de Piezas Culturales]]
 - Conoce el modelo ERD global: [[01 - Diagrama Entidad-Relación (ERD)]]
 - Consulta el listado completo de campos en: [[01 - Diccionario de Datos Completo]]
+

@@ -142,3 +142,4 @@ En `templates/includes/sidebar.php` y vistas de catálogo:
 - Consulta el flujo de autenticación en: [[01 - Inicio de Sesión y Perfiles de Usuario]]
 - Revisa el controlador central en: [[01 - Controladores y Flujo de Peticiones]]
 - Modelo de datos: [[01 - Diagrama Entidad-Relación (ERD)]]
+

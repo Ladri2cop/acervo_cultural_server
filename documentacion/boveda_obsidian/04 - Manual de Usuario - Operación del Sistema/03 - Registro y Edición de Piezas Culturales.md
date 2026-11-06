@@ -112,3 +112,4 @@ Si un curador o administrador evaluó tu pieza y solicitó modificaciones:
 - Conoce el proceso de aprobación curatorial: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
 - Consulta el catálogo de piezas aprobadas: [[02 - Exploración, Búsqueda y Filtrado del Acervo]]
 - Préstamos y movimientos de piezas: [[05 - Gestión de Préstamos y Transferencias]]
+

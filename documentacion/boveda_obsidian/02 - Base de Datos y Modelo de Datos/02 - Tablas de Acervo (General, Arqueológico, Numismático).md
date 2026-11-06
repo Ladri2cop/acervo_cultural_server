@@ -128,3 +128,4 @@ flowchart TD
 - Consulta el flujo de aprobación en: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
 - Conoce el procedimiento de alta en: [[03 - Registro y Edición de Piezas Culturales]]
 - Diccionario completo de columnas: [[01 - Diccionario de Datos Completo]]
+

@@ -90,3 +90,4 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 - Conexión PDO Singleton a MariaDB/MySQL.
 - Estructuración inicial de colecciones: Acervo General, Acervo Arqueológico y Acervo Numismático.
 - Plantilla responsiva con Bootstrap 5, SB Admin 2 y DataTables.
+

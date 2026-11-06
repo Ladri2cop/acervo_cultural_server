@@ -103,3 +103,4 @@ Para garantizar el funcionamiento sin interrupciones del aplicativo en un servid
 - Conoce los controladores en: [[01 - Controladores y Flujo de Peticiones]]
 - Conoce los scripts JS en: [[05 - Componentes Frontend, Estilos CSS y JavaScript]]
 - Revisa las tareas de servidor en: [[06 - Despliegue, Servidor y Mantenimiento]]
+

@@ -81,3 +81,4 @@ mindmap
 - Para consultar la arquitectura técnica: [[02 - Arquitectura Bee Framework MVC]]
 - Para explorar el modelo de base de datos: [[01 - Diagrama Entidad-Relación (ERD)]]
 - Para la guía del usuario final: [[01 - Inicio de Sesión y Perfiles de Usuario]]
+

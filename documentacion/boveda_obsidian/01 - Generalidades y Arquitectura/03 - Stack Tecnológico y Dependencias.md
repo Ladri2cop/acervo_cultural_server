@@ -96,3 +96,4 @@ date.timezone = "America/Mexico_City"
 - Conoce la disposición de archivos en: [[04 - Estructura de Directorios del Proyecto]]
 - Consulta la interacción del frontend en: [[05 - Componentes Frontend, Estilos CSS y JavaScript]]
 - Revisa las pautas de despliegue en: [[06 - Despliegue, Servidor y Mantenimiento]]
+

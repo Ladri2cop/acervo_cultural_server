@@ -192,3 +192,4 @@ erDiagram
 - Detalle del ciclo de préstamos: [[03 - Módulo de Préstamos y Transferencias]]
 - Mecanismo de auditoría: [[04 - Sistema de Auditoría y Trazabilidad]]
 - Tablas maestras y catálogos: [[05 - Catálogos y Tablas Auxiliares]]
+

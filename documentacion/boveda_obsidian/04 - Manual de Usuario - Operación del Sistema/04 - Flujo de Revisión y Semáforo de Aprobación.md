@@ -102,3 +102,4 @@ Si eres capturista y recibes una pieza con **Cambios Solicitados**:
 - Conoce el registro de piezas: [[03 - Registro y Edición de Piezas Culturales]]
 - Consulta el historial de auditoría de revisiones: [[04 - Sistema de Auditoría y Trazabilidad]]
 - Gestión de traslados para piezas aprobadas: [[05 - Gestión de Préstamos y Transferencias]]
+

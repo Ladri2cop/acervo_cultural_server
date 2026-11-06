@@ -240,3 +240,4 @@ Catálogo de recintos museográficos oficiales del estado.
 - Consulta el diagrama visual en: [[01 - Diagrama Entidad-Relación (ERD)]]
 - Tablas de acervo: [[02 - Tablas de Acervo (General, Arqueológico, Numismático)]]
 - Trazabilidad y movimientos: [[03 - Módulo de Préstamos y Transferencias]]
+

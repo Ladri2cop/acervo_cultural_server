@@ -141,3 +141,4 @@ graph TD
 - Modelos subyacentes: [[02 - Modelos y Capa de Persistencia PDO]]
 - Interfaz gráfica y scripts JS: [[05 - Componentes Frontend, Estilos CSS y JavaScript]]
 - Matriz de permisos: [[03 - Sistema de Roles y Permisos (RBAC)]]
+

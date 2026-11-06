@@ -110,3 +110,4 @@ En cualquier momento puedes pulsar **"Ver Expediente Completo"** (`bx-eye`) para
 - Conoce el catálogo de obras: [[02 - Exploración, Búsqueda y Filtrado del Acervo]]
 - Consulta el modelo técnico de datos: [[03 - Módulo de Préstamos y Transferencias]]
 - Verificación en auditoría: [[04 - Sistema de Auditoría y Trazabilidad]]
+

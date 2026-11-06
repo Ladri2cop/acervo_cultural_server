@@ -164,3 +164,4 @@ sequenceDiagram
 - Conoce los scripts que invocan estos servicios: [[05 - Componentes Frontend, Estilos CSS y JavaScript]]
 - Revisa el controlador backend en: [[01 - Controladores y Flujo de Peticiones]]
 - Modelo de auditoría que registra estas llamadas: [[04 - Sistema de Auditoría y Trazabilidad]]
+

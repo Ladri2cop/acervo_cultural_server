@@ -142,3 +142,4 @@ find $BACKUP_DIR -type f -name "*.sql.gz" -mtime +30 -exec rm {} \;
 - Arquitectura del framework: [[02 - Arquitectura Bee Framework MVC]]
 - Catálogo de dependencias: [[03 - Stack Tecnológico y Dependencias]]
 - Bitácora de versiones: [[03 - Bitácora de Versiones y Changelog]]
+

@@ -99,3 +99,4 @@ El controlador extrae la dirección de conexión del cliente inspeccionando las 
 - Vista de auditoría en manual de usuario: [[06 - Fichas Técnicas, Exportaciones y Auditoría#3. Consulta del Historial de Auditoría]]
 - Métodos del controlador: [[01 - Controladores y Flujo de Peticiones]]
 - Modelo relacional general: [[01 - Diagrama Entidad-Relación (ERD)]]
+

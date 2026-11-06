@@ -153,3 +153,4 @@ try {
 - Conoce los controladores que invocan estos modelos: [[01 - Controladores y Flujo de Peticiones]]
 - Revisa el esquema relacional en: [[01 - Diagrama Entidad-Relación (ERD)]]
 - Consulta los campos de tablas en: [[02 - Tablas de Acervo (General, Arqueológico, Numismático)]]
+

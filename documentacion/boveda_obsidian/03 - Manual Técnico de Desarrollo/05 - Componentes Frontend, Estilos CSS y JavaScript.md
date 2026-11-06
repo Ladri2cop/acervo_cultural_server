@@ -169,3 +169,4 @@ $('#ubicacion_fisica').on('change', function () {
 - Consulta los endpoints que alimentan estos scripts: [[04 - Endpoints AJAX y API Interna]]
 - Conoce la operación de usuario del formulario: [[03 - Registro y Edición de Piezas Culturales]]
 - Guía de navegación general: [[01 - Mapa de Navegación del Sistema]]
+
