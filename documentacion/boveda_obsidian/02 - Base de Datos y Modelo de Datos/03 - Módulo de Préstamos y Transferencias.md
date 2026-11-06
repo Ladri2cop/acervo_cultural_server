@@ -113,3 +113,6 @@ Para posibilitar que cualquier pieza de los tres acervos sea movilizada sin romp
 - Consulta el controlador correspondiente: [[01 - Controladores y Flujo de Peticiones#Gestión de Préstamos y Traslados]]
 - Revisa el registro de auditoría de movimientos: [[04 - Sistema de Auditoría y Trazabilidad]]
 
+---
+
+Queda pendiente [[Préstamos y Transferencias]].
