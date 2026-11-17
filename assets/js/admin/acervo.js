@@ -713,6 +713,41 @@ $(document).on('change', 'input[name="editar_tipo_dimension"]', function () {
   }
 });
 
+$(document).on('change', '#editar-tipo', function () {
+  const val = $(this).val();
+  const tridimensionales = ['Escultura', 'Mobiliario', 'Cerámica', 'Objeto', 'Otro'];
+  const bidimensionales = ['Pintura', 'Dibujo', 'Grabado', 'Fotografía', 'Acuarela', 'Textil'];
+  if (tridimensionales.includes(val)) {
+    $('#editar_dimension_tridimensional').prop('checked', true).trigger('change');
+  } else if (bidimensionales.includes(val)) {
+    $('#editar_dimension_bidimensional').prop('checked', true).trigger('change');
+  }
+});
+
+$(document).on('change', 'input[name="editar_tipo_dimension_num"]', function () {
+  const tipo = $('input[name="editar_tipo_dimension_num"]:checked').val();
+  if (tipo === 'bidimensional') {
+    $('#container-editar-num-cm').show();
+    $('#container-editar-num-medidas').hide();
+    $('#editar-num-medidas').val('');
+  } else {
+    $('#container-editar-num-cm').hide();
+    $('#editar-num-cm').val('');
+    $('#container-editar-num-medidas').show();
+  }
+});
+
+$(document).on('change', '#editar-num-tipo_obra', function () {
+  const val = $(this).val();
+  const bidimensionales = ['Billetes o notafilia', 'Filatelia', 'Loterofilia', 'Acciones', 'Documentos fiduciarios', 'Sellos'];
+  const tridimensionales = ['Monedas', 'Medallística', 'Tlacos', 'Condecoraciones', 'Otro'];
+  if (bidimensionales.includes(val)) {
+    $('#editar_num_dimension_bidimensional').prop('checked', true).trigger('change');
+  } else if (tridimensionales.includes(val)) {
+    $('#editar_num_dimension_tridimensional').prop('checked', true).trigger('change');
+  }
+});
+
 function abrirModalEditarPiezaNum(id, esCorreccion = false) {
   const permisos = (window.permisosAcervo && window.permisosAcervo.numismatica)
     ? window.permisosAcervo.numismatica
@@ -745,7 +780,28 @@ function abrirModalEditarPiezaNum(id, esCorreccion = false) {
         $('#editar-num-denominacion').val(pieza.denominacion || '');
         setSelectValueOrAppend('#editar-num-material', pieza.material);
         setSelectValueOrAppend('#editar-num-fecha_epoca', pieza.fecha_epoca);
+
+        // Lógica de dimensiones para Numismática
+        const bidimensionalesNum = ['Billetes o notafilia', 'Filatelia', 'Loterofilia', 'Acciones', 'Documentos fiduciarios', 'Sellos'];
+        if (pieza.medidas && pieza.medidas.trim() !== '') {
+          $('#editar_num_dimension_tridimensional').prop('checked', true).trigger('change');
+          $('#editar-num-medidas').val(pieza.medidas);
+          $('#editar-num-cm').val('');
+        } else if (pieza.cm && pieza.cm.trim() !== '') {
+          $('#editar_num_dimension_bidimensional').prop('checked', true).trigger('change');
+          $('#editar-num-cm').val(pieza.cm);
+          $('#editar-num-medidas').val('');
+        } else if (bidimensionalesNum.includes(pieza.tipo_obra)) {
+          $('#editar_num_dimension_bidimensional').prop('checked', true).trigger('change');
+          $('#editar-num-cm').val(pieza.dimensiones || '');
+          $('#editar-num-medidas').val('');
+        } else {
+          $('#editar_num_dimension_tridimensional').prop('checked', true).trigger('change');
+          $('#editar-num-medidas').val(pieza.dimensiones || '');
+          $('#editar-num-cm').val('');
+        }
         $('#editar-num-dimensiones').val(pieza.dimensiones || '');
+
         setUbicacionFisicaSelect('#editar-num-ubicacion_fisica', '#container-editar-num-ubicacion_otro', '#editar-num-ubicacion_fisica_otro', pieza.ubicacion_fisica);
         $('#editar-num-ubicacion_topografica').val(pieza.ubicacion_topografica || '');
         setSelectValueOrAppend('#editar-num-estado_conservacion', pieza.estado_conservacion);
@@ -1312,7 +1368,14 @@ document.addEventListener('DOMContentLoaded', function () {
       formData.append('denominacion', $('#editar-num-denominacion').val());
       formData.append('material', $('#editar-num-material').val());
       formData.append('fecha_epoca', $('#editar-num-fecha_epoca').val());
-      formData.append('dimensiones', $('#editar-num-dimensiones').val());
+
+      const tipoDimNum = $('input[name="editar_tipo_dimension_num"]:checked').val() || 'tridimensional';
+      const cmVal = (tipoDimNum === 'bidimensional') ? ($('#editar-num-cm').val() || '') : '';
+      const medidasVal = (tipoDimNum === 'tridimensional') ? ($('#editar-num-medidas').val() || '') : '';
+      formData.append('editar_tipo_dimension_num', tipoDimNum);
+      formData.append('cm', cmVal);
+      formData.append('medidas', medidasVal);
+      formData.append('dimensiones', tipoDimNum === 'bidimensional' ? cmVal : medidasVal);
 
       const ubiNumVal = $('#editar-num-ubicacion_fisica').val();
       const ubiNumOtro = ($('#editar-num-ubicacion_fisica_otro').val() || '').trim();

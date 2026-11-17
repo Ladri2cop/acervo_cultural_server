@@ -15,6 +15,21 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 
 ---
 
+## [Versión 1.6.0] - 2026-11-17
+### 🏛️ Implementación de Catálogos Oficiales y Acuerdos de Minuta 03 (SIPAC)
+- **Catálogos Oficiales de Curaduría y Patrimonio (`ÉPOCA, TÉCNICAS Y MATERIALES.docx`)**:
+  - Población y normalización completa de las tablas `museos` (31 recintos oficiales), `epocas_periodos` (14 épocas históricas), `estado_conservacion` (Bueno, Regular, Malo), `tipo_obras` (20 clasificaciones), `materiales` (112 materiales) y `tecnicas` (167 técnicas clasificadas).
+  - Creación del módulo central de opciones `app/functions/acervo_catalogos.php` con funciones seguras y generador de opciones `renderizarOpcionesSelect()`.
+- **Soporte de Agrupación `<optgroup>` en BeeFormBuilder**:
+  - Actualización del motor `BeeFormBuilder.php` para soportar de manera nativa arreglos multidimensionales con `<optgroup label="...">`, habilitando la visualización jerárquica de 180 formas arqueológicas (7 grupos) y técnicas especializadas.
+- **Conmutación Inteligente de Dimensiones por Tipo de Obra**:
+  - Acervo General: Al elegir el tipo de obra (Pintura, Escultura, etc.), el sistema preselecciona automáticamente entre *Bidimensional* (`cm`) y *Tridimensional* (`medidas`) tanto en registro nuevo como en edición.
+  - Acervo Numismático: Incorporación de campos `cm` y `medidas` en tabla `acervo_numismatica`, con alternancia automática según el tipo de bien (Monedas/Medallas vs Billetes/Documentos/Filatelia).
+- **Módulo de Préstamos y Transferencias**:
+  - Incorporación del campo `coleccion` en la tabla `prestamos_transferencias`, con autocompletado en el buscador de piezas, formulario de nuevo movimiento y expediente de detalle.
+
+---
+
 ## [Versión 1.5.0] - 2026-11-05
 ### 📚 Documentación y Base de Conocimiento Centralizada
 - **Bóveda Oficial en Obsidian**: Creación de la estructura integral de documentación en formato Markdown con enlaces bidireccionales (`wikilinks`), diagramas Mermaid, alertas GitHub Flavored Markdown y configuración nativa `.obsidian`.

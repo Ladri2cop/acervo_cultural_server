@@ -568,6 +568,15 @@ $(document).ready(function () {
     if (p.tipo_acervo === 'numismatica') catBadgeText = 'Numismático';
     $('#sel-pieza-badge-catalogo').text(catBadgeText);
 
+    let coleccionTexto = p.coleccion || '';
+    if (!coleccionTexto) {
+      if (p.tipo_acervo === 'general') coleccionTexto = 'Acervo General';
+      else if (p.tipo_acervo === 'arqueologico') coleccionTexto = 'Acervo Arqueológico';
+      else if (p.tipo_acervo === 'numismatica') coleccionTexto = 'Acervo Numismático';
+    }
+    $('#sel-pieza-coleccion').text(coleccionTexto);
+    $('#input_coleccion').val(coleccionTexto);
+
     // Sugerir la ubicación física actual como lugar de origen
     if (p.ubicacion_fisica && !$('#input_lugar_origen').val()) {
       $('#input_lugar_origen').val(p.ubicacion_fisica);
@@ -582,6 +591,8 @@ $(document).ready(function () {
     estado.piezaSeleccionada = null;
     $('#input_tipo_acervo').val('');
     $('#input_id_pieza').val('');
+    $('#sel-pieza-coleccion').text('-');
+    $('#input_coleccion').val('');
     $('#modal-pieza-seleccionada').addClass('d-none');
     $('#modal-search-pieza').val('').prop('disabled', false).focus();
   }
@@ -816,6 +827,7 @@ $(document).ready(function () {
           $('#det-pieza-titulo').text(m.titulo_pieza || 'Sin título');
           $('#det-pieza-codigo').text(m.codigo_interno_pieza || 'S/C');
           $('#det-pieza-catalogo').text(m.tipo_acervo.toUpperCase());
+          $('#det-pieza-coleccion').text(m.coleccion || '--');
           $('#det-pieza-ubicacion').text((m.pieza_actual && m.pieza_actual.ubicacion_fisica) ? m.pieza_actual.ubicacion_fisica : '--');
 
           // Origen

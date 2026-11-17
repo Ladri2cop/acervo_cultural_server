@@ -27,6 +27,7 @@ CREATE TABLE `prestamos_transferencias` (
   `id_pieza` int NOT NULL,
   `codigo_interno_pieza` varchar(100) DEFAULT NULL,
   `titulo_pieza` varchar(255) DEFAULT NULL,
+  `coleccion` varchar(255) DEFAULT NULL,
   `tipo_origen` varchar(100) NOT NULL,
   `lugar_origen` varchar(255) NOT NULL,
   `responsable_origen` varchar(255) DEFAULT NULL,

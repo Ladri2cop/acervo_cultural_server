@@ -174,9 +174,60 @@ function inicializarCamposDinamicos() {
     }
     radiosDimension.off('change').on('change', toggleDimensiones);
     toggleDimensiones();
+
+    // Auto-seleccionar dimensión según el tipo de obra (Acuerdo 1 Minuta)
+    const selectTipoGeneral = $('#tipo');
+    if (selectTipoGeneral.length) {
+      selectTipoGeneral.off('change.tipoDim').on('change.tipoDim', function() {
+        const val = $(this).val();
+        const tridimensionales = ['Escultura', 'Mobiliario', 'Cerámica', 'Objeto', 'Otro'];
+        const bidimensionales = ['Pintura', 'Dibujo', 'Grabado', 'Fotografía', 'Acuarela', 'Textil'];
+        if (tridimensionales.includes(val)) {
+          $('input[name="tipo_dimension"][value="tridimensional"]').prop('checked', true).trigger('change');
+        } else if (bidimensionales.includes(val)) {
+          $('input[name="tipo_dimension"][value="bidimensional"]').prop('checked', true).trigger('change');
+        }
+      });
+    }
   }
 
-  // 2. Lógica para Ubicación Física: Museos de la Secretaría vs Otro
+  // 2. Lógica para dimensiones en Acervo Numismático: Bidimensional vs Tridimensional (Acuerdo 15 Minuta)
+  const radiosDimensionNum = $('input[name="tipo_dimension_num"]');
+  if (radiosDimensionNum.length) {
+    function toggleDimensionesNum() {
+      const valor = $('input[name="tipo_dimension_num"]:checked').val();
+      if (valor === 'bidimensional') {
+        $('.container-campo-num-cm').show();
+        $('#num-cm').prop('disabled', false);
+        $('.container-campo-num-medidas').hide();
+        $('#num-medidas').prop('disabled', true).val('');
+      } else {
+        $('.container-campo-num-cm').hide();
+        $('#num-cm').prop('disabled', true).val('');
+        $('.container-campo-num-medidas').show();
+        $('#num-medidas').prop('disabled', false);
+      }
+    }
+    radiosDimensionNum.off('change').on('change', toggleDimensionesNum);
+    toggleDimensionesNum();
+
+    // Auto-seleccionar dimensión según tipo de acervo numismático
+    const selectTipoNum = $('#tipo-obra-num');
+    if (selectTipoNum.length) {
+      selectTipoNum.off('change.tipoDimNum').on('change.tipoDimNum', function() {
+        const val = $(this).val();
+        const bidimensionales = ['Billetes o notafilia', 'Filatelia', 'Loterofilia', 'Acciones', 'Documentos fiduciarios', 'Sellos'];
+        const tridimensionales = ['Monedas', 'Medallística', 'Tlacos', 'Condecoraciones', 'Otro'];
+        if (bidimensionales.includes(val)) {
+          $('input[name="tipo_dimension_num"][value="bidimensional"]').prop('checked', true).trigger('change');
+        } else if (tridimensionales.includes(val)) {
+          $('input[name="tipo_dimension_num"][value="tridimensional"]').prop('checked', true).trigger('change');
+        }
+      });
+    }
+  }
+
+  // 3. Lógica para Ubicación Física: Museos de la Secretaría vs Otro
   const selectUbi = $('#ubicacion-fisica');
   if (selectUbi.length) {
     function toggleUbiOtro() {

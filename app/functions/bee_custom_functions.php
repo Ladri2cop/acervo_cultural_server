@@ -319,4 +319,8 @@ function get_user_id(): ?int
 
   return null;
 }
+
+// Carga de catálogos oficiales del SIPAC
+require_once __DIR__ . '/acervo_catalogos.php';
+
 

@@ -369,10 +369,7 @@
               <label for="editar-epoca" class="form-label fw-semibold">Época</label>
               <select class="form-select" id="editar-epoca" name="epoca">
                 <option value="" hidden>Seleccione...</option>
-                <option value="Prehispánica">Prehispánica</option>
-                <option value="Colonial">Colonial</option>
-                <option value="Moderna">Moderna</option>
-                <option value="Contemporánea">Contemporánea</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesEpocas()) ?>
               </select>
             </div>
           </div>
@@ -383,27 +380,10 @@
           </h6>
           <div class="row g-3 mb-4">
             <div class="col-md-4">
-              <label for="editar-tecnica" class="form-label fw-semibold">Técnica</label>
-              <select class="form-select" id="editar-tecnica" name="tecnica">
+              <label for="editar-tipo" class="form-label fw-semibold">Tipo de Obra</label>
+              <select class="form-select" id="editar-tipo" name="tipo">
                 <option value="" hidden>Seleccione...</option>
-                <option value="Óleo">Óleo</option>
-                <option value="Acuarela">Acuarela</option>
-                <option value="Grabado">Grabado</option>
-                <option value="Mixta">Mixta</option>
-              </select>
-            </div>
-            <div class="col-md-4">
-              <label for="editar-origen" class="form-label fw-semibold">Origen</label>
-              <input type="text" class="form-control" id="editar-origen" name="origen">
-            </div>
-            <div class="col-md-4">
-              <label for="editar-material" class="form-label fw-semibold">Material</label>
-              <select class="form-select" id="editar-material" name="material">
-                <option value="" hidden>Seleccione...</option>
-                <option value="Madera">Madera</option>
-                <option value="Metal">Metal</option>
-                <option value="Cerámica">Cerámica</option>
-                <option value="Textil">Textil</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesTiposGeneral()) ?>
               </select>
             </div>
             <div class="col-md-4">
@@ -428,22 +408,30 @@
               <input type="text" class="form-control" id="editar-medidas" name="medidas" placeholder="Ej. 20 x 15 x 10 cm">
             </div>
             <div class="col-md-4">
+              <label for="editar-tecnica" class="form-label fw-semibold">Técnica</label>
+              <select class="form-select" id="editar-tecnica" name="tecnica">
+                <option value="" hidden>Seleccione...</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesTecnicasGeneral()) ?>
+              </select>
+            </div>
+            <div class="col-md-4">
+              <label for="editar-origen" class="form-label fw-semibold">Origen</label>
+              <input type="text" class="form-control" id="editar-origen" name="origen">
+            </div>
+            <div class="col-md-4">
+              <label for="editar-material" class="form-label fw-semibold">Material</label>
+              <select class="form-select" id="editar-material" name="material">
+                <option value="" hidden>Seleccione...</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesMaterialesGeneral()) ?>
+              </select>
+            </div>
+            <div class="col-md-4">
               <label for="editar-lote" class="form-label fw-semibold">Lote</label>
               <input type="text" class="form-control" id="editar-lote" name="lote">
             </div>
             <div class="col-md-4">
               <label for="editar-peso" class="form-label fw-semibold">Peso</label>
               <input type="text" class="form-control" id="editar-peso" name="peso">
-            </div>
-            <div class="col-md-4">
-              <label for="editar-tipo" class="form-label fw-semibold">Tipo</label>
-              <select class="form-select" id="editar-tipo" name="tipo">
-                <option value="" hidden>Seleccione...</option>
-                <option value="Pintura">Pintura</option>
-                <option value="Escultura">Escultura</option>
-                <option value="Fotografía">Fotografía</option>
-                <option value="Objeto">Objeto</option>
-              </select>
             </div>
           </div>
 
@@ -474,10 +462,7 @@
               <label for="editar-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
               <select class="form-select" id="editar-estado_conservacion" name="estado_conservacion">
                 <option value="" hidden>Seleccione...</option>
-                <option value="Excelente">Excelente</option>
-                <option value="Bueno">Bueno</option>
-                <option value="Regular">Regular</option>
-                <option value="Dañado">Dañado</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesEstadoConservacion()) ?>
               </select>
             </div>
           </div>
@@ -580,10 +565,7 @@
               <label for="editar-arq-epoca" class="form-label fw-semibold">Época</label>
               <select class="form-select" id="editar-arq-epoca" name="epoca">
                 <option value="" hidden>Seleccione...</option>
-                <option value="Prehispánica">Prehispánica</option>
-                <option value="Colonial">Colonial</option>
-                <option value="Moderna">Moderna</option>
-                <option value="Contemporánea">Contemporánea</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesEpocas()) ?>
               </select>
             </div>
             <div class="col-md-4">
@@ -605,10 +587,7 @@
               <label for="editar-arq-material" class="form-label fw-semibold">Material</label>
               <select class="form-select" id="editar-arq-material" name="material">
                 <option value="" hidden>Seleccione...</option>
-                <option value="Madera">Madera</option>
-                <option value="Metal">Metal</option>
-                <option value="Cerámica">Cerámica</option>
-                <option value="Textil">Textil</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesMaterialesArqueologico()) ?>
               </select>
             </div>
             <div class="col-md-4">
@@ -617,15 +596,24 @@
             </div>
             <div class="col-md-4">
               <label for="editar-arq-forma" class="form-label fw-semibold">Forma</label>
-              <input type="text" class="form-control" id="editar-arq-forma" name="forma">
+              <select class="form-select" id="editar-arq-forma" name="forma">
+                <option value="" hidden>Seleccione...</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesFormasArqueologico()) ?>
+              </select>
             </div>
             <div class="col-md-4">
               <label for="editar-arq-tecnica_manufactura" class="form-label fw-semibold">Técnica de Manufactura</label>
-              <input type="text" class="form-control" id="editar-arq-tecnica_manufactura" name="tecnica_manufactura">
+              <select class="form-select" id="editar-arq-tecnica_manufactura" name="tecnica_manufactura">
+                <option value="" hidden>Seleccione...</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesTecnicasManufacturaArqueologico()) ?>
+              </select>
             </div>
             <div class="col-md-4">
               <label for="editar-arq-tecnica_decorativa" class="form-label fw-semibold">Técnica Decorativa</label>
-              <input type="text" class="form-control" id="editar-arq-tecnica_decorativa" name="tecnica_decorativa">
+              <select class="form-select" id="editar-arq-tecnica_decorativa" name="tecnica_decorativa">
+                <option value="" hidden>Seleccione...</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesTecnicasDecorativasArqueologico()) ?>
+              </select>
             </div>
             <div class="col-md-4">
               <label for="editar-arq-coleccion" class="form-label fw-semibold">Colección</label>
@@ -660,10 +648,7 @@
               <label for="editar-arq-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
               <select class="form-select" id="editar-arq-estado_conservacion" name="estado_conservacion">
                 <option value="" hidden>Seleccione...</option>
-                <option value="Excelente">Excelente</option>
-                <option value="Bueno">Bueno</option>
-                <option value="Regular">Regular</option>
-                <option value="Dañado">Dañado</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesEstadoConservacion()) ?>
               </select>
             </div>
           </div>
@@ -746,10 +731,8 @@
             <div class="col-md-4">
               <label for="editar-num-tipo_obra" class="form-label fw-semibold">Tipo de Obra</label>
               <select class="form-select" id="editar-num-tipo_obra" name="tipo_obra">
-                <option value="Pintura">Pintura</option>
-                <option value="Escultura">Escultura</option>
-                <option value="Fotografía">Fotografía</option>
-                <option value="Objeto">Objeto</option>
+                <option value="" hidden>Seleccione tipo...</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesTiposNumismatica()) ?>
               </select>
             </div>
           </div>
@@ -770,19 +753,15 @@
             <div class="col-md-3">
               <label for="editar-num-material" class="form-label fw-semibold">Material</label>
               <select class="form-select" id="editar-num-material" name="material">
-                <option value="Madera">Madera</option>
-                <option value="Metal">Metal</option>
-                <option value="Cerámica">Cerámica</option>
-                <option value="Textil">Textil</option>
+                <option value="" hidden>Seleccione...</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesMaterialesNumismatica()) ?>
               </select>
             </div>
             <div class="col-md-3">
               <label for="editar-num-fecha_epoca" class="form-label fw-semibold">Época</label>
               <select class="form-select" id="editar-num-fecha_epoca" name="fecha_epoca">
-                <option value="Prehispánica">Prehispánica</option>
-                <option value="Colonial">Colonial</option>
-                <option value="Moderna">Moderna</option>
-                <option value="Contemporánea">Contemporánea</option>
+                <option value="" hidden>Seleccione...</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesEpocas()) ?>
               </select>
             </div>
           </div>
@@ -792,11 +771,30 @@
             <i class="bx bx-map-pin me-1"></i>Dimensiones, Ubicación y Conservación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-3">
-              <label for="editar-num-dimensiones" class="form-label fw-semibold">Dimensiones (cm)</label>
-              <input type="text" class="form-control" id="editar-num-dimensiones" name="dimensiones">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold d-block">Tipo de Dimensiones</label>
+              <div class="d-flex align-items-center gap-3 mt-1">
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="editar_tipo_dimension_num" id="editar_num_dimension_tridimensional" value="tridimensional" checked>
+                  <label class="form-check-label fw-semibold" for="editar_num_dimension_tridimensional">Tridimensional</label>
+                </div>
+                <div class="form-check">
+                  <input class="form-check-input" type="radio" name="editar_tipo_dimension_num" id="editar_num_dimension_bidimensional" value="bidimensional">
+                  <label class="form-check-label fw-semibold" for="editar_num_dimension_bidimensional">Bidimensional</label>
+                </div>
+              </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4" id="container-editar-num-cm" style="display: none;">
+              <label for="editar-num-cm" class="form-label fw-semibold">Centímetros (Bidimensional)</label>
+              <input type="text" class="form-control" id="editar-num-cm" name="cm" placeholder="Ej. 15.5 x 6.5 cm">
+            </div>
+            <div class="col-md-4" id="container-editar-num-medidas">
+              <label for="editar-num-medidas" class="form-label fw-semibold">Medidas (Tridimensional)</label>
+              <input type="text" class="form-control" id="editar-num-medidas" name="medidas" placeholder="Ej. Diámetro: 38 mm, Grosor: 2.5 mm">
+            </div>
+            <input type="hidden" id="editar-num-dimensiones" name="dimensiones">
+
+            <div class="col-md-4">
               <label for="editar-num-ubicacion_fisica" class="form-label fw-semibold">Ubicación Física</label>
               <select class="form-select select-editar-ubicacion_fisica" id="editar-num-ubicacion_fisica" name="ubicacion_fisica">
                 <option value="">Seleccione ubicación...</option>
@@ -806,21 +804,19 @@
                 <option value="Otro">Otro (Especificar sede externa o dependencia)</option>
               </select>
             </div>
-            <div class="col-md-3 container-editar-num-ubicacion_otro" id="container-editar-num-ubicacion_otro" style="display: none;">
+            <div class="col-md-4 container-editar-num-ubicacion_otro" id="container-editar-num-ubicacion_otro" style="display: none;">
               <label for="editar-num-ubicacion_fisica_otro" class="form-label fw-semibold">Sede Externa / Dependencia</label>
               <input type="text" class="form-control" id="editar-num-ubicacion_fisica_otro" name="ubicacion_fisica_otro" placeholder="Ej. Sede Central / Dependencia">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label for="editar-num-ubicacion_topografica" class="form-label fw-semibold">Ubicación Topográfica</label>
               <input type="text" class="form-control" id="editar-num-ubicacion_topografica" name="ubicacion_topografica" placeholder="Ej. Sala 3, vitrina 5">
             </div>
-            <div class="col-md-3">
+            <div class="col-md-4">
               <label for="editar-num-estado_conservacion" class="form-label fw-semibold">Estado de Conservación</label>
               <select class="form-select" id="editar-num-estado_conservacion" name="estado_conservacion">
-                <option value="Excelente">Excelente</option>
-                <option value="Bueno">Bueno</option>
-                <option value="Regular">Regular</option>
-                <option value="Dañado">Dañado</option>
+                <option value="" hidden>Seleccione...</option>
+                <?= renderizarOpcionesSelect(obtenerOpcionesEstadoConservacion()) ?>
               </select>
             </div>
           </div>

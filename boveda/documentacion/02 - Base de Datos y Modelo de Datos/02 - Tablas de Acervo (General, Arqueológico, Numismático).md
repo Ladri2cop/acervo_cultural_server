@@ -93,7 +93,9 @@ Gestiona piezas monetarias históricas, condecoraciones y medallas conmemorativa
 | `tipo_obra` | `varchar(255)` | Moneda macuquina, moneda de cordoncillo, medalla, billete. |
 | `ensayador` | `varchar(50)` | Letras del ensayador que autorizó la ley del metal (ej. `M`, `F`, `TH`). |
 | `denominacion` | `varchar(255)` | Valor facial histórico (ej. 8 Reales, 1 Peso Fuerte, 4 Maravedíes). |
-| `dimensiones` | `varchar(255)` | Diámetro en milímetros y espesor (ej. `39 mm ø`). |
+| `cm` | `varchar(255)` | Dimensiones en centímetros para piezas bidimensionales (billetes, documentos fiduciarios, filatelia). |
+| `medidas` | `varchar(1000)` | Medidas tridimensionales detalladas (diámetro, grosor, peso para monedas, medallas, condecoraciones). |
+| `dimensiones` | `varchar(255)` | Campo histórico sincronizado con la dimensión activa para compatibilidad de reportes. |
 | `descripcion_cara_a` | `varchar(255)` | **Anverso**: Escudo de armas, efigie del monarca o gobernante, leyendas. |
 | `descripcion_cara_b` | `varchar(255)` | **Reverso**: Columnas de Hércules, cruz de Jerusalén, alegoría histórica. |
 

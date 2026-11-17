@@ -360,6 +360,11 @@
                         <span class="font-weight-bold text-gray-800" id="sel-pieza-codigo">CI-001</span>
                       </div>
                       <h6 class="font-weight-bold text-gray-900 mb-1" id="sel-pieza-titulo">Título de la pieza</h6>
+                      <div class="small text-muted mb-1">
+                        <i class='bx bx-collection text-secondary'></i> 
+                        <strong>Colección:</strong> 
+                        <span id="sel-pieza-coleccion" class="text-dark font-weight-bold">-</span>
+                      </div>
                       <div class="small text-muted">
                         <i class='bx bx-map-pin text-danger'></i> 
                         <strong>Ubicación física actual:</strong> 
@@ -373,6 +378,15 @@
                     </div>
                   </div>
                 </div>
+              </div>
+
+              <!-- Campo Colección de la pieza -->
+              <div class="mt-3" id="wrapper-coleccion-pieza">
+                <label class="form-label small font-weight-bold text-gray-800">
+                  Colección a la que pertenece la pieza
+                </label>
+                <input type="text" class="form-control form-control-sm" name="coleccion" id="input_coleccion" placeholder="Ej. Acervo General, Pintura, Culturas Populares...">
+                <small class="text-muted" style="font-size: 0.75rem;">Se prellena automáticamente con la colección de la pieza seleccionada o puede personalizarse.</small>
               </div>
 
               <!-- Inputs ocultos para enviar la pieza seleccionada -->
@@ -715,6 +729,7 @@
                 <div class="small text-muted mb-1">
                   <span><strong>Código interno:</strong> <span id="det-pieza-codigo">--</span></span>
                   <span class="ms-3"><strong>Catálogo:</strong> <span id="det-pieza-catalogo">--</span></span>
+                  <span class="ms-3"><strong>Colección:</strong> <span id="det-pieza-coleccion">--</span></span>
                 </div>
                 <div class="small text-muted">
                   <i class='bx bx-map-pin text-danger'></i> <strong>Ubicación actual registrada:</strong> <span id="det-pieza-ubicacion" class="text-primary font-weight-bold">--</span>

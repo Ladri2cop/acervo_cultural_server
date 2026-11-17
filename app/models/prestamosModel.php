@@ -225,6 +225,7 @@ class PrestamosModel extends Model
                        codigo_interno, 
                        no_inventario, 
                        nombre_titulo_pieza AS titulo, 
+                       COALESCE(NULLIF(coleccion, ''), 'Acervo General') AS coleccion,
                        fotografia, 
                        ubicacion_fisica, 
                        estado_conservacion 
@@ -240,6 +241,7 @@ class PrestamosModel extends Model
                        codigo_interno, 
                        no_inventario_scyt AS no_inventario, 
                        nombre_titulo_pieza AS titulo, 
+                       COALESCE(NULLIF(coleccion, ''), 'Acervo Arqueológico') AS coleccion,
                        fotografia, 
                        ubicacion_fisica, 
                        estado_conservacion 
@@ -255,6 +257,7 @@ class PrestamosModel extends Model
                        codigo_interno, 
                        no_inventario, 
                        denominacion AS titulo, 
+                       'Acervo Numismático' AS coleccion,
                        fotografia, 
                        ubicacion_fisica, 
                        estado_conservacion 

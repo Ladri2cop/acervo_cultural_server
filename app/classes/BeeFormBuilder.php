@@ -223,15 +223,31 @@ class BeeFormBuilder
             $required
           );
           foreach ($fieldOptions as $key => $value) {
-            $optionValue = is_numeric($key) ? $value : $key;
-            $optionLabel = $value;
-            $selected = ($optionValue === $defaultValue) ? 'selected' : '';
-            $this->formHtml .= sprintf(
-              '<option value="%s" %s>%s</option>',
-              htmlspecialchars($optionValue),
-              $selected,
-              htmlspecialchars($optionLabel)
-            );
+            if (is_array($value)) {
+              $this->formHtml .= sprintf('<optgroup label="%s">', htmlspecialchars($key));
+              foreach ($value as $subKey => $subVal) {
+                $optionValue = is_numeric($subKey) ? $subVal : $subKey;
+                $optionLabel = $subVal;
+                $selected = ($optionValue === $defaultValue) ? 'selected' : '';
+                $this->formHtml .= sprintf(
+                  '<option value="%s" %s>%s</option>',
+                  htmlspecialchars($optionValue),
+                  $selected,
+                  htmlspecialchars($optionLabel)
+                );
+              }
+              $this->formHtml .= '</optgroup>';
+            } else {
+              $optionValue = is_numeric($key) ? $value : $key;
+              $optionLabel = $value;
+              $selected = ($optionValue === $defaultValue) ? 'selected' : '';
+              $this->formHtml .= sprintf(
+                '<option value="%s" %s>%s</option>',
+                htmlspecialchars($optionValue),
+                $selected,
+                htmlspecialchars($optionLabel)
+              );
+            }
           }
           $this->formHtml .= '</select>';
           break;

@@ -1189,6 +1189,14 @@ class adminController extends Controller implements ControllerInterface
     }
     $ubicacionTopografica = trim($_POST['ubicacion_topografica'] ?? '');
 
+    $tipoDimensionNum = $_POST['tipo_dimension_num'] ?? ($_POST['tipo_dimension'] ?? 'tridimensional');
+    $cmNum = trim($_POST['cm'] ?? '');
+    $medidasNum = trim($_POST['medidas'] ?? '');
+    $dimensionesStr = trim($_POST['dimensiones'] ?? '');
+    if (empty($dimensionesStr)) {
+      $dimensionesStr = ($tipoDimensionNum === 'bidimensional') ? $cmNum : $medidasNum;
+    }
+
     // Procesar y guardar los datos del formulario de acervoNumismatica
     $data = [
       'codigo_interno'        => $_POST['codigo_interno'] ?? '',
@@ -1199,7 +1207,9 @@ class adminController extends Controller implements ControllerInterface
       'denominacion'          => $_POST['denominacion'] ?? '',
       'material'              => $_POST['material'] ?? '',
       'fecha_epoca'           => $_POST['fecha_epoca'] ?? '',
-      'dimensiones'           => $_POST['dimensiones'] ?? '',
+      'cm'                    => $cmNum,
+      'medidas'               => $medidasNum,
+      'dimensiones'           => $dimensionesStr,
       'ubicacion_fisica'      => $ubicacionFisica,
       'ubicacion_topografica' => $ubicacionTopografica,
       'estado_conservacion'   => $_POST['estado_conservacion'] ?? '',
@@ -2175,6 +2185,27 @@ class adminController extends Controller implements ControllerInterface
     }
     $data['ubicacion_fisica'] = $ubicacionFisica;
     unset($data['ubicacion_fisica_otro']);
+
+    // Dimensiones en numismática (Bidimensional vs Tridimensional)
+    $tipoDimNum = $data['editar_tipo_dimension_num'] ?? ($data['tipo_dimension_num'] ?? ($data['editar_tipo_dimension'] ?? ''));
+    if ($tipoDimNum === 'bidimensional') {
+      $data['medidas'] = '';
+      $data['dimensiones'] = trim($data['cm'] ?? '');
+    } elseif ($tipoDimNum === 'tridimensional') {
+      $data['cm'] = '';
+      $data['dimensiones'] = trim($data['medidas'] ?? '');
+    } elseif (!empty($data['cm']) && empty($data['medidas'])) {
+      $data['dimensiones'] = trim($data['cm']);
+    } elseif (!empty($data['medidas']) && empty($data['cm'])) {
+      $data['dimensiones'] = trim($data['medidas']);
+    } elseif (!empty($data['dimensiones'])) {
+      if (empty($data['cm']) && empty($data['medidas'])) {
+        $data['medidas'] = $data['dimensiones'];
+      }
+    }
+    unset($data['editar_tipo_dimension_num']);
+    unset($data['tipo_dimension_num']);
+    unset($data['editar_tipo_dimension']);
 
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
       $tmpName = $_FILES['fotografia']['tmp_name'];
@@ -3453,6 +3484,16 @@ class adminController extends Controller implements ControllerInterface
       $estatus = ($tipoMovimiento === 'transferencia') ? 'completada' : 'activo';
       $idUser = (int)(get_user('id') ?: (isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : 1));
 
+      $coleccion = isset($_POST['coleccion']) ? trim($_POST['coleccion']) : '';
+      if (empty($coleccion)) {
+        $coleccion = $pieza['coleccion'] ?? '';
+        if (empty($coleccion)) {
+          if ($tipoAcervo === 'general') $coleccion = 'Acervo General';
+          elseif ($tipoAcervo === 'arqueologico') $coleccion = 'Acervo Arqueológico';
+          elseif ($tipoAcervo === 'numismatica') $coleccion = 'Acervo Numismático';
+        }
+      }
+
       $movData = [
         'folio' => $folio,
         'tipo_movimiento' => $tipoMovimiento,
@@ -3460,6 +3501,7 @@ class adminController extends Controller implements ControllerInterface
         'id_pieza' => $idPieza,
         'codigo_interno_pieza' => $pieza['codigo_interno'] ?? '',
         'titulo_pieza' => $pieza['titulo'] ?? ($pieza['nombre_titulo_pieza'] ?? ''),
+        'coleccion' => $coleccion,
         'tipo_origen' => $tipoOrigen,
         'lugar_origen' => $lugarOrigen,
         'responsable_origen' => $responsableOrigen,
@@ -3708,26 +3750,6 @@ class adminController extends Controller implements ControllerInterface
 
 }
 
-function obtenerOpcionesMuseos()
-{
-  $opciones = ['' => 'Seleccione una ubicación...'];
-  try {
-    $db = Db::connect();
-    $stmt = $db->query("SELECT nombre_museo FROM museos WHERE status = 1 ORDER BY nombre_museo ASC");
-    $museos = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
-    foreach ($museos as $m) {
-      $nombre = trim($m);
-      if (!empty($nombre)) {
-        $opciones[$nombre] = $nombre;
-      }
-    }
-  } catch (Exception $e) {
-    // Si falla consulta
-  }
-  $opciones['Otro'] = 'Otro (Especificar sede externa o dependencia)';
-  return $opciones;
-}
-
 function obtenerCamposAcervoGeneral()
 {
   $opcionesMuseos = obtenerOpcionesMuseos();
@@ -3758,12 +3780,22 @@ function obtenerCamposAcervoGeneral()
     [
       'type' => 'text',
       'name' => 'nombre_titulo_pieza',
-      'label' => 'Nombre de la pieza',
+      'label' => 'Nombre o título de la pieza',
       'id' => 'nombre-titulo-pieza',
       'class' => 'form-control',
       'required' => true,
       'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
+      'placeholder' => 'Ej. Retrato de Sor Juana Inés de la Cruz',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'select',
+      'name' => 'tipo',
+      'label' => 'Tipo de obra',
+      'id' => 'tipo',
+      'class' => 'form-select select-tipo-obra-general',
+      'required' => true,
+      'options' => obtenerOpcionesTiposGeneral(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -3827,13 +3859,14 @@ function obtenerCamposAcervoGeneral()
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'date',
+      'type' => 'text',
       'name' => 'anio',
       'label' => 'Año',
       'id' => 'anio',
       'class' => 'form-control',
       'required' => false,
-      'default_value' => '1970-01-01',
+      'default_value' => '',
+      'placeholder' => 'Ej. 1892',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -3843,7 +3876,7 @@ function obtenerCamposAcervoGeneral()
       'id' => 'epoca',
       'class' => 'form-select',
       'required' => false,
-      'options' => ['Prehispánica', 'Colonial', 'Moderna', 'Contemporánea'],
+      'options' => obtenerOpcionesEpocas(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -3853,7 +3886,7 @@ function obtenerCamposAcervoGeneral()
       'id' => 'tecnica',
       'class' => 'form-select',
       'required' => true,
-      'options' => ['Óleo', 'Acuarela', 'Grabado', 'Mixta'],
+      'options' => obtenerOpcionesTecnicasGeneral(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -3874,7 +3907,7 @@ function obtenerCamposAcervoGeneral()
       'id' => 'material',
       'class' => 'form-select',
       'required' => true,
-      'options' => ['Madera', 'Metal', 'Cerámica', 'Textil'],
+      'options' => obtenerOpcionesMaterialesGeneral(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -3883,9 +3916,9 @@ function obtenerCamposAcervoGeneral()
       'label' => 'Lote',
       'id' => 'lote',
       'class' => 'form-control',
-      'required' => true,
+      'required' => false,
       'default_value' => '',
-      'placeholder' => 'Ej. 100',
+      'placeholder' => 'Ej. Lote 12',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -3894,19 +3927,9 @@ function obtenerCamposAcervoGeneral()
       'label' => 'Peso (kg)',
       'id' => 'peso',
       'class' => 'form-control',
-      'required' => true,
+      'required' => false,
       'default_value' => '',
-      'placeholder' => 'Ej. 100',
-      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
-    ],
-    [
-      'type' => 'select',
-      'name' => 'tipo',
-      'label' => 'Tipo de obra',
-      'id' => 'tipo',
-      'class' => 'form-select',
-      'required' => true,
-      'options' => ['Pintura', 'Escultura', 'Fotografía', 'Objeto'],
+      'placeholder' => 'Ej. 5.2 kg',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -3948,7 +3971,7 @@ function obtenerCamposAcervoGeneral()
       'id' => 'estado-conservacion',
       'class' => 'form-select',
       'required' => false,
-      'options' => ['Excelente', 'Bueno', 'Regular', 'Dañado'],
+      'options' => obtenerOpcionesEstadoConservacion(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4006,7 +4029,7 @@ function obtenerCamposAcervoArqueologico()
       'class' => 'form-control',
       'required' => true,
       'default_value' => '',
-      'placeholder' => 'Ej. CI-001',
+      'placeholder' => 'Ej. INV-SCYT-001',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4017,7 +4040,7 @@ function obtenerCamposAcervoArqueologico()
       'class' => 'form-control',
       'required' => true,
       'default_value' => '',
-      'placeholder' => 'Ej. INV-2025-001',
+      'placeholder' => 'Ej. INAH-REG-2025-001',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4026,9 +4049,9 @@ function obtenerCamposAcervoArqueologico()
       'label' => 'Otros',
       'id' => 'otros',
       'class' => 'form-control',
-      'required' => true,
+      'required' => false,
       'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
+      'placeholder' => 'Claves adicionales o referencias',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4039,7 +4062,7 @@ function obtenerCamposAcervoArqueologico()
       'class' => 'form-control',
       'required' => true,
       'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
+      'placeholder' => 'Ej. Cajete trípode policromado',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4048,9 +4071,9 @@ function obtenerCamposAcervoArqueologico()
       'label' => 'Número de pieza por lote',
       'id' => 'numero-pieza-por-lote',
       'class' => 'form-control',
-      'required' => true,
+      'required' => false,
       'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
+      'placeholder' => 'Ej. 1 de 10',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4060,7 +4083,7 @@ function obtenerCamposAcervoArqueologico()
       'id' => 'epoca',
       'class' => 'form-select',
       'required' => false,
-      'options' => ['Prehispánica', 'Colonial', 'Moderna', 'Contemporánea'],
+      'options' => obtenerOpcionesEpocas(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4071,64 +4094,58 @@ function obtenerCamposAcervoArqueologico()
       'class' => 'form-control',
       'required' => true,
       'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
+      'placeholder' => 'Ej. Teotihuacán / Malinalco',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
       'type' => 'select',
-      'name' => 'Material',
+      'name' => 'material',
       'label' => 'Material',
       'id' => 'material',
       'class' => 'form-select',
-      'required' => false,
-      'options' => ['Madera', 'Metal', 'Cerámica', 'Textil'],
+      'required' => true,
+      'options' => obtenerOpcionesMaterialesArqueologico(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'number',
+      'type' => 'text',
       'name' => 'medidas',
       'label' => 'Medidas (cm)',
       'id' => 'medidas',
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
-      'min' => 0,
-      'max' => 9999,
-      'step' => 'any',
-      'placeholder' => ' 1cm x 1cm x 1cm',
+      'placeholder' => 'Ej. Alto: 25 cm, Diámetro: 18 cm',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'text',
+      'type' => 'select',
       'name' => 'forma',
       'label' => 'Forma',
       'id' => 'forma',
-      'class' => 'form-control',
-      'required' => false,
-      'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
+      'class' => 'form-select',
+      'required' => true,
+      'options' => obtenerOpcionesFormasArqueologico(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'text',
+      'type' => 'select',
       'name' => 'tecnica_manufactura',
       'label' => 'Técnica de manufactura',
       'id' => 'tecnica-manufactura',
-      'class' => 'form-control',
+      'class' => 'form-select',
       'required' => true,
-      'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
+      'options' => obtenerOpcionesTecnicasManufacturaArqueologico(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'text',
+      'type' => 'select',
       'name' => 'tecnica_decorativa',
       'label' => 'Técnica decorativa',
       'id' => 'tecnica-decorativa',
-      'class' => 'form-control',
+      'class' => 'form-select',
       'required' => true,
-      'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
+      'options' => obtenerOpcionesTecnicasDecorativasArqueologico(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4137,9 +4154,9 @@ function obtenerCamposAcervoArqueologico()
       'label' => 'Colección',
       'id' => 'coleccion',
       'class' => 'form-control',
-      'required' => true,
+      'required' => false,
       'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
+      'placeholder' => 'Ej. Ofrenda 4, Proyecto Arqueológico',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4148,9 +4165,9 @@ function obtenerCamposAcervoArqueologico()
       'label' => 'Obtención',
       'id' => 'obtencion',
       'class' => 'form-control',
-      'required' => true,
+      'required' => false,
       'default_value' => '',
-      'placeholder' => 'Ej. Escultura de barro',
+      'placeholder' => 'Ej. Excavación científica / Donación',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4192,7 +4209,7 @@ function obtenerCamposAcervoArqueologico()
       'id' => 'estado-conservacion',
       'class' => 'form-select',
       'required' => false,
-      'options' => ['Excelente', 'Bueno', 'Regular', 'Dañado'],
+      'options' => obtenerOpcionesEstadoConservacion(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4203,7 +4220,7 @@ function obtenerCamposAcervoArqueologico()
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
-      'placeholder' => 'Descripción detallada de la pieza',
+      'placeholder' => 'Observaciones curatoriales',
       'rows' => 4,
       'cols' => 5,
       'column_class' => 'col-12 mb-3'
@@ -4216,7 +4233,7 @@ function obtenerCamposAcervoArqueologico()
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
-      'placeholder' => 'Descripción detallada de la pieza',
+      'placeholder' => 'Descripción contextual e iconográfica',
       'rows' => 4,
       'cols' => 5,
       'column_class' => 'col-12 mb-3'
@@ -4229,7 +4246,7 @@ function obtenerCamposAcervoArqueologico()
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
-      'placeholder' => 'Representación detallada de la pieza',
+      'placeholder' => 'Zoomorfa, antropomorfa, fitomorfa, deidad...',
       'rows' => 4,
       'cols' => 5,
       'column_class' => 'col-12 mb-3'
@@ -4269,12 +4286,61 @@ function obtenerCamposAcervoNumismatica()
     [
       'type' => 'select',
       'name' => 'tipo_obra',
-      'label' => 'Tipo de obra',
-      'id' => 'tipo-obra',
-      'class' => 'form-select',
+      'label' => 'Tipo de acervo numismático',
+      'id' => 'tipo-obra-num',
+      'class' => 'form-select select-tipo-obra-num',
       'required' => true,
-      'options' => ['Pintura', 'Escultura', 'Fotografía', 'Objeto'],
+      'options' => obtenerOpcionesTiposNumismatica(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'custom',
+      'name' => 'tipo_dimension_container_num',
+      'label' => null,
+      'required' => false,
+      'id' => 'tipo_dimension_container_num',
+      'class' => '',
+      'content' => '
+        <div class="col-12 col-sm-6 col-lg-4 mb-3">
+          <label class="form-label font-weight-bold text-gray-800 d-block">Tipo de dimensiones <span class="text-danger">*</span></label>
+          <div class="d-flex align-items-center gap-4 mt-2">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo_dimension_num" id="dimension_num_tridimensional" value="tridimensional" checked>
+              <label class="form-check-label fw-semibold text-dark" for="dimension_num_tridimensional">
+                <i class="bx bx-cube me-1 text-primary"></i> Tridimensional (Monedas/Medallas)
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="tipo_dimension_num" id="dimension_num_bidimensional" value="bidimensional">
+              <label class="form-check-label fw-semibold text-dark" for="dimension_num_bidimensional">
+                <i class="bx bx-shape-square me-1 text-primary"></i> Bidimensional (Billetes/Documentos)
+              </label>
+            </div>
+          </div>
+        </div>
+      '
+    ],
+    [
+      'type' => 'text',
+      'name' => 'cm',
+      'label' => 'Dimensiones (Bidimensional)',
+      'id' => 'num-cm',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Ej. 15.5 x 6.5 cm',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3 container-campo-num-cm'
+    ],
+    [
+      'type' => 'text',
+      'name' => 'medidas',
+      'label' => 'Dimensiones (Tridimensional)',
+      'id' => 'num-medidas',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Ej. Diámetro: 38 mm, Grosor: 2.5 mm, Peso: 27 g',
+      'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3 container-campo-num-medidas'
     ],
     [
       'type' => 'text',
@@ -4282,9 +4348,9 @@ function obtenerCamposAcervoNumismatica()
       'label' => 'Ensayador',
       'id' => 'ensayador',
       'class' => 'form-control',
-      'required' => true,
+      'required' => false,
       'default_value' => '',
-      'placeholder' => 'Ej. INV-2025-001',
+      'placeholder' => 'Ej. M, F, TH o Anónimo',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4295,7 +4361,7 @@ function obtenerCamposAcervoNumismatica()
       'class' => 'form-control',
       'required' => true,
       'default_value' => '',
-      'placeholder' => 'Ej. INV-2025-001',
+      'placeholder' => 'Ej. 8 Reales / 1 Peso Fuerte',
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4305,7 +4371,7 @@ function obtenerCamposAcervoNumismatica()
       'id' => 'material',
       'class' => 'form-select',
       'required' => true,
-      'options' => ['Madera', 'Metal', 'Cerámica', 'Textil'],
+      'options' => obtenerOpcionesMaterialesNumismatica(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4315,21 +4381,17 @@ function obtenerCamposAcervoNumismatica()
       'id' => 'fecha-epoca',
       'class' => 'form-select',
       'required' => false,
-      'options' => ['Prehispánica', 'Colonial', 'Moderna', 'Contemporánea'],
+      'options' => obtenerOpcionesEpocas(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
-      'type' => 'number',
-      'name' => 'dimensiones',
-      'label' => 'Dimensiones (cm)',
-      'id' => 'dimensiones',
-      'class' => 'form-control',
+      'type' => 'select',
+      'name' => 'tecnica',
+      'label' => 'Técnica de manufactura',
+      'id' => 'tecnica-num',
+      'class' => 'form-select',
       'required' => false,
-      'default_value' => '',
-      'min' => 0,
-      'max' => 9999,
-      'step' => 'any',
-      'placeholder' => '0.00',
+      'options' => obtenerOpcionesTecnicasNumismatica(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
     ],
     [
@@ -4371,8 +4433,34 @@ function obtenerCamposAcervoNumismatica()
       'id' => 'estado-conservacion',
       'class' => 'form-select',
       'required' => false,
-      'options' => ['Excelente', 'Bueno', 'Regular', 'Dañado'],
+      'options' => obtenerOpcionesEstadoConservacion(),
       'column_class' => 'col-12 col-sm-6 col-lg-4 mb-3'
+    ],
+    [
+      'type' => 'textarea',
+      'name' => 'descripcion_cara_a',
+      'label' => 'Descripción Anverso (Cara A)',
+      'id' => 'descripcion-cara-a',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Descripción del anverso: escudo, efigie, leyendas...',
+      'rows' => 3,
+      'cols' => 5,
+      'column_class' => 'col-12 col-md-6 mb-3'
+    ],
+    [
+      'type' => 'textarea',
+      'name' => 'descripcion_cara_b',
+      'label' => 'Descripción Reverso (Cara B)',
+      'id' => 'descripcion-cara-b',
+      'class' => 'form-control',
+      'required' => false,
+      'default_value' => '',
+      'placeholder' => 'Descripción del reverso: columnas, valor, cruz...',
+      'rows' => 3,
+      'cols' => 5,
+      'column_class' => 'col-12 col-md-6 mb-3'
     ],
     [
       'type' => 'textarea',
@@ -4382,36 +4470,10 @@ function obtenerCamposAcervoNumismatica()
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
-      'placeholder' => '',
-      'rows' => 4,
+      'placeholder' => 'Observaciones generales sobre la pieza',
+      'rows' => 3,
       'cols' => 5,
       'column_class' => 'col-12 mb-3'
-    ],
-    [
-      'type' => 'textarea',
-      'name' => 'descripcion_cara_a',
-      'label' => "Descripción de la cara A",
-      'id' => "descripcion-cara-a",
-      'class' => "form-control",
-      'required' => false,
-      'default_value' => "",
-      'placeholder' => "",
-      'rows' => 4,
-      'cols' => 5,
-      'column_class' => "col-12 mb-3"
-    ],
-    [
-        "type" => "textarea",
-        "name" => "descripcion_cara_b",
-        "label" => "Descripción de la cara B",
-        "id" => "descripcion-cara-b",
-        "class" => "form-control",
-        "required" => false,
-        "default_value" => "",
-        "placeholder" => "",
-        "rows" => 4,
-        "cols" => 5,
-        "column_class" => "col-12 mb-3"
     ]
   ];
 
