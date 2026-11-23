@@ -15,6 +15,35 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 
 ---
 
+## [Versión 1.7.0] - 2026-11-23
+### 🚚 Dictamen de Préstamos y Transferencias por Museo Receptora y Carga de Oficios
+- **Asignación de Usuarios Administradores a Museos de la Red**:
+  - Incorporación del campo `id_museo` en `bee_users` con llave foránea a `museos(id_museo)`.
+  - Exigencia estricta de asignación de museo para el rol *Administrador* (`id_role = 2`) en formularios de creación y edición de usuarios.
+  - El *Super Administrador* (`id_role = 1`) queda exento de asignación fija con alcance global sobre toda la red.
+- **Flujo de Dictamen Institucional (Aceptar / Declinar)**:
+  - Todo movimiento de préstamo o transferencia se registra inicialmente con estatus `pendiente_aprobacion`.
+  - **Inmovilidad preventiva**: La pieza no se traslada físicamente en el catálogo hasta que la sede de destino autorice el movimiento.
+  - Validación de permisos RBAC territorial: Solo el administrador del museo destino (`id_museo_destino`) o el Super Administrador pueden emitir dictamen.
+  - Acción de **Aceptar Movimiento**: Concreta el préstamo (`activo`) o transferencia (`completada`), actualizando la ubicación física de la obra al nuevo recinto.
+  - Acción de **Declinar Movimiento**: Requiere motivo institucional obligatorio (`motivo_declinacion`), pasa a estatus `declinado` y la obra permanece en su sede original.
+- **Carga Obligatoria de Oficios Digitales**:
+  - Requisito obligatorio de adjuntar el archivo digital del oficio de autorización (.pdf, .doc, .docx, .jpg, .png) al momento de registrar el movimiento.
+  - Almacenamiento seguro en `assets/uploads/oficios_movimientos/` y visualización/descarga directa desde la tabla y el expediente.
+- **Expediente Institucional Enriquecido y KPIs**:
+  - Nuevo indicador KPI para movimientos **Pendientes de Aprobación**.
+  - Visualización del dictamen oficial con fecha, funcionario responsable y justificación de rechazo en caso de declinación.
+- **Recuperación Automática de Origen y Alternancia Dinámica de Sede**:
+  - Detección y resolución automática del origen (museo o sede externa) al seleccionar una pieza en el modal de movimiento, precargando el museo, responsable e indicando confirmación visual.
+  - Alternancia dinámica en Origen y Destino: Si se elige *"Museo Institucional"*, se despliega el combobox de museos registrados y se oculta el texto libre; si se selecciona otra dependencia, se oculta el combobox y se muestra el campo de texto libre para captura manual.
+  - Validación preventiva que impide registrar movimientos con origen y destino en el mismo museo.
+- **Filtro de Alcance Territorial por Museo Asignado**:
+  - Los usuarios *Administradores* (`id_role = 2`) solo pueden ver y gestionar movimientos (préstamos y transferencias) donde su museo asignado sea origen o destino.
+  - Los indicadores KPIs se recalculan dinámicamente reflejando las métricas territoriales de su recinto.
+  - Protección de seguridad en endpoints (`get_detalle_movimiento`, devoluciones y cancelaciones) impidiendo la consulta o manipulación de movimientos de recintos ajenos.
+
+---
+
 ## [Versión 1.6.0] - 2026-11-17
 ### 🏛️ Implementación de Catálogos Oficiales y Acuerdos de Minuta 03 (SIPAC)
 - **Catálogos Oficiales de Curaduría y Patrimonio (`ÉPOCA, TÉCNICAS Y MATERIALES.docx`)**:

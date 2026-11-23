@@ -159,6 +159,92 @@ function is_admin_user(): bool
 }
 
 /**
+ * Determina si el usuario en sesión es super administrador
+ *
+ * @return bool
+ */
+function is_super_admin(): bool
+{
+  $userRole = get_user('id_role') ?: (isset($_SESSION['user_session']['user']['id_role']) ? $_SESSION['user_session']['user']['id_role'] : (isset($_SESSION['user']['id_role']) ? $_SESSION['user']['id_role'] : null));
+  if (!$userRole) return false;
+  if ((int)$userRole === 1) return true;
+
+  $roleRow = userModel::query("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1", ['id' => $userRole]);
+  $roleSlug = ($roleRow && isset($roleRow[0]['slug'])) ? $roleRow[0]['slug'] : '';
+  return in_array($roleSlug, ['super-admin', 'super-administrador']);
+}
+
+/**
+ * Obtiene el ID del museo asignado al usuario en sesión
+ *
+ * @return int|null
+ */
+function get_user_museum_id(): ?int
+{
+  $idMuseo = get_user('id_museo');
+  if (!$idMuseo && isset($_SESSION['user_session']['user']['id_museo'])) {
+    $idMuseo = $_SESSION['user_session']['user']['id_museo'];
+  }
+  if (!$idMuseo && isset($_SESSION['user']['id_museo'])) {
+    $idMuseo = $_SESSION['user']['id_museo'];
+  }
+  return !empty($idMuseo) ? (int)$idMuseo : null;
+}
+
+/**
+ * Obtiene el nombre del museo asignado al usuario en sesión
+ *
+ * @return string|null
+ */
+function get_user_museum_name(): ?string
+{
+  $idMuseo = get_user_museum_id();
+  if (!$idMuseo) return null;
+  $row = Model::query("SELECT nombre_museo FROM museos WHERE id_museo = :id LIMIT 1", ['id' => $idMuseo]);
+  return ($row && isset($row[0]['nombre_museo'])) ? $row[0]['nombre_museo'] : null;
+}
+
+/**
+ * Determina si el usuario en sesión puede dictaminar (aceptar/declinar) un movimiento.
+ * El Super Administrador tiene control global.
+ * El Administrador debe estar asignado al museo de destino.
+ *
+ * @param array|object $movimiento
+ * @return bool
+ */
+function user_can_dictate_movement($movimiento): bool
+{
+  if (is_super_admin()) {
+    return true;
+  }
+
+  $userRole = get_user('id_role') ?: (isset($_SESSION['user_session']['user']['id_role']) ? $_SESSION['user_session']['user']['id_role'] : (isset($_SESSION['user']['id_role']) ? $_SESSION['user']['id_role'] : null));
+  if ((int)$userRole !== 2) {
+    return false;
+  }
+
+  $userMuseumId = get_user_museum_id();
+  if (!$userMuseumId) {
+    return false;
+  }
+
+  $idDestino = is_array($movimiento) ? ($movimiento['id_museo_destino'] ?? null) : ($movimiento->id_museo_destino ?? null);
+  if ($idDestino && (int)$idDestino === (int)$userMuseumId) {
+    return true;
+  }
+
+  $lugarDestino = is_array($movimiento) ? ($movimiento['lugar_destino'] ?? '') : ($movimiento->lugar_destino ?? '');
+  $userMuseumName = get_user_museum_name();
+  if (!empty($lugarDestino) && !empty($userMuseumName)) {
+    if (mb_stripos(trim($lugarDestino), trim($userMuseumName)) !== false || mb_stripos(trim($userMuseumName), trim($lugarDestino)) !== false) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+/**
  * Determina si el rol del usuario tiene únicamente permisos de visualización
  *
  * @return bool

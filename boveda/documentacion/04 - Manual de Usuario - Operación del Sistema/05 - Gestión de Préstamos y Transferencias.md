@@ -2,39 +2,26 @@
 title: Gestión de Préstamos y Transferencias
 type: user-guide
 project: Sistema de Gestión de Acervo Cultural
-date: 2026-11-05
+date: 2026-11-23
 tags:
   - prestamos
   - transferencias
   - movilidad
   - manual-usuario
+  - dictamen
 ---
 
 # 🚚 Gestión de Préstamos y Transferencias
 
-El módulo **Préstamos y Transferencias** (`/admin/prestamos_transferencias`) administra la trazabilidad y custodia jurídica de las piezas que salen temporal o permanentemente de su recinto de origen.
+El módulo **Préstamos y Transferencias** (`/admin/prestamos_transferencias`) administra la trazabilidad jurídica y física de las obras de arte y bienes culturales que se trasladan entre museos de la red estatal o hacia instituciones externas.
 
 ---
 
-## 1. Tipos de Movimientos Patrimoniales
+## 1. Asignación Institucional de Administradores por Museo
 
-El sistema contempla dos categorías normativas:
-
-```mermaid
-graph TD
-    Mov["Movimiento de Acervo"] --> Temp["Préstamo Temporal"]
-    Mov --> Def["Transferencia Definitiva"]
-
-    Temp --> E1["Exposiciones temporales nacionales o extranjeras"]
-    Temp --> E2["Intervención en talleres externos de restauración"]
-    Temp --> E3["Investigación científica y peritaje"]
-
-    Def --> D1["Reasignación de custodia permanente entre recintos"]
-    Def --> D2["Apertura de nuevos museos de la Secretaría"]
-```
-
-1. **Préstamo Temporal**: La pieza sale por un periodo determinado y debe regresar al recinto de origen antes de la **Fecha Estimada de Devolución**.
-2. **Transferencia Definitiva**: Cambio permanente de asignación de la obra entre museos de la Secretaría. La ubicación física de la pieza se actualiza de manera definitiva en el catálogo.
+A partir de la actualización de seguridad y control territorial:
+- **Administradores Regulares (`id_role = 2`)**: Están asignados a un museo específico de la Secretaría de Cultura y Turismo. Su facultad de dictamen (aceptar o declinar movimientos) está acotada exclusivamente a aquellos movimientos donde su recinto sea la **sede de destino**.
+- **Super Administradores (`id_role = 1`)**: No tienen restricción por recinto y cuentan con atribuciones globales para supervisar, registrar, aceptar, declinar o cancelar cualquier movimiento en toda la entidad.
 
 ---
 
@@ -43,71 +30,68 @@ graph TD
 Para registrar una salida de obra:
 
 1. Haz clic en el botón superior derecho **"Registrar Movimiento"**.
-2. Se abrirá la ventana modal con barra de desplazamiento vertical integrada (puedes desplazarte libremente por el formulario con el ratón o pantalla táctil).
+2. Completa las secciones del formulario:
 
 ```mermaid
 flowchart TD
-    M1["1. Elegir Tipo de Movimiento (Temporal o Definitivo)"] --> M2["2. Seleccionar Colección (General, Arqueológico, Numismático)"]
-    M2 --> M3["3. Buscar y Seleccionar la Pieza por Código o Título"]
-    M3 --> M4["4. Datos de Origen (Recinto y Responsable de Entrega)"]
-    M4 --> M5["5. Datos de Destino (Recinto y Responsable Receptor)"]
-    M5 --> M6["6. Fechas (Salida y Estimada de Devolución)"]
-    M6 --> M7["7. Fundamento Legal (Oficio de Autorización y Motivo)"]
-    M7 --> M8["8. Condiciones Físicas de Entrega (Estado actual)"]
-    M8 --> Fin["Guardar -> Folio Automático MOV-2026-XXXX"]
+    M1["1. Elegir Tipo de Movimiento (Préstamo o Transferencia)"] --> M2["2. Seleccionar Pieza Cultural Aprobada"]
+    M2 --> M3["3. Sede de Origen (Recinto y Custodio de Entrega)"]
+    M3 --> M4["4. Sede de Destino (Museo Receptor y Responsable)"]
+    M4 --> M5["5. Fechas, Motivo y Datos Administrativos"]
+    M5 --> M6["6. Carga Obligatoria del Oficio Digital (.pdf, .doc, .jpg, .png)"]
+    M6 --> Fin["Guardar -> Estatus: Pendiente de Aprobación"]
 ```
 
-### Campos Requeridos:
-- **Tipo de Movimiento**: Selecciona *Préstamo Temporal* o *Transferencia Definitiva*.
-- **Colección**: Selecciona la disciplina correspondiente.
-- **Pieza a Movilizar**: Escribe parte del título o código en el buscador interactivo Select2. Solo aparecerán obras con estatus curatorial **Aprobado**.
-- **Lugar y Responsable de Origen**: Se precarga automáticamente con la ubicación física actual de la obra. Registra el nombre del funcionario que entrega la pieza.
-- **Lugar y Responsable de Destino**: Selecciona el museo receptor o captura la institución externa, junto con el funcionario que recibirá la custodia.
-- **Fecha de Salida**: Día en que la obra abandona el recinto.
-- **Fecha Estimada de Devolución**: Requerida obligatoriamente en préstamos temporales.
-- **No. de Oficio de Autorización**: Número de oficio oficial emitido por la Dirección General o la Secretaría (ej. `SCYT/DGM/2026/0894`).
-- **Condiciones de Entrega**: Dictamen de estado de conservación al momento del embalaje.
+### Campos Obligatorios y Documentación:
+- **Tipo de Movimiento**: *Préstamo Temporal* (requiere fecha estimada de retorno) o *Transferencia Definitiva*.
+- **Pieza a Movilizar**: Buscador interactivo por código interno o título. Solo se despliegan obras en estatus curatorial **Aprobado**.
+- **Sede de Origen**: Recinto actual y funcionario que entrega.
+- **Sede de Destino**: Museo o recinto que recibirá la obra. Al elegir un museo registrado, el sistema asocia automáticamente la entidad receptora.
+- **Fechas**: Fecha de salida y fecha estimada de devolución (para préstamos).
+- **Oficio Digital Adjunto (OBLIGATORIO)**: Se debe adjuntar el archivo digital escaneado del oficio o memorándum de autorización (.pdf, .doc, .docx, .jpg o .png, máx. 20MB).
+- **Motivo y Condiciones**: Justificación del traslado y dictamen de estado de conservación al embalar.
 
-3. Haz clic en **"Registrar Movimiento"**. El sistema generará el folio único institucional (ej. `MOV-2026-0003`) y la pieza pasará al estatus de **Activo**.
-
----
-
-## 3. Retorno e Inspección de la Pieza (Registrar Devolución)
-
-Cuando una pieza en préstamo temporal regresa a su recinto de custodia:
-
-1. En la tabla de movimientos, localiza el registro con estatus **Activo**.
-2. Despliega el menú **"Acciones"** y selecciona **"Registrar Devolución"** (`bx-undo`).
-3. En el formulario de retorno captura:
-   - **Fecha Real de Devolución**: Fecha y hora de recepción en almacén o sala.
-   - **Lugar de Devolución**: Bóveda o recinto que recibe la obra.
-   - **Condiciones de Devolución**: Dictamen comparativo para verificar que la obra no haya sufrido deterioros, fracturas o afectaciones durante el traslado o exhibición.
-4. Presiona **"Confirmar Devolución"**. El estatus del movimiento cambiará a **"Devuelto"** (badge verde).
+3. Al presionar **"Confirmar y Registrar Movimiento"**, el sistema genera el folio (`PRE-2026-XXXX` o `TRA-2026-XXXX`) y asigna el estatus **"Pendiente de Aprobación"** (badge amarillo).
+   > [!IMPORTANT]
+   > La pieza **NO se reubica físicamente** de manera inmediata. Permanecerá resguardada en su sede de origen hasta que el administrador de destino la acepte formalmente.
 
 ---
 
-## 4. Cancelación de un Movimiento
+## 3. Dictamen de Movimientos por la Sede Receptora
 
-En caso de que un préstamo autorizado se suspenda antes de ejecutarse:
-1. En el menú **"Acciones"**, selecciona **"Cancelar Movimiento"** (`bx-x-circle`).
-2. Digita una justificación obligatoria en el cuadro de confirmación (ejemplo: *"Exposición cancelada por causas de fuerza mayor"*).
-3. El registro pasará a estatus **"Cancelado"** para efectos de auditoría histórica.
+Cuando el museo receptor recibe la notificación de un movimiento pendiente:
+
+### 3.1. Desde la Tabla de Movimientos
+1. Localiza el registro en estatus **"Pendiente"**.
+2. Si eres el administrador asignado al museo de destino o Super Administrador, el menú desplegable de **"Acciones"** mostrará dos opciones prioritarias:
+   - **Aceptar Movimiento** (`bx-check-circle` en verde): Despliega un cuadro de diálogo donde puedes ingresar observaciones de recepción opcionales. Al confirmar:
+     - El estatus pasa a **Activo** (préstamo) o **Completada** (transferencia).
+     - La ubicación física de la pieza se actualiza a la sede de destino.
+   - **Declinar Movimiento** (`bx-x-circle` en rojo): Abre un cuadro obligatorio donde debes escribir la **justificación o motivo del rechazo** (ej. *Capacidad de sala agotada, condiciones climáticas inadecuadas o inconsistencia en fundamentación legal*). Al confirmar:
+     - El estatus pasa a **Declinado**.
+     - La obra no se traslada y permanece en su recinto original.
+
+### 3.2. Desde el Modal "Ver Expediente"
+1. Al abrir el expediente del movimiento, encontrarás el botón para **"Descargar / Ver Oficio Adjunto"**.
+2. En el pie del modal se disponen los botones directos **"Aceptar Movimiento"** y **"Declinar Movimiento"** para evaluar el expediente tras revisar el documento oficial.
 
 ---
 
-## 5. Consulta del Expediente Completo
+## 4. Retorno e Inspección de la Pieza (Registrar Devolución)
 
-En cualquier momento puedes pulsar **"Ver Expediente Completo"** (`bx-eye`) para consultar la bitácora íntegra del movimiento:
-- Folio institucional y marcas de tiempo.
-- Fotografía de la pieza y ficha técnica vinculada.
-- Oficio de autorización gubernamental.
-- Funcionarios responsables de entrega y recepción.
-- Dictámenes comparativos de salida y devolución.
+Para préstamos temporales activos que regresan a su sede original:
+
+1. En la tabla de movimientos, despliega el menú de acciones y selecciona **"Registrar Devolución"**.
+2. Captura la **Fecha Real de Devolución**, el **Lugar de Reincorporación** (sala o bodega) y las **Condiciones Físicas al Recibir** (verificando que no existan deterioros durante la estancia externa).
+3. Al confirmar, el estatus pasa a **"Devuelto"** (badge verde) y la obra se reincorpora a su sala original.
 
 ---
 
-## 6. Referencias Cruzadas
-- Conoce el catálogo de obras: [[02 - Exploración, Búsqueda y Filtrado del Acervo]]
-- Consulta el modelo técnico de datos: [[03 - Módulo de Préstamos y Transferencias]]
-- Verificación en auditoría: [[04 - Sistema de Auditoría y Trazabilidad]]
+## 5. Visualización e Impresión de Expedientes
 
+Pulsando **"Ver Expediente"** (`bx-eye-alt`):
+- Ficha técnica completa de la pieza y fotografía.
+- Diagrama del trayecto (Origen ➔ Destino).
+- Enlace directo al **Oficio Digital Adjunto**.
+- Ficha de dictamen institucional con nombre del funcionario evaluador, fecha y motivo en caso de haber sido declinado.
+- Botón **"Imprimir"** para generar la carátula oficial de entrega-recepción con líneas de firma y sellos institucionales.

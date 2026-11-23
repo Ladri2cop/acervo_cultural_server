@@ -350,18 +350,32 @@ class adminController extends Controller implements ControllerInterface
     // Si es super-admin id_role = 1, ve todos los usuarios y todos los roles.
     // Si es otro rol de administración, ve los usuarios que él creó y los roles disponibles excepto el rol 1 (Super Admin).
     if ($currentRole == 1) {
-      $users = userModel::all_paginated();
+      $sqlUsers = "SELECT u.*, r.nombre as role_name, m.nombre_museo as museo_nombre 
+                   FROM bee_users u 
+                   LEFT JOIN bee_roles r ON u.id_role = r.id 
+                   LEFT JOIN museos m ON u.id_museo = m.id_museo 
+                   ORDER BY u.id DESC";
+      $users = PaginationHandler::paginate($sqlUsers);
       $roles = userModel::get_roles();
     } else {
-      $sqlUsers = sprintf("SELECT u.*, r.nombre as role_name FROM bee_users u LEFT JOIN bee_roles r ON u.id_role = r.id WHERE u.created_by = %d OR u.id = %d ORDER BY u.id DESC", (int)$currentUserId, (int)$currentUserId);
+      $sqlUsers = sprintf("SELECT u.*, r.nombre as role_name, m.nombre_museo as museo_nombre 
+                           FROM bee_users u 
+                           LEFT JOIN bee_roles r ON u.id_role = r.id 
+                           LEFT JOIN museos m ON u.id_museo = m.id_museo 
+                           WHERE u.created_by = %d OR u.id = %d 
+                           ORDER BY u.id DESC", (int)$currentUserId, (int)$currentUserId);
       $users = PaginationHandler::paginate($sqlUsers);
 
       $sqlRoles = "SELECT * FROM bee_roles WHERE id != 1 ORDER BY id ASC";
       $roles = userModel::query($sqlRoles) ?: [];
     }
 
+    $sqlMuseos = "SELECT id_museo, nombre_museo FROM museos WHERE status = 1 ORDER BY nombre_museo ASC";
+    $museos = userModel::query($sqlMuseos) ?: [];
+
     $this->addToData('users', $users);
     $this->addToData('roles', $roles);
+    $this->addToData('museos', $museos);
     $this->addToData('slug', 'usuarios');
     $this->setView('usuarios/usuarios');
     $this->render();
@@ -396,6 +410,7 @@ class adminController extends Controller implements ControllerInterface
       $email        = $_POST['email'];
       $password     = $_POST['password'];
       $id_role      = (int)$_POST['id_role'];
+      $id_museo     = !empty($_POST['id_museo']) ? (int)$_POST['id_museo'] : null;
       $currentRole  = get_user('id_role');
       $currentUserId = get_user('id');
       $errorMessage = '';
@@ -403,6 +418,13 @@ class adminController extends Controller implements ControllerInterface
 
       if ($id_role === 1 && $currentRole != 1) {
         throw new Exception('No tienes permisos para asignar el rol de Super Administrador.');
+      }
+
+      if ($id_role === 2 && empty($id_museo)) {
+        throw new Exception('Todo usuario con rol de Administrador debe estar asignado obligatoriamente a un museo.');
+      }
+      if ($id_role === 1) {
+        $id_museo = null;
       }
 
       // Verificar que no exista ya un usuario con ese username o correo electrónico
@@ -445,6 +467,7 @@ class adminController extends Controller implements ControllerInterface
       $user     =
         [
           'id_role'    => $id_role,
+          'id_museo'   => $id_museo,
           'username'   => $username,
           'email'      => $email,
           'password'   => password_hash($password . AUTH_SALT, PASSWORD_BCRYPT),
@@ -483,9 +506,17 @@ class adminController extends Controller implements ControllerInterface
       $username     = $_POST['username'];
       $email        = $_POST['email'];
       $id_role      = (int)$_POST['id_role'];
+      $id_museo     = !empty($_POST['id_museo']) ? (int)$_POST['id_museo'] : null;
       $password     = isset($_POST['password']) ? trim($_POST['password']) : '';
       $errorMessage = '';
       $errors       = 0;
+
+      if ($id_role === 2 && empty($id_museo)) {
+        throw new Exception('Todo usuario con rol de Administrador debe estar asignado obligatoriamente a un museo.');
+      }
+      if ($id_role === 1) {
+        $id_museo = null;
+      }
 
       // Verificar existencia del usuario
       if (!$userExisting = userModel::by_id($id_usuario)) {
@@ -532,7 +563,8 @@ class adminController extends Controller implements ControllerInterface
       $dataUpdate = [
         'username' => $username,
         'email'    => $email,
-        'id_role'  => $id_role
+        'id_role'  => $id_role,
+        'id_museo' => $id_museo
       ];
 
       if (!empty($password)) {
@@ -3405,6 +3437,46 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  public function obtener_origen_pieza()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    try {
+      $tipo = isset($_REQUEST['tipo_acervo']) ? trim($_REQUEST['tipo_acervo']) : '';
+      $id = isset($_REQUEST['id_pieza']) ? (int)$_REQUEST['id_pieza'] : 0;
+
+      $pieza = PrestamosModel::obtenerDetallePieza($tipo, $id);
+      if (!$pieza) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada en el catálogo']);
+        exit;
+      }
+
+      $origen = PrestamosModel::resolverOrigenPieza($pieza['ubicacion_fisica'] ?? '', $tipo, $id);
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'data' => $origen,
+        'pieza' => [
+          'tipo_acervo' => $tipo,
+          'id_pieza' => $id,
+          'codigo_interno' => $pieza['codigo_interno'] ?? '',
+          'titulo' => $pieza['titulo'] ?? ($pieza['nombre_titulo_pieza'] ?? ''),
+          'ubicacion_fisica' => $pieza['ubicacion_fisica'] ?? ''
+        ]
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 500, 'msg' => 'Error al resolver origen: ' . $e->getMessage()]);
+    }
+    exit;
+  }
+
   public function post_crear_movimiento()
   {
     if (!is_admin_user()) {
@@ -3480,8 +3552,63 @@ class adminController extends Controller implements ControllerInterface
         exit;
       }
 
+      // Validar carga obligatoria del oficio o documento de autorización
+      if (!isset($_FILES['archivo_oficio']) || $_FILES['archivo_oficio']['error'] !== UPLOAD_ERR_OK) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'Debe adjuntar obligatoriamente el oficio o documento oficial que autoriza el préstamo o transferencia (.pdf, .doc, .docx, .jpg, .png).']);
+        exit;
+      }
+
+      $fileOficio = $_FILES['archivo_oficio'];
+      $extOficio = strtolower(pathinfo($fileOficio['name'], PATHINFO_EXTENSION));
+      $allowedOficioExts = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
+      if (!in_array($extOficio, $allowedOficioExts)) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'Formato de oficio no válido. Se permiten únicamente archivos PDF, Word (.doc, .docx) o imágenes (.jpg, .png).']);
+        exit;
+      }
+
+      if ($fileOficio['size'] > 20 * 1024 * 1024) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'El archivo de oficio supera el tamaño máximo permitido (20 MB).']);
+        exit;
+      }
+
+      $uploadDirOficios = ROOT . 'assets' . DS . 'uploads' . DS . 'oficios_movimientos' . DS;
+      if (!is_dir($uploadDirOficios)) {
+        @mkdir($uploadDirOficios, 0777, true);
+      }
+
       $folio = PrestamosModel::generarFolio($tipoMovimiento);
-      $estatus = ($tipoMovimiento === 'transferencia') ? 'completada' : 'activo';
+      $folioLimpio = preg_replace('/[^A-Za-z0-9_-]/', '_', $folio);
+      $nombreArchivoGuardado = 'oficio_' . strtolower($folioLimpio) . '_' . time() . '.' . $extOficio;
+      $rutaDestinoOficio = $uploadDirOficios . $nombreArchivoGuardado;
+
+      if (!move_uploaded_file($fileOficio['tmp_name'], $rutaDestinoOficio)) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 500, 'msg' => 'Error al guardar el archivo de oficio en el servidor.']);
+        exit;
+      }
+
+      // Resolver IDs de museos origen y destino si aplican
+      $idMuseoOrigen = isset($_POST['id_museo_origen']) && (int)$_POST['id_museo_origen'] > 0 ? (int)$_POST['id_museo_origen'] : null;
+      $idMuseoDestino = isset($_POST['id_museo_destino']) && (int)$_POST['id_museo_destino'] > 0 ? (int)$_POST['id_museo_destino'] : null;
+
+      if (!$idMuseoOrigen && !empty($lugarOrigen)) {
+        $rowMO = Model::query("SELECT id_museo FROM museos WHERE nombre_museo = :nom LIMIT 1", ['nom' => $lugarOrigen]);
+        if ($rowMO && isset($rowMO[0]['id_museo'])) {
+          $idMuseoOrigen = (int)$rowMO[0]['id_museo'];
+        }
+      }
+
+      if (!$idMuseoDestino && !empty($lugarDestino)) {
+        $rowMD = Model::query("SELECT id_museo FROM museos WHERE nombre_museo = :nom LIMIT 1", ['nom' => $lugarDestino]);
+        if ($rowMD && isset($rowMD[0]['id_museo'])) {
+          $idMuseoDestino = (int)$rowMD[0]['id_museo'];
+        }
+      }
+
+      $estatus = 'pendiente_aprobacion';
       $idUser = (int)(get_user('id') ?: (isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : 1));
 
       $coleccion = isset($_POST['coleccion']) ? trim($_POST['coleccion']) : '';
@@ -3504,14 +3631,17 @@ class adminController extends Controller implements ControllerInterface
         'coleccion' => $coleccion,
         'tipo_origen' => $tipoOrigen,
         'lugar_origen' => $lugarOrigen,
+        'id_museo_origen' => $idMuseoOrigen,
         'responsable_origen' => $responsableOrigen,
         'tipo_destino' => $tipoDestino,
         'lugar_destino' => $lugarDestino,
+        'id_museo_destino' => $idMuseoDestino,
         'responsable_destino' => $responsableDestino,
         'fecha_salida' => $fechaSalida,
         'fecha_devolucion_estimada' => ($tipoMovimiento === 'prestamo') ? $fechaDevolucionEstimada : null,
         'motivo' => $motivo,
         'no_oficio_autorizacion' => $noOficio,
+        'archivo_oficio' => $nombreArchivoGuardado,
         'condiciones_entrega' => $condicionesEntrega,
         'observaciones' => $observaciones,
         'estatus' => $estatus,
@@ -3521,22 +3651,20 @@ class adminController extends Controller implements ControllerInterface
       $idMovimiento = PrestamosModel::addMovimiento($movData);
 
       if (!$idMovimiento) {
+        // Eliminar archivo subido si falla el insert
+        if (file_exists($rutaDestinoOficio)) {
+          @unlink($rutaDestinoOficio);
+        }
         header('Content-Type: application/json');
         echo json_encode(['status' => 500, 'msg' => 'No se pudo guardar el registro del movimiento.']);
         exit;
       }
 
-      // Actualizar ubicación física de la pieza
-      if ($tipoMovimiento === 'transferencia') {
-        $nuevaUbicacion = $lugarDestino;
-      } else {
-        $nuevaUbicacion = sprintf('En préstamo en: %s (Folio: %s)', $lugarDestino, $folio);
-      }
-      PrestamosModel::actualizarUbicacionPieza($tipoAcervo, $idPieza, $nuevaUbicacion);
+      // Nota institucional: La pieza no se reubica físicamente hasta que sea aceptada por el destino
 
       // Auditoría
       $descAudit = sprintf(
-        'Registro de %s con folio %s para la pieza %s (Origen: %s -> Destino: %s)',
+        'Registro de %s con folio %s para la pieza %s (Origen: %s -> Destino: %s). Pendiente de aceptación por el museo destino.',
         ucfirst($tipoMovimiento),
         $folio,
         $movData['codigo_interno_pieza'],
@@ -3548,7 +3676,7 @@ class adminController extends Controller implements ControllerInterface
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 201,
-        'msg' => sprintf('Movimiento registrado exitosamente con folio %s.', $folio),
+        'msg' => sprintf('Movimiento registrado exitosamente con folio %s en espera de aprobación por el museo de destino.', $folio),
         'folio' => $folio,
         'id' => $idMovimiento
       ]);
@@ -3557,6 +3685,187 @@ class adminController extends Controller implements ControllerInterface
       echo json_encode([
         'status' => 500,
         'msg' => 'Error al registrar movimiento: ' . $e->getMessage()
+      ]);
+    }
+    exit;
+  }
+
+  public function post_aceptar_movimiento()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    try {
+      $idMovimiento = isset($_POST['id_movimiento']) ? (int)$_POST['id_movimiento'] : 0;
+      $observaciones = isset($_POST['observaciones_dictamen']) ? trim($_POST['observaciones_dictamen']) : '';
+
+      if ($idMovimiento <= 0) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'ID de movimiento no válido.']);
+        exit;
+      }
+
+      $mov = PrestamosModel::getById($idMovimiento);
+      if (!$mov) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 404, 'msg' => 'El movimiento especificado no existe.']);
+        exit;
+      }
+
+      if ($mov['estatus'] !== 'pendiente_aprobacion') {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => sprintf('El movimiento no se encuentra en espera de aprobación (Estatus actual: %s).', $mov['estatus'])]);
+        exit;
+      }
+
+      if (!user_can_dictate_movement($mov)) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 403, 'msg' => 'No tiene autorización para dictaminar este movimiento. Solo el administrador asignado al museo de destino o el Super Administrador pueden aceptar el movimiento.']);
+        exit;
+      }
+
+      $idUser = (int)(get_user('id') ?: (isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : 1));
+      $tipoMovimiento = $mov['tipo_movimiento'];
+      $nuevoEstatus = ($tipoMovimiento === 'transferencia') ? 'completada' : 'activo';
+
+      // Actualizar ubicación física de la pieza ahora que ha sido formalmente aceptada
+      if ($tipoMovimiento === 'transferencia') {
+        $nuevaUbicacion = $mov['lugar_destino'];
+      } else {
+        $nuevaUbicacion = sprintf('En préstamo en: %s (Folio: %s)', $mov['lugar_destino'], $mov['folio']);
+      }
+      PrestamosModel::actualizarUbicacionPieza($mov['tipo_acervo'], $mov['id_pieza'], $nuevaUbicacion);
+
+      $obsFinal = $mov['observaciones'] ?? '';
+      if (!empty($observaciones)) {
+        $obsFinal = trim($obsFinal . "\n[Aceptado " . date('d/m/Y H:i') . "]: " . $observaciones);
+      }
+
+      $updateData = [
+        'estatus' => $nuevoEstatus,
+        'id_usuario_dictamen' => $idUser,
+        'fecha_dictamen' => date('Y-m-d H:i:s'),
+        'observaciones_dictamen' => $observaciones,
+        'observaciones' => $obsFinal
+      ];
+
+      PrestamosModel::updateMovimiento($idMovimiento, $updateData);
+
+      // Auditoría
+      $descAudit = sprintf(
+        'Aceptación de %s con folio %s por sede destino %s. Estatus actualizado a %s y pieza reubicada en %s',
+        $tipoMovimiento,
+        $mov['folio'],
+        $mov['lugar_destino'],
+        $nuevoEstatus,
+        $nuevaUbicacion
+      );
+      registrar_auditoria('UPDATE', 'prestamos_transferencias', $idMovimiento, $descAudit);
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'msg' => sprintf('Movimiento %s aceptado exitosamente. La pieza ha sido incorporada a la sede de destino.', $mov['folio']),
+        'estatus' => $nuevoEstatus
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al aceptar movimiento: ' . $e->getMessage()
+      ]);
+    }
+    exit;
+  }
+
+  public function post_declinar_movimiento()
+  {
+    if (!is_admin_user()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
+    try {
+      $idMovimiento = isset($_POST['id_movimiento']) ? (int)$_POST['id_movimiento'] : 0;
+      $motivoDeclinacion = isset($_POST['motivo_declinacion']) ? trim($_POST['motivo_declinacion']) : '';
+      $observaciones = isset($_POST['observaciones_dictamen']) ? trim($_POST['observaciones_dictamen']) : '';
+
+      if ($idMovimiento <= 0) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'ID de movimiento no válido.']);
+        exit;
+      }
+
+      if (empty($motivoDeclinacion)) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => 'El motivo o justificación de la declinación es obligatorio.']);
+        exit;
+      }
+
+      $mov = PrestamosModel::getById($idMovimiento);
+      if (!$mov) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 404, 'msg' => 'El movimiento especificado no existe.']);
+        exit;
+      }
+
+      if ($mov['estatus'] !== 'pendiente_aprobacion') {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 400, 'msg' => sprintf('El movimiento no se encuentra en espera de aprobación (Estatus actual: %s).', $mov['estatus'])]);
+        exit;
+      }
+
+      if (!user_can_dictate_movement($mov)) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 403, 'msg' => 'No tiene autorización para dictaminar este movimiento. Solo el administrador asignado al museo de destino o el Super Administrador pueden declinar el movimiento.']);
+        exit;
+      }
+
+      $idUser = (int)(get_user('id') ?: (isset($_SESSION['user']['id']) ? $_SESSION['user']['id'] : 1));
+
+      // La pieza no se traslada, permanece en origen
+      $obsFinal = $mov['observaciones'] ?? '';
+      $obsFinal = trim($obsFinal . "\n[Declinado " . date('d/m/Y H:i') . "]: Motivo: " . $motivoDeclinacion);
+      if (!empty($observaciones)) {
+        $obsFinal .= " | Observaciones: " . $observaciones;
+      }
+
+      $updateData = [
+        'estatus' => 'declinado',
+        'id_usuario_dictamen' => $idUser,
+        'fecha_dictamen' => date('Y-m-d H:i:s'),
+        'motivo_declinacion' => $motivoDeclinacion,
+        'observaciones_dictamen' => $observaciones,
+        'observaciones' => $obsFinal
+      ];
+
+      PrestamosModel::updateMovimiento($idMovimiento, $updateData);
+
+      // Auditoría
+      $descAudit = sprintf(
+        'Declinación de %s con folio %s por sede destino %s. Motivo: %s',
+        $mov['tipo_movimiento'],
+        $mov['folio'],
+        $mov['lugar_destino'],
+        $motivoDeclinacion
+      );
+      registrar_auditoria('UPDATE', 'prestamos_transferencias', $idMovimiento, $descAudit);
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'msg' => sprintf('El movimiento %s ha sido declinado debidamente. La pieza permanece en su sede de origen.', $mov['folio']),
+        'estatus' => 'declinado'
+      ]);
+    } catch (Throwable $e) {
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 500,
+        'msg' => 'Error al declinar movimiento: ' . $e->getMessage()
       ]);
     }
     exit;

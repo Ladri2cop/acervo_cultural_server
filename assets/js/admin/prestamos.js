@@ -132,12 +132,23 @@ $(document).ready(function () {
       deseleccionarPieza();
     });
 
+    // Alternar visibilidad de campos origen y destino según tipo de dependencia
+    $('#select_tipo_origen').on('change', function () {
+      alternarCamposEntidad($(this).val(), 'origen');
+    });
+
+    $('#select_tipo_destino').on('change', function () {
+      alternarCamposEntidad($(this).val(), 'destino');
+    });
+
     // Autocompletar origen si se selecciona museo registrado
     $('#select_museo_origen_catalogo').on('change', function () {
       const opt = $(this).find('option:selected');
       const val = $(this).val();
+      const idMuseo = opt.data('id') || '';
+      $('#input_id_museo_origen').val(idMuseo);
+      $('#input_lugar_origen').val(val || '');
       if (val) {
-        $('#input_lugar_origen').val(val);
         const resp = opt.data('resp') || '';
         if (resp) {
           $('#input_responsable_origen').val(resp);
@@ -149,8 +160,10 @@ $(document).ready(function () {
     $('#select_museo_destino_catalogo').on('change', function () {
       const opt = $(this).find('option:selected');
       const val = $(this).val();
+      const idMuseo = opt.data('id') || '';
+      $('#input_id_museo_destino').val(idMuseo);
+      $('#input_lugar_destino').val(val || '');
       if (val) {
-        $('#input_lugar_destino').val(val);
         const resp = opt.data('resp') || '';
         if (resp) {
           $('#input_responsable_destino').val(resp);
@@ -222,6 +235,7 @@ $(document).ready(function () {
   // =========================================================================
   function actualizarKPIs(kpis) {
     $('#kpi-total').text(kpis.total || 0);
+    $('#kpi-pendientes').text(kpis.pendientes_aprobacion || 0);
     $('#kpi-activos').text(kpis.prestamos_activos || 0);
     $('#kpi-vencidos').text(kpis.prestamos_vencidos || 0);
     $('#kpi-devueltos').text(kpis.prestamos_devueltos || 0);
@@ -265,16 +279,20 @@ $(document).ready(function () {
 
       // Estatus Badge
       let badgeEstatus = '';
-      if (m.estatus === 'activo') {
+      if (m.estatus === 'pendiente_aprobacion') {
+        badgeEstatus = `<span class="badge bg-warning text-dark"><i class='bx bx-time me-1'></i>Pendiente</span>`;
+      } else if (m.estatus === 'activo') {
         if (m.es_vencido) {
           badgeEstatus = `<span class="badge bg-danger text-white"><i class='bx bx-alarm-exclamation me-1'></i>Vencido</span>`;
         } else {
-          badgeEstatus = `<span class="badge bg-warning text-dark"><i class='bx bx-time me-1'></i>Activo</span>`;
+          badgeEstatus = `<span class="badge bg-info text-white"><i class='bx bx-time me-1'></i>Activo</span>`;
         }
       } else if (m.estatus === 'devuelto') {
         badgeEstatus = `<span class="badge bg-success"><i class='bx bx-check-double me-1'></i>Devuelto</span>`;
       } else if (m.estatus === 'completada') {
         badgeEstatus = `<span class="badge bg-primary"><i class='bx bx-check me-1'></i>Completada</span>`;
+      } else if (m.estatus === 'declinado') {
+        badgeEstatus = `<span class="badge bg-danger"><i class='bx bx-x-circle me-1'></i>Declinado</span>`;
       } else if (m.estatus === 'cancelado') {
         badgeEstatus = `<span class="badge bg-secondary"><i class='bx bx-x me-1'></i>Cancelado</span>`;
       }
@@ -301,17 +319,43 @@ $(document).ready(function () {
         </li>
       `;
 
+      if (m.archivo_oficio_url) {
+        opcionesDropdown += `
+          <li>
+            <a class="dropdown-item" href="${escapeHtml(m.archivo_oficio_url)}" target="_blank" rel="noopener noreferrer">
+              <i class='bx text-info bx__iconmenu bx-file'></i> Ver Oficio Adjunto
+            </a>
+          </li>
+        `;
+      }
+
+      if (m.estatus === 'pendiente_aprobacion' && m.puede_dictaminar) {
+        opcionesDropdown += `
+          <li><hr class="dropdown-divider"></li>
+          <li>
+            <a class="dropdown-item btn-aceptar-movimiento text-success font-weight-bold" href="javascript:void(0);" data-id="${m.id_movimiento}">
+              <i class='bx text-success bx__iconmenu bx-check-circle'></i> Aceptar Movimiento
+            </a>
+          </li>
+          <li>
+            <a class="dropdown-item btn-declinar-movimiento text-danger font-weight-bold" href="javascript:void(0);" data-id="${m.id_movimiento}">
+              <i class='bx text-danger bx__iconmenu bx-x-circle'></i> Declinar Movimiento
+            </a>
+          </li>
+        `;
+      }
+
       if (esPrestamo && m.estatus === 'activo') {
         opcionesDropdown += `
           <li>
-            <a class="dropdown-item btn-devolver-prestamo" href="javascript:void(0);" data-id="${m.id_movimiento}">
+            <a class="dropdown-item btn-devolver-prestamo text-success" href="javascript:void(0);" data-id="${m.id_movimiento}">
               <i class='bx text-success bx__iconmenu bx-undo'></i> Registrar Devolución
             </a>
           </li>
         `;
       }
 
-      if (m.estatus === 'activo') {
+      if (m.estatus === 'activo' || m.estatus === 'pendiente_aprobacion') {
         opcionesDropdown += `
           <li><hr class="dropdown-divider"></li>
           <li>
@@ -381,6 +425,18 @@ $(document).ready(function () {
       e.preventDefault();
       const id = $(this).data('id');
       mostrarDetalleMovimiento(id);
+    });
+
+    $('.btn-aceptar-movimiento').on('click', function (e) {
+      e.preventDefault();
+      const id = $(this).data('id');
+      confirmarAceptarMovimiento(id);
+    });
+
+    $('.btn-declinar-movimiento').on('click', function (e) {
+      e.preventDefault();
+      const id = $(this).data('id');
+      confirmarDeclinarMovimiento(id);
     });
 
     $('.btn-devolver-prestamo').on('click', function (e) {
@@ -472,11 +528,72 @@ $(document).ready(function () {
   }
 
   // =========================================================================
+  // CONTROL DINÁMICO DE ORIGEN Y DESTINO (MUSEO VS OTRA DEPENDENCIA)
+  // =========================================================================
+  function alternarCamposEntidad(tipoEntidad, campo) {
+    const esMuseo = (tipoEntidad === 'museo');
+    const $wrapperMuseo = $('#wrapper-museo-' + campo);
+    const $selectMuseo = $('#select_museo_' + campo + '_catalogo');
+    const $wrapperLugar = $('#wrapper-lugar-' + campo);
+    const $inputLugar = $('#input_lugar_' + campo);
+    const $inputIdMuseo = $('#input_id_museo_' + campo);
+
+    if (esMuseo) {
+      $wrapperMuseo.removeClass('d-none').show();
+      $wrapperLugar.addClass('d-none').hide();
+      $inputLugar.prop('required', false);
+      $selectMuseo.prop('required', true);
+
+      // Si ya hay museo seleccionado en el combo, sincronizar
+      const selVal = $selectMuseo.val();
+      if (selVal) {
+        $inputLugar.val(selVal);
+        const opt = $selectMuseo.find('option:selected');
+        $inputIdMuseo.val(opt.data('id') || '');
+      }
+    } else {
+      $wrapperMuseo.addClass('d-none').hide();
+      $wrapperLugar.removeClass('d-none').show();
+      $selectMuseo.prop('required', false).val('');
+      $inputIdMuseo.val('');
+      $inputLugar.prop('required', true);
+    }
+  }
+
+  // =========================================================================
   // MODAL NUEVO MOVIMIENTO
   // =========================================================================
   function abrirModalNuevoMovimiento() {
     $('#formNuevoMovimiento')[0].reset();
     deseleccionarPieza();
+    $('#select_tipo_origen').val('museo');
+    alternarCamposEntidad('museo', 'origen');
+    $('#select_tipo_destino').val('museo');
+    alternarCamposEntidad('museo', 'destino');
+    $('#select_museo_origen_catalogo').val('');
+    $('#select_museo_destino_catalogo').val('');
+    $('#input_id_museo_origen').val('');
+    $('#input_id_museo_destino').val('');
+    $('#input_lugar_origen').val('');
+    $('#input_lugar_destino').val('');
+    $('#input_responsable_origen').val('');
+    $('#input_responsable_destino').val('');
+    $('#input_archivo_oficio').val('');
+    $('#badge-origen-autodetectado').addClass('d-none');
+
+    // Si el usuario es administrador de sede, sugerir por defecto su museo asignado
+    const isSuperAdmin = $('#auth_user_is_super_admin').val() === '1';
+    const authMuseumName = ($('#auth_user_museum_name').val() || '').trim();
+    const authMuseumId = ($('#auth_user_museum_id').val() || '').trim();
+    if (!isSuperAdmin && authMuseumName) {
+      $('#select_tipo_origen').val('museo');
+      alternarCamposEntidad('museo', 'origen');
+      $('#select_museo_origen_catalogo').val(authMuseumName).trigger('change');
+      if (authMuseumId) {
+        $('#input_id_museo_origen').val(authMuseumId);
+      }
+    }
+
     $('#tipo_prestamo').prop('checked', true);
     actualizarCamposTipoMovimiento('prestamo');
     $('#input_fecha_salida').val(obtenerFechaHoy());
@@ -568,9 +685,84 @@ $(document).ready(function () {
     if (p.tipo_acervo === 'numismatica') catBadgeText = 'Numismático';
     $('#sel-pieza-badge-catalogo').text(catBadgeText);
 
-    // Sugerir la ubicación física actual como lugar de origen
-    if (p.ubicacion_fisica && !$('#input_lugar_origen').val()) {
-      $('#input_lugar_origen').val(p.ubicacion_fisica);
+    let coleccionTexto = p.coleccion || '';
+    if (!coleccionTexto) {
+      if (p.tipo_acervo === 'general') coleccionTexto = 'Acervo General';
+      else if (p.tipo_acervo === 'arqueologico') coleccionTexto = 'Acervo Arqueológico';
+      else if (p.tipo_acervo === 'numismatica') coleccionTexto = 'Acervo Numismático';
+    }
+    $('#sel-pieza-coleccion').text(coleccionTexto);
+    $('#input_coleccion').val(coleccionTexto);
+
+    // =======================================================================
+    // RECUPERACIÓN AUTOMÁTICA DEL ORIGEN DE LA PIEZA
+    // =======================================================================
+    const orig = p.origen_detectado;
+    if (orig && orig.tipo_origen === 'museo' && orig.nombre_museo) {
+      $('#select_tipo_origen').val('museo');
+      alternarCamposEntidad('museo', 'origen');
+
+      // Seleccionar el museo en el combo por ID o por nombre
+      let selEncontrado = false;
+      if (orig.id_museo) {
+        $('#select_museo_origen_catalogo option').each(function () {
+          if (parseInt($(this).data('id'), 10) === parseInt(orig.id_museo, 10)) {
+            $('#select_museo_origen_catalogo').val($(this).val());
+            selEncontrado = true;
+            return false;
+          }
+        });
+      }
+      if (!selEncontrado) {
+        $('#select_museo_origen_catalogo').val(orig.nombre_museo);
+      }
+
+      $('#input_id_museo_origen').val(orig.id_museo || '');
+      $('#input_lugar_origen').val(orig.nombre_museo);
+      if (orig.responsable_origen) {
+        $('#input_responsable_origen').val(orig.responsable_origen);
+      }
+
+      $('#badge-origen-autodetectado')
+        .removeClass('d-none')
+        .html("<i class='bx bx-check-circle me-1'></i> Origen recuperado: <strong>" + escapeHtml(orig.nombre_museo) + "</strong>");
+    } else if (orig && orig.tipo_origen !== 'museo' && orig.lugar_origen) {
+      $('#select_tipo_origen').val(orig.tipo_origen || 'unidad');
+      alternarCamposEntidad(orig.tipo_origen || 'unidad', 'origen');
+
+      $('#select_museo_origen_catalogo').val('');
+      $('#input_id_museo_origen').val('');
+      $('#input_lugar_origen').val(orig.lugar_origen);
+      $('#badge-origen-autodetectado')
+        .removeClass('d-none')
+        .html("<i class='bx bx-check-circle me-1'></i> Origen recuperado: <strong>" + escapeHtml(orig.lugar_origen) + "</strong>");
+    } else if (p.ubicacion_fisica) {
+      // Fallback si no viniera origen_detectado: búsqueda inteligente en las opciones
+      const locClean = (p.ubicacion_fisica || '').trim().toLowerCase();
+      let encontrado = false;
+
+      $('#select_museo_origen_catalogo option').each(function () {
+        const val = ($(this).val() || '').trim().toLowerCase();
+        if (val && (val === locClean || locClean.indexOf(val) !== -1 || val.indexOf(locClean) !== -1)) {
+          $('#select_tipo_origen').val('museo');
+          alternarCamposEntidad('museo', 'origen');
+          $('#select_museo_origen_catalogo').val($(this).val()).trigger('change');
+          encontrado = true;
+          return false;
+        }
+      });
+
+      if (!encontrado) {
+        $('#select_tipo_origen').val('unidad');
+        alternarCamposEntidad('unidad', 'origen');
+        $('#select_museo_origen_catalogo').val('');
+        $('#input_id_museo_origen').val('');
+        $('#input_lugar_origen').val(p.ubicacion_fisica);
+      }
+
+      $('#badge-origen-autodetectado')
+        .removeClass('d-none')
+        .html("<i class='bx bx-check-circle me-1'></i> Origen recuperado: <strong>" + escapeHtml(p.ubicacion_fisica) + "</strong>");
     }
 
     $('#modal-pieza-seleccionada').removeClass('d-none');
@@ -582,7 +774,16 @@ $(document).ready(function () {
     estado.piezaSeleccionada = null;
     $('#input_tipo_acervo').val('');
     $('#input_id_pieza').val('');
+    $('#sel-pieza-coleccion').text('-');
+    $('#input_coleccion').val('');
     $('#modal-pieza-seleccionada').addClass('d-none');
+    $('#badge-origen-autodetectado').addClass('d-none');
+    $('#select_museo_origen_catalogo').val('');
+    $('#input_id_museo_origen').val('');
+    $('#input_lugar_origen').val('');
+    $('#input_responsable_origen').val('');
+    $('#select_tipo_origen').val('museo');
+    alternarCamposEntidad('museo', 'origen');
     $('#modal-search-pieza').val('').prop('disabled', false).focus();
   }
 
@@ -597,19 +798,76 @@ $(document).ready(function () {
       return;
     }
 
-    const lugarOrigen = $('#input_lugar_origen').val().trim();
-    const lugarDestino = $('#input_lugar_destino').val().trim();
+    // Validar origen según tipo de dependencia
+    const tipoOrigen = $('#select_tipo_origen').val();
+    let lugarOrigen = '';
+    if (tipoOrigen === 'museo') {
+      const nomMuseoOrig = $('#select_museo_origen_catalogo').val();
+      if (!nomMuseoOrig) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Museo de origen requerido',
+          text: 'Por favor seleccione el museo de origen de la pieza.'
+        });
+        return;
+      }
+      lugarOrigen = nomMuseoOrig;
+      $('#input_lugar_origen').val(nomMuseoOrig);
+    } else {
+      lugarOrigen = $('#input_lugar_origen').val().trim();
+      if (!lugarOrigen) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Sede de origen requerida',
+          text: 'Por favor ingrese el nombre del lugar o sede de origen.'
+        });
+        return;
+      }
+    }
+
+    // Validar destino según tipo de dependencia
+    const tipoDestino = $('#select_tipo_destino').val();
+    let lugarDestino = '';
+    if (tipoDestino === 'museo') {
+      const nomMuseoDest = $('#select_museo_destino_catalogo').val();
+      if (!nomMuseoDest) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Museo de destino requerido',
+          text: 'Por favor seleccione el museo institucional de destino.'
+        });
+        return;
+      }
+      lugarDestino = nomMuseoDest;
+      $('#input_lugar_destino').val(nomMuseoDest);
+    } else {
+      lugarDestino = $('#input_lugar_destino').val().trim();
+      if (!lugarDestino) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Sede de destino requerida',
+          text: 'Por favor ingrese el nombre del lugar o sede de destino.'
+        });
+        return;
+      }
+    }
+
+    // Validar que origen y destino no sean el mismo museo
+    if (tipoOrigen === 'museo' && tipoDestino === 'museo') {
+      const idOrig = $('#input_id_museo_origen').val();
+      const idDest = $('#input_id_museo_destino').val();
+      if (idOrig && idDest && String(idOrig) === String(idDest)) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Origen y Destino Idénticos',
+          text: 'El museo de destino debe ser diferente al museo de origen.'
+        });
+        return;
+      }
+    }
+
     const motivo = $('#input_motivo').val().trim();
     const tipoMov = $('input[name="tipo_movimiento"]:checked').val();
-
-    if (!lugarOrigen || !lugarDestino) {
-      Swal.fire({
-        icon: 'warning',
-        title: 'Campos requeridos',
-        text: 'El lugar de origen y el lugar de destino son obligatorios.'
-      });
-      return;
-    }
 
     if (!motivo) {
       Swal.fire({
@@ -625,6 +883,16 @@ $(document).ready(function () {
         icon: 'warning',
         title: 'Fecha estimada requerida',
         text: 'Para préstamos temporales es obligatoria la fecha estimada de devolución.'
+      });
+      return;
+    }
+
+    const fileOficio = document.getElementById('input_archivo_oficio');
+    if (!fileOficio || !fileOficio.files || fileOficio.files.length === 0) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Oficio obligatorio',
+        text: 'Debe adjuntar obligatoriamente el oficio o documento de autorización del movimiento (.pdf, .doc, .docx, .jpg, .png).'
       });
       return;
     }
@@ -648,7 +916,7 @@ $(document).ready(function () {
           Swal.fire({
             icon: 'success',
             title: '¡Movimiento Registrado!',
-            html: `Se ha generado el folio institucional: <strong class="text-primary font-monospace fs-5">${res.folio}</strong>.<br>La ubicación física de la pieza ha sido actualizada.`,
+            html: `Se ha generado el folio institucional: <strong class="text-primary font-monospace fs-5">${res.folio}</strong>.<br>El movimiento ha quedado en estado <strong>Pendiente de Aprobación</strong> por el museo de destino.`,
             confirmButtonColor: '#4e73df'
           });
           cargarMovimientos();
@@ -779,19 +1047,25 @@ $(document).ready(function () {
             .attr('class', esPrestamo ? 'badge bg-info' : 'badge bg-primary');
 
           let estatusTexto = 'Activo';
-          let estatusClass = 'badge bg-warning text-dark';
-          if (m.estatus === 'devuelto') {
+          let estatusClass = 'badge bg-info text-white';
+          if (m.estatus === 'pendiente_aprobacion') {
+            estatusTexto = 'Pendiente de Aprobación';
+            estatusClass = 'badge bg-warning text-dark';
+          } else if (m.estatus === 'declinado') {
+            estatusTexto = 'Declinado';
+            estatusClass = 'badge bg-danger text-white';
+          } else if (m.estatus === 'devuelto') {
             estatusTexto = 'Devuelto';
-            estatusClass = 'badge bg-success';
+            estatusClass = 'badge bg-success text-white';
           } else if (m.estatus === 'completada') {
             estatusTexto = 'Completada';
-            estatusClass = 'badge bg-primary';
+            estatusClass = 'badge bg-primary text-white';
           } else if (m.estatus === 'cancelado') {
             estatusTexto = 'Cancelado';
-            estatusClass = 'badge bg-secondary';
+            estatusClass = 'badge bg-secondary text-white';
           } else if (m.es_vencido) {
             estatusTexto = 'Plazo Vencido';
-            estatusClass = 'badge bg-danger';
+            estatusClass = 'badge bg-danger text-white';
           }
           $('#det-estatus-badge').text(estatusTexto).attr('class', estatusClass);
 
@@ -816,6 +1090,7 @@ $(document).ready(function () {
           $('#det-pieza-titulo').text(m.titulo_pieza || 'Sin título');
           $('#det-pieza-codigo').text(m.codigo_interno_pieza || 'S/C');
           $('#det-pieza-catalogo').text(m.tipo_acervo.toUpperCase());
+          $('#det-pieza-coleccion').text(m.coleccion || '--');
           $('#det-pieza-ubicacion').text((m.pieza_actual && m.pieza_actual.ubicacion_fisica) ? m.pieza_actual.ubicacion_fisica : '--');
 
           // Origen
@@ -828,18 +1103,209 @@ $(document).ready(function () {
           $('#det-tipo-destino').text(formatearTipoDependencia(m.tipo_destino));
           $('#det-responsable-destino').text(m.responsable_destino || 'No especificado');
 
-          // Documentación
+          // Documentación y Oficio
           $('#det-no-oficio').text(m.no_oficio_autorizacion || 'Sin oficio registrado');
           $('#det-usuario-registro').text(m.usuario_registro_nombre ? `${m.usuario_registro_nombre} (${formatearFecha(m.created_at)})` : '--');
+
+          if (m.archivo_oficio_url) {
+            $('#det-oficio-container').html(`
+              <a href="${escapeHtml(m.archivo_oficio_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm">
+                <i class='bx bx-file me-1'></i> Descargar / Ver Oficio Adjunto (${escapeHtml(m.archivo_oficio || 'Oficio')})
+              </a>
+            `);
+          } else {
+            $('#det-oficio-container').html('<span class="text-muted small">Sin documento digital adjunto</span>');
+          }
+
           $('#det-motivo').text(m.motivo || 'No especificado');
           $('#det-condiciones-entrega').text(m.condiciones_entrega || 'Sin observaciones al momento de la entrega');
           $('#det-condiciones-devolucion').text(m.condiciones_devolucion || (m.estatus === 'devuelto' ? 'Recibido sin observaciones adicionales' : 'Pendiente de devolución'));
           $('#det-observaciones').text(m.observaciones || 'Sin observaciones registradas');
 
+          // Dictamen de Sede Receptora
+          if (m.estatus === 'declinado' || m.fecha_dictamen) {
+            $('#det-card-dictamen').removeClass('d-none');
+            $('#det-dictamen-usuario').text(m.usuario_dictamen_nombre || 'Administrador Receptor');
+            $('#det-dictamen-fecha').text(formatearFecha(m.fecha_dictamen));
+
+            if (m.estatus === 'declinado') {
+              $('#det-dictamen-badge').text('Declinado').attr('class', 'badge bg-danger');
+              $('#det-wrapper-motivo-declinacion').removeClass('d-none');
+              $('#det-motivo-declinacion').text(m.motivo_declinacion || 'Sin motivo registrado');
+            } else {
+              $('#det-dictamen-badge').text('Aceptado').attr('class', 'badge bg-success');
+              $('#det-wrapper-motivo-declinacion').addClass('d-none');
+            }
+
+            if (m.observaciones_dictamen) {
+              $('#det-wrapper-obs-dictamen').removeClass('d-none');
+              $('#det-observaciones-dictamen').text(m.observaciones_dictamen);
+            } else {
+              $('#det-wrapper-obs-dictamen').addClass('d-none');
+            }
+          } else {
+            $('#det-card-dictamen').addClass('d-none');
+          }
+
+          // Botones de Dictamen en el Footer del Modal
+          if (m.estatus === 'pendiente_aprobacion' && m.puede_dictaminar) {
+            $('#det-acciones-dictamen').removeClass('d-none').addClass('d-flex');
+            $('#btn-detalle-aceptar').off('click').on('click', function () {
+              confirmarAceptarMovimiento(m.id_movimiento, true);
+            });
+            $('#btn-detalle-declinar').off('click').on('click', function () {
+              confirmarDeclinarMovimiento(m.id_movimiento, true);
+            });
+          } else {
+            $('#det-acciones-dictamen').addClass('d-none').removeClass('d-flex');
+          }
+
           $('#modalDetalleMovimiento').modal('show');
         } else {
           toastr.error('No se pudo cargar el detalle del movimiento.');
         }
+      }
+    });
+  }
+
+  // =========================================================================
+  // ACEPTAR MOVIMIENTO (DICTAMEN SEDE DESTINO)
+  // =========================================================================
+  function confirmarAceptarMovimiento(id, cerrarModalDetalle) {
+    Swal.fire({
+      title: '¿Aceptar préstamo o transferencia?',
+      text: 'Al aceptar, el movimiento quedará formalmente aprobado y la pieza se reubicará a la sede de destino.',
+      icon: 'question',
+      input: 'text',
+      inputPlaceholder: 'Observaciones de aceptación (opcional)...',
+      showCancelButton: true,
+      confirmButtonColor: '#198754',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: '<i class="bx bx-check-circle me-1"></i> Sí, Aceptar Movimiento',
+      cancelButtonText: 'Cancelar'
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Procesando dictamen...',
+          text: 'Por favor espere mientras se valida y actualiza la ubicación de la pieza.',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        $.ajax({
+          url: 'admin/post_aceptar_movimiento',
+          type: 'POST',
+          data: {
+            id_movimiento: id,
+            observaciones_dictamen: result.value || ''
+          },
+          dataType: 'json',
+          success: function (res) {
+            if (res.status === 200) {
+              if (cerrarModalDetalle) {
+                $('#modalDetalleMovimiento').modal('hide');
+              }
+              Swal.fire({
+                icon: 'success',
+                title: '¡Movimiento Aceptado!',
+                text: res.msg,
+                confirmButtonColor: '#198754'
+              });
+              cargarMovimientos();
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error al aceptar',
+                text: res.msg || 'No se pudo procesar la aceptación del movimiento.'
+              });
+            }
+          },
+          error: function (xhr, status, error) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error de servidor',
+              text: 'Ocurrió un error inesperado al comunicarse con el servidor.'
+            });
+            console.error(error);
+          }
+        });
+      }
+    });
+  }
+
+  // =========================================================================
+  // DECLINAR MOVIMIENTO (DICTAMEN SEDE DESTINO)
+  // =========================================================================
+  function confirmarDeclinarMovimiento(id, cerrarModalDetalle) {
+    Swal.fire({
+      title: '¿Declinar préstamo o transferencia?',
+      text: 'Indique obligatoriamente el motivo de la declinación. La pieza permanecerá resguardada en su sede de origen.',
+      icon: 'warning',
+      input: 'textarea',
+      inputPlaceholder: 'Escriba la justificación institucional de la declinación...',
+      inputAttributes: {
+        'aria-label': 'Motivo de la declinación'
+      },
+      showCancelButton: true,
+      confirmButtonColor: '#dc3545',
+      cancelButtonColor: '#6c757d',
+      confirmButtonText: '<i class="bx bx-x-circle me-1"></i> Sí, Declinar Movimiento',
+      cancelButtonText: 'Cancelar',
+      inputValidator: (value) => {
+        if (!value || !value.trim()) {
+          return 'Debe ingresar obligatoriamente el motivo de la declinación.';
+        }
+      }
+    }).then((result) => {
+      if (result.isConfirmed) {
+        Swal.fire({
+          title: 'Procesando dictamen...',
+          text: 'Por favor espere...',
+          allowOutsideClick: false,
+          didOpen: () => {
+            Swal.showLoading();
+          }
+        });
+
+        $.ajax({
+          url: 'admin/post_declinar_movimiento',
+          type: 'POST',
+          data: {
+            id_movimiento: id,
+            motivo_declinacion: result.value
+          },
+          dataType: 'json',
+          success: function (res) {
+            if (res.status === 200) {
+              if (cerrarModalDetalle) {
+                $('#modalDetalleMovimiento').modal('hide');
+              }
+              Swal.fire({
+                icon: 'success',
+                title: 'Movimiento Declinado',
+                text: res.msg,
+                confirmButtonColor: '#6c757d'
+              });
+              cargarMovimientos();
+            } else {
+              Swal.fire({
+                icon: 'error',
+                title: 'Error al declinar',
+                text: res.msg || 'No se pudo procesar la declinación del movimiento.'
+              });
+            }
+          },
+          error: function (xhr, status, error) {
+            Swal.fire({
+              icon: 'error',
+              title: 'Error de servidor',
+              text: 'Ocurrió un error inesperado al comunicarse con el servidor.'
+            });
+            console.error(error);
+          }
+        });
       }
     });
   }

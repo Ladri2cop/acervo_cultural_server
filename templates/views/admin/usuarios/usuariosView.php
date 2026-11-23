@@ -42,6 +42,23 @@
             </select>
           </div>
 
+          <div class="mb-3" id="wrapper_id_museo" style="display: none;">
+            <label for="id_museo" class="form-label">Museo asignado <span class="text-danger">*</span></label>
+            <select class="form-control" id="id_museo" name="id_museo">
+              <option value="">-- Selecciona un museo --</option>
+              <?php if (!empty($d->museos)): ?>
+                <?php foreach ($d->museos as $mus): ?>
+                  <?php 
+                    $mId = is_object($mus) ? $mus->id_museo : $mus['id_museo'];
+                    $mNombre = is_object($mus) ? $mus->nombre_museo : $mus['nombre_museo'];
+                  ?>
+                  <option value="<?php echo $mId; ?>"><?php echo htmlspecialchars($mNombre); ?></option>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </select>
+            <small class="text-muted" style="font-size: 0.75rem;">Obligatorio para el rol de Administrador.</small>
+          </div>
+
           <button class="btn btn-success btn-lg btn-block" type="submit">Agregar ahora</button>
         </form>
       </div>
@@ -62,6 +79,7 @@
                 <th>Usuario</th>
                 <th class="text-center">Correo electrónico</th>
                 <th class="text-center">Rol</th>
+                <th class="text-center">Museo Asignado</th>
                 <th class="text-end">Acciones</th>
               </tr>
             </thead>
@@ -72,6 +90,15 @@
                     <td><?php echo $user->id == get_user('id') ? $user->username . ' (Tú)' : $user->username; ?></td>
                     <td class="text-center"><?php echo $user->email; ?></td>
                     <td class="text-center"><span class="badge bg-primary text-white"><?php echo !empty($user->role_name) ? $user->role_name : 'Sin rol'; ?></span></td>
+                    <td class="text-center">
+                      <?php if ($user->id_role == 1): ?>
+                        <span class="badge bg-dark text-white"><i class="fas fa-globe me-1"></i> Global (Super Admin)</span>
+                      <?php elseif (!empty($user->museo_nombre)): ?>
+                        <span class="badge bg-info text-white"><i class="fas fa-landmark me-1"></i> <?php echo htmlspecialchars($user->museo_nombre); ?></span>
+                      <?php else: ?>
+                        <span class="text-muted small">Sin asignar</span>
+                      <?php endif; ?>
+                    </td>
                     <td class="text-end">
                       <div class="dropdown">
                         <a class="btn btn-sm btn-secondary" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
@@ -85,6 +112,7 @@
                                data-username="<?php echo htmlspecialchars($user->username); ?>" 
                                data-email="<?php echo htmlspecialchars($user->email); ?>" 
                                data-role="<?php echo $user->id_role; ?>"
+                               data-museo="<?php echo $user->id_museo ?? ''; ?>"
                                data-toggle="modal" 
                                data-target="#modalEditarUsuario">
                               Editar
@@ -101,7 +129,7 @@
                 <?php endforeach; ?>
               <?php else: ?>
                 <tr>
-                  <td colspan="4" class="text-center">No hay usuarios registrados en la base de datos.</td>
+                  <td colspan="5" class="text-center">No hay usuarios registrados en la base de datos.</td>
                 </tr>
               <?php endif; ?>
             </tbody>
@@ -156,6 +184,23 @@
             </select>
           </div>
 
+          <div class="mb-3" id="wrapper_edit_id_museo" style="display: none;">
+            <label for="edit_id_museo" class="form-label font-weight-bold">Museo asignado <span class="text-danger">*</span></label>
+            <select class="form-control" id="edit_id_museo" name="id_museo">
+              <option value="">-- Selecciona un museo --</option>
+              <?php if (!empty($d->museos)): ?>
+                <?php foreach ($d->museos as $mus): ?>
+                  <?php 
+                    $mId = is_object($mus) ? $mus->id_museo : $mus['id_museo'];
+                    $mNombre = is_object($mus) ? $mus->nombre_museo : $mus['nombre_museo'];
+                  ?>
+                  <option value="<?php echo $mId; ?>"><?php echo htmlspecialchars($mNombre); ?></option>
+                <?php endforeach; ?>
+              <?php endif; ?>
+            </select>
+            <small class="text-muted" style="font-size: 0.75rem;">Obligatorio para el rol de Administrador.</small>
+          </div>
+
           <div class="mb-3">
             <label for="edit_password" class="form-label font-weight-bold">Nueva contraseña <small class="text-muted">(Opcional, dejar en blanco para conservar la actual)</small></label>
             <input type="password" class="form-control" id="edit_password" name="password" placeholder="••••••••">
@@ -173,17 +218,49 @@
 
 <script>
   document.addEventListener('DOMContentLoaded', function() {
+    function toggleMuseoField(roleSelectId, wrapperId, inputId) {
+      var roleVal = $(roleSelectId).val();
+      if (roleVal == '2') {
+        $(wrapperId).slideDown(200);
+        $(inputId).prop('required', true);
+      } else {
+        $(wrapperId).slideUp(200);
+        $(inputId).prop('required', false).val('');
+      }
+    }
+
+    $('#id_role').on('change', function() {
+      toggleMuseoField('#id_role', '#wrapper_id_museo', '#id_museo');
+    });
+
+    $('#edit_id_role').on('change', function() {
+      toggleMuseoField('#edit_id_role', '#wrapper_edit_id_museo', '#edit_id_museo');
+    });
+
     $(document).on('click', '.btn-editar-usuario', function(e) {
       var id = $(this).data('id');
       var username = $(this).data('username');
       var email = $(this).data('email');
       var role = $(this).data('role');
+      var museo = $(this).data('museo');
 
       $('#edit_id_usuario').val(id);
       $('#edit_username').val(username);
       $('#edit_email').val(email);
       $('#edit_id_role').val(role);
       $('#edit_password').val('');
+      $('#edit_id_museo').val(museo || '');
+
+      if (role == '2') {
+        $('#wrapper_edit_id_museo').show();
+        $('#edit_id_museo').prop('required', true);
+        if (museo) {
+          $('#edit_id_museo').val(museo);
+        }
+      } else {
+        $('#wrapper_edit_id_museo').hide();
+        $('#edit_id_museo').prop('required', false).val('');
+      }
     });
   });
 </script>

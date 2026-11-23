@@ -1,4 +1,14 @@
-<?php require_once INCLUDES . 'admin/dashboardTop.php'; ?>
+<?php 
+require_once INCLUDES . 'admin/dashboardTop.php'; 
+
+// Catálogo oficial de museos disponible en vista
+$listaMuseos = !empty($d->museos) ? $d->museos : (!empty($data['museos']) ? $data['museos'] : []);
+if (empty($listaMuseos)) {
+  $db = Db::connect();
+  $stmt = $db->query("SELECT id_museo, nombre_museo, ubicacion, responsable_museo FROM museos WHERE status = 1 ORDER BY nombre_museo ASC");
+  $listaMuseos = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+}
+?>
 
 <!-- Contenedor Principal: Préstamos y Transferencias -->
 <div class="container-fluid px-3 py-2">
@@ -59,6 +69,51 @@
     </div>
   </div>
 
+  <?php 
+    $esSuperAdmin = !empty($d->is_super_admin) || (!empty($data['is_super_admin']));
+    $museoAsignadoNombre = !empty($d->user_museum_name) ? $d->user_museum_name : (!empty($data['user_museum_name']) ? $data['user_museum_name'] : null);
+    $museoAsignadoId = !empty($d->user_museum_id) ? $d->user_museum_id : (!empty($data['user_museum_id']) ? $data['user_museum_id'] : null);
+  ?>
+
+  <!-- Variables de contexto de usuario para JavaScript -->
+  <input type="hidden" id="auth_user_is_super_admin" value="<?php echo $esSuperAdmin ? '1' : '0'; ?>">
+  <input type="hidden" id="auth_user_museum_id" value="<?php echo htmlspecialchars((string)($museoAsignadoId ?? '')); ?>">
+  <input type="hidden" id="auth_user_museum_name" value="<?php echo htmlspecialchars((string)($museoAsignadoNombre ?? '')); ?>">
+
+  <!-- Banner de Jurisdicción y Alcance Territorial -->
+  <?php if (!$esSuperAdmin && !empty($museoAsignadoNombre)): ?>
+    <div class="alert alert-info py-2 px-3 mb-3 d-flex align-items-center justify-content-between shadow-sm border-start border-4 border-info">
+      <div class="d-flex align-items-center">
+        <i class='bx bx-building-house fs-4 text-info me-2'></i>
+        <div>
+          <span class="font-weight-bold text-gray-800">Sede asignada:</span>
+          <span class="badge bg-primary text-white ms-1 px-2 py-1" style="font-size: 0.85rem;">
+            <?php echo htmlspecialchars($museoAsignadoNombre); ?>
+          </span>
+          <span class="text-muted small ms-2 d-none d-md-inline">
+            (Mostrando únicamente préstamos y transferencias donde este museo figura como origen o destino)
+          </span>
+        </div>
+      </div>
+      <span class="badge bg-light text-info border border-info px-2 py-1">
+        <i class='bx bx-user-check me-1'></i> Administrador de Sede
+      </span>
+    </div>
+  <?php elseif ($esSuperAdmin): ?>
+    <div class="alert alert-dark py-2 px-3 mb-3 d-flex align-items-center justify-content-between shadow-sm border-start border-4 border-dark" style="background-color: #f8f9fc;">
+      <div class="d-flex align-items-center">
+        <i class='bx bx-globe fs-4 text-dark me-2'></i>
+        <div>
+          <span class="font-weight-bold text-gray-800">Alcance Global:</span>
+          <span class="text-muted small ms-2">Visualización y gestión completa sobre la red de 31 museos y sedes culturales.</span>
+        </div>
+      </div>
+      <span class="badge bg-dark text-white px-2 py-1">
+        <i class='bx bx-crown me-1'></i> Super Administrador
+      </span>
+    </div>
+  <?php endif; ?>
+
   <!-- Indicadores Clave (KPIs) -->
   <div class="row g-3 mb-4">
     <!-- KPI 1: Total Movimientos -->
@@ -72,15 +127,31 @@
       </div>
     </div>
 
-    <!-- KPI 2: Préstamos Activos -->
-    <div class="col-xl-3 col-md-4 col-sm-6">
+    <!-- KPI 2: Pendientes de Aprobación -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
+      <div class="card border-left-warning shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="todos" data-filter-estatus="pendiente_aprobacion" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div class="card-body py-2 px-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Pendientes</div>
+              <div class="h4 mb-0 font-weight-bold text-warning" id="kpi-pendientes">0</div>
+              <small class="text-muted">Por dictaminar</small>
+            </div>
+            <i class='bx bx-time text-warning' style="font-size: 2.2rem; opacity: 0.8;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 3: Préstamos Activos -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
       <div class="card border-left-info shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="prestamo" data-filter-estatus="activo" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="card-body py-2 px-3">
           <div class="d-flex align-items-center justify-content-between">
             <div>
               <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Préstamos Activos</div>
               <div class="h4 mb-0 font-weight-bold text-info" id="kpi-activos">0</div>
-              <small class="text-muted">Piezas en comodato / préstamo</small>
+              <small class="text-muted">En préstamo</small>
             </div>
             <i class='bx bx-time-five text-info' style="font-size: 2.2rem; opacity: 0.8;"></i>
           </div>
@@ -88,15 +159,15 @@
       </div>
     </div>
 
-    <!-- KPI 3: Préstamos Vencidos -->
-    <div class="col-xl-3 col-md-4 col-sm-6">
+    <!-- KPI 4: Préstamos Vencidos -->
+    <div class="col-xl-2 col-md-4 col-sm-6">
       <div class="card border-left-danger shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="prestamo" data-filter-estatus="vencido" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="card-body py-2 px-3">
           <div class="d-flex align-items-center justify-content-between">
             <div>
               <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Préstamos Vencidos</div>
               <div class="h4 mb-0 font-weight-bold text-danger" id="kpi-vencidos">0</div>
-              <small class="text-muted">Fecha estimada superada</small>
+              <small class="text-muted">Plazo superado</small>
             </div>
             <i class='bx bx-alarm-exclamation text-danger' style="font-size: 2.2rem; opacity: 0.8;"></i>
           </div>
@@ -104,24 +175,24 @@
       </div>
     </div>
 
-    <!-- KPI 4: Préstamos Devueltos -->
+    <!-- KPI 5: Préstamos Devueltos -->
     <div class="col-xl-2 col-md-6 col-sm-6">
       <div class="card border-left-success shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="prestamo" data-filter-estatus="devuelto" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="card-body py-2 px-3">
-          <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Préstamos Devueltos</div>
+          <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Devueltos</div>
           <div class="h4 mb-0 font-weight-bold text-success" id="kpi-devueltos">0</div>
-          <small class="text-muted">Reincorporadas a origen</small>
+          <small class="text-muted">Reincorporadas</small>
         </div>
       </div>
     </div>
 
-    <!-- KPI 5: Transferencias -->
+    <!-- KPI 6: Transferencias -->
     <div class="col-xl-2 col-md-6 col-sm-6">
-      <div class="card border-left-primary shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="transferencia" data-filter-estatus="todos" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+      <div class="card border-left-primary shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="transferencia" data-filter-estatus="completada" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="card-body py-2 px-3">
           <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Transferencias</div>
           <div class="h4 mb-0 font-weight-bold text-primary" id="kpi-transferencias">0</div>
-          <small class="text-muted">Cambios definitivos</small>
+          <small class="text-muted">Completadas</small>
         </div>
       </div>
     </div>
@@ -146,10 +217,12 @@
           <label class="form-label small font-weight-bold text-muted mb-1">Estatus del Movimiento</label>
           <select id="filter-estatus" class="form-select form-select-sm">
             <option value="todos">Todos los estatus</option>
+            <option value="pendiente_aprobacion">Pendientes de aprobación</option>
             <option value="activo">Activos (en curso)</option>
             <option value="vencido">Vencidos (plazo agotado)</option>
             <option value="devuelto">Devueltos</option>
             <option value="completada">Completadas (transferencias)</option>
+            <option value="declinado">Declinados (rechazados)</option>
             <option value="cancelado">Cancelados</option>
           </select>
         </div>
@@ -273,7 +346,7 @@
           <div class="alert alert-info border-0 shadow-sm d-flex align-items-center mb-4 py-2 px-3">
             <i class='bx bx-info-circle fs-4 me-2 text-info'></i>
             <span class="small">
-              Seleccione la pieza aprobada del catálogo, especifique la sede de origen y la sede de destino, y determine si se trata de un <strong>Préstamo temporal</strong> (con fecha estimada de retorno) o una <strong>Transferencia definitiva</strong>. La ubicación física de la pieza se actualizará de forma automática.
+              Seleccione la pieza aprobada del catálogo, especifique la sede de origen y la sede de destino, y adjunte obligatoriamente el <strong>oficio oficial</strong> de autorización. Todo movimiento se registra en estado <strong>Pendiente de aprobación</strong>; el administrador asignado al museo de destino deberá aceptarlo para concretar el traslado.
             </span>
           </div>
 
@@ -400,10 +473,13 @@
             <!-- Columna: ORIGEN -->
             <div class="col-lg-6">
               <div class="card h-100 border-start border-4 border-info shadow-sm">
-                <div class="card-header bg-white py-2">
+                <div class="card-header bg-white py-2 d-flex align-items-center justify-content-between">
                   <h6 class="font-weight-bold text-info mb-0">
                     <i class='bx bx-log-out-circle me-1'></i> 3. Origen del Movimiento
                   </h6>
+                  <span id="badge-origen-autodetectado" class="badge bg-light text-info border border-info font-weight-normal py-1 px-2 d-none" style="font-size: 0.72rem;">
+                    <i class='bx bx-check-circle me-1'></i> Recuperado automáticamente
+                  </span>
                 </div>
                 <div class="card-body p-3">
                   <div class="mb-3">
@@ -418,29 +494,38 @@
                     </select>
                   </div>
 
-                  <!-- Selector rápido si es museo -->
+                  <!-- Selector si es museo institucional -->
                   <div class="mb-3" id="wrapper-museo-origen">
                     <label class="form-label small font-weight-bold text-gray-800">
-                      Seleccionar Museo Registrado
+                      Seleccionar Museo de Origen <span class="text-danger">*</span>
                     </label>
                     <select class="form-select form-select-sm" id="select_museo_origen_catalogo">
-                      <option value="">-- Seleccionar museo existente o escribir abajo --</option>
-                      <?php if (!empty($museos)): ?>
-                        <?php foreach ($museos as $m): ?>
-                          <option value="<?php echo htmlspecialchars($m['nombre_museo']); ?>" 
-                                  data-resp="<?php echo htmlspecialchars($m['responsable_museo'] ?? ''); ?>">
-                            <?php echo htmlspecialchars($m['nombre_museo']); ?>
+                      <option value="" data-id="">-- Seleccionar museo registrado --</option>
+                      <?php if (!empty($listaMuseos)): ?>
+                        <?php foreach ($listaMuseos as $m): ?>
+                          <?php
+                            $mId = is_object($m) ? $m->id_museo : $m['id_museo'];
+                            $mNombre = is_object($m) ? $m->nombre_museo : $m['nombre_museo'];
+                            $mResp = is_object($m) ? ($m->responsable_museo ?? '') : ($m['responsable_museo'] ?? '');
+                          ?>
+                          <option value="<?php echo htmlspecialchars($mNombre); ?>" 
+                                  data-id="<?php echo (int)$mId; ?>"
+                                  data-resp="<?php echo htmlspecialchars($mResp); ?>">
+                            <?php echo htmlspecialchars($mNombre); ?>
                           </option>
                         <?php endforeach; ?>
                       <?php endif; ?>
                     </select>
                   </div>
 
-                  <div class="mb-3">
+                  <input type="hidden" name="id_museo_origen" id="input_id_museo_origen" value="">
+
+                  <!-- Campo de texto si es otra opción distinta a museo -->
+                  <div class="mb-3 d-none" id="wrapper-lugar-origen">
                     <label class="form-label small font-weight-bold text-gray-800">
                       Nombre del Lugar / Sede de Origen <span class="text-danger">*</span>
                     </label>
-                    <input type="text" class="form-control form-control-sm" name="lugar_origen" id="input_lugar_origen" placeholder="Ej. Museo de Antropología / Bóveda central" required>
+                    <input type="text" class="form-control form-control-sm" name="lugar_origen" id="input_lugar_origen" placeholder="Ej. Bóveda Central / Dirección de Patrimonio">
                     <small class="text-muted" style="font-size: 0.75rem;">Sede donde se encuentra actualmente la pieza.</small>
                   </div>
 
@@ -475,29 +560,38 @@
                     </select>
                   </div>
 
-                  <!-- Selector rápido si es museo -->
+                  <!-- Selector si es museo institucional -->
                   <div class="mb-3" id="wrapper-museo-destino">
                     <label class="form-label small font-weight-bold text-gray-800">
-                      Seleccionar Museo Registrado
+                      Seleccionar Museo de Destino <span class="text-danger">*</span>
                     </label>
                     <select class="form-select form-select-sm" id="select_museo_destino_catalogo">
-                      <option value="">-- Seleccionar museo existente o escribir abajo --</option>
-                      <?php if (!empty($museos)): ?>
-                        <?php foreach ($museos as $m): ?>
-                          <option value="<?php echo htmlspecialchars($m['nombre_museo']); ?>"
-                                  data-resp="<?php echo htmlspecialchars($m['responsable_museo'] ?? ''); ?>">
-                            <?php echo htmlspecialchars($m['nombre_museo']); ?>
+                      <option value="" data-id="">-- Seleccionar museo registrado --</option>
+                      <?php if (!empty($listaMuseos)): ?>
+                        <?php foreach ($listaMuseos as $m): ?>
+                          <?php
+                            $mId = is_object($m) ? $m->id_museo : $m['id_museo'];
+                            $mNombre = is_object($m) ? $m->nombre_museo : $m['nombre_museo'];
+                            $mResp = is_object($m) ? ($m->responsable_museo ?? '') : ($m['responsable_museo'] ?? '');
+                          ?>
+                          <option value="<?php echo htmlspecialchars($mNombre); ?>"
+                                  data-id="<?php echo (int)$mId; ?>"
+                                  data-resp="<?php echo htmlspecialchars($mResp); ?>">
+                            <?php echo htmlspecialchars($mNombre); ?>
                           </option>
                         <?php endforeach; ?>
                       <?php endif; ?>
                     </select>
                   </div>
 
-                  <div class="mb-3">
+                  <input type="hidden" name="id_museo_destino" id="input_id_museo_destino" value="">
+
+                  <!-- Campo de texto si es otra opción distinta a museo -->
+                  <div class="mb-3 d-none" id="wrapper-lugar-destino">
                     <label class="form-label small font-weight-bold text-gray-800">
                       Nombre del Lugar / Sede de Destino <span class="text-danger">*</span>
                     </label>
-                    <input type="text" class="form-control form-control-sm" name="lugar_destino" id="input_lugar_destino" placeholder="Ej. Museo de Arte Virreinal / Sala 2" required>
+                    <input type="text" class="form-control form-control-sm" name="lugar_destino" id="input_lugar_destino" placeholder="Ej. Galería Universitaria / Palacio de Gobierno">
                     <small class="text-muted" style="font-size: 0.75rem;">Sede donde se exhibirá, resguardará o transferirá.</small>
                   </div>
 
@@ -516,13 +610,13 @@
           <div class="card border mb-3">
             <div class="card-header bg-white py-2">
               <h6 class="font-weight-bold text-gray-800 mb-0">
-                <i class='bx bx-calendar-event me-1'></i> 5. Fechas, Justificación y Documentación
+                <i class='bx bx-calendar-event me-1'></i> 5. Fechas, Justificación y Oficio de Autorización
               </h6>
             </div>
             <div class="card-body p-3">
               <div class="row g-3">
                 <!-- Fecha Salida -->
-                <div class="col-md-4">
+                <div class="col-md-6 col-lg-3">
                   <label class="form-label small font-weight-bold text-gray-800">
                     Fecha de Salida <span class="text-danger">*</span>
                   </label>
@@ -530,20 +624,29 @@
                 </div>
 
                 <!-- Fecha Devolución Estimada (solo si préstamo) -->
-                <div class="col-md-4" id="wrapper-fecha-devolucion">
+                <div class="col-md-6 col-lg-3" id="wrapper-fecha-devolucion">
                   <label class="form-label small font-weight-bold text-gray-800">
-                    Fecha Estimada de Devolución <span class="text-danger">*</span>
+                    Fecha Estimada Retorno <span class="text-danger">*</span>
                   </label>
                   <input type="date" class="form-control form-control-sm" name="fecha_devolucion_estimada" id="input_fecha_devolucion_estimada">
                   <small class="text-muted" style="font-size: 0.72rem;">Plazo pactado para retornar la pieza.</small>
                 </div>
 
                 <!-- No. Oficio Autorización -->
-                <div class="col-md-4">
+                <div class="col-md-6 col-lg-3">
                   <label class="form-label small font-weight-bold text-gray-800">
                     No. de Oficio / Memorándum
                   </label>
                   <input type="text" class="form-control form-control-sm" name="no_oficio_autorizacion" id="input_no_oficio" placeholder="Ej. SCyT/DPCVT/2026-0158">
+                </div>
+
+                <!-- Archivo Digital del Oficio de Autorización (Obligatorio) -->
+                <div class="col-md-6 col-lg-3">
+                  <label class="form-label small font-weight-bold text-gray-800">
+                    Oficio Digital Adjunto <span class="text-danger">*</span>
+                  </label>
+                  <input type="file" class="form-control form-control-sm" name="archivo_oficio" id="input_archivo_oficio" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" required>
+                  <small class="text-muted" style="font-size: 0.72rem;">Formato PDF, Word o imagen (máx 20MB).</small>
                 </div>
 
                 <!-- Motivo del Movimiento -->
@@ -791,6 +894,14 @@
               </div>
             </div>
 
+            <!-- Oficio Digital Adjunto -->
+            <div class="mb-2 p-2 bg-white rounded border">
+              <strong class="d-block mb-1"><i class='bx bx-file-blank text-primary'></i> Documento de Oficio Adjunto:</strong>
+              <div id="det-oficio-container">
+                <span class="text-muted small">Sin archivo digital adjunto</span>
+              </div>
+            </div>
+
             <div class="mb-2">
               <strong>Motivo del Movimiento:</strong>
               <div id="det-motivo" class="text-gray-800 p-2 bg-light rounded mt-1">--</div>
@@ -814,10 +925,48 @@
           </div>
         </div>
 
+        <!-- Dictamen Institucional de la Sede Receptora -->
+        <div class="card border mb-3 d-none" id="det-card-dictamen">
+          <div class="card-header bg-light py-2 font-weight-bold text-gray-800 small d-flex justify-content-between align-items-center">
+            <span><i class='bx bx-check-shield me-1'></i> Dictamen de la Sede Receptora</span>
+            <span class="badge" id="det-dictamen-badge">Dictamen</span>
+          </div>
+          <div class="card-body p-3 small">
+            <div class="row g-2 mb-2">
+              <div class="col-md-6">
+                <strong>Dictaminado por:</strong>
+                <div id="det-dictamen-usuario" class="text-gray-900 font-weight-bold">--</div>
+              </div>
+              <div class="col-md-6">
+                <strong>Fecha de Dictamen:</strong>
+                <div id="det-dictamen-fecha" class="text-gray-900">--</div>
+              </div>
+            </div>
+
+            <div id="det-wrapper-motivo-declinacion" class="mb-2 d-none">
+              <strong class="text-danger"><i class='bx bx-x-circle me-1'></i> Motivo de Declinación / Rechazo:</strong>
+              <div id="det-motivo-declinacion" class="text-danger p-2 bg-danger-subtle rounded mt-1 border border-danger">--</div>
+            </div>
+
+            <div id="det-wrapper-obs-dictamen" class="mb-0 d-none">
+              <strong>Observaciones del Dictamen:</strong>
+              <div id="det-observaciones-dictamen" class="text-muted p-2 bg-light rounded mt-1">--</div>
+            </div>
+          </div>
+        </div>
+
       </div>
 
-      <div class="modal-footer bg-light py-2 px-3">
-        <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+      <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+        <div id="det-acciones-dictamen" class="d-none gap-2">
+          <button type="button" class="btn btn-outline-danger btn-sm" id="btn-detalle-declinar">
+            <i class='bx bx-x-circle me-1'></i> Declinar Movimiento
+          </button>
+          <button type="button" class="btn btn-success btn-sm font-weight-bold" id="btn-detalle-aceptar">
+            <i class='bx bx-check-circle me-1'></i> Aceptar Movimiento
+          </button>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm ms-auto" data-bs-dismiss="modal">Cerrar</button>
       </div>
     </div>
   </div>
