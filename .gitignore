@@ -12,3 +12,5 @@ app/config/config.php
 app/controllers/pruebasController.php
 templates/views/pruebas/
 .env
+assets/uploads/oficios_movimientos/*
+!assets/uploads/oficios_movimientos/.gitkeep

@@ -70,9 +70,9 @@ if (empty($listaMuseos)) {
   </div>
 
   <?php 
-    $esSuperAdmin = !empty($d->is_super_admin) || (!empty($data['is_super_admin']));
-    $museoAsignadoNombre = !empty($d->user_museum_name) ? $d->user_museum_name : (!empty($data['user_museum_name']) ? $data['user_museum_name'] : null);
-    $museoAsignadoId = !empty($d->user_museum_id) ? $d->user_museum_id : (!empty($data['user_museum_id']) ? $data['user_museum_id'] : null);
+    $esSuperAdmin = isset($d->is_super_admin) ? (bool)$d->is_super_admin : (!empty($data['is_super_admin']) || (function_exists('is_super_admin') ? is_super_admin() : false));
+    $museoAsignadoNombre = !empty($d->user_museum_name) ? $d->user_museum_name : (!empty($data['user_museum_name']) ? $data['user_museum_name'] : (function_exists('get_user_museum_name') ? get_user_museum_name() : null));
+    $museoAsignadoId = !empty($d->user_museum_id) ? $d->user_museum_id : (!empty($data['user_museum_id']) ? $data['user_museum_id'] : (function_exists('get_user_museum_id') ? get_user_museum_id() : null));
   ?>
 
   <!-- Variables de contexto de usuario para JavaScript -->
@@ -97,6 +97,21 @@ if (empty($listaMuseos)) {
       </div>
       <span class="badge bg-light text-info border border-info px-2 py-1">
         <i class='bx bx-user-check me-1'></i> Administrador de Sede
+      </span>
+    </div>
+  <?php elseif (!$esSuperAdmin && empty($museoAsignadoNombre)): ?>
+    <div class="alert alert-warning py-2 px-3 mb-3 d-flex align-items-center justify-content-between shadow-sm border-start border-4 border-warning">
+      <div class="d-flex align-items-center">
+        <i class='bx bx-error-circle fs-4 text-warning me-2'></i>
+        <div>
+          <span class="font-weight-bold text-gray-800">Sin sede asignada:</span>
+          <span class="text-muted small ms-2">
+            Tu cuenta de administrador no tiene un museo asignado actualmente. Comunícate con el Super Administrador para vincularte a una sede y poder visualizar o gestionar movimientos.
+          </span>
+        </div>
+      </div>
+      <span class="badge bg-warning text-dark px-2 py-1">
+        <i class='bx bx-lock-alt me-1'></i> Sin Asignación
       </span>
     </div>
   <?php elseif ($esSuperAdmin): ?>

@@ -17,11 +17,15 @@ El módulo **Préstamos y Transferencias** (`/admin/prestamos_transferencias`) a
 
 ---
 
-## 1. Asignación Institucional de Administradores por Museo
+## 1. Asignación Institucional y Alcance Territorial por Museo
 
 A partir de la actualización de seguridad y control territorial:
-- **Administradores Regulares (`id_role = 2`)**: Están asignados a un museo específico de la Secretaría de Cultura y Turismo. Su facultad de dictamen (aceptar o declinar movimientos) está acotada exclusivamente a aquellos movimientos donde su recinto sea la **sede de destino**.
-- **Super Administradores (`id_role = 1`)**: No tienen restricción por recinto y cuentan con atribuciones globales para supervisar, registrar, aceptar, declinar o cancelar cualquier movimiento en toda la entidad.
+- **Administradores Regulares (`id_role = 2`)**: Están asignados a un museo específico de la Secretaría de Cultura y Turismo. 
+  - **Alcance de Visualización**: Únicamente pueden visualizar y consultar en la tabla los préstamos y transferencias donde su recinto figure como **origen** o como **destino**.
+  - **Indicadores Clave (KPIs)**: Las métricas numéricas del panel superior se calculan en tiempo real exclusivamente con base en los movimientos de su recinto.
+  - **Facultad de Dictamen**: Acotada exclusivamente a aquellos movimientos donde su recinto sea la **sede de destino** (o Super Administrador).
+  - **Seguridad perimetral**: Si un administrador intenta consultar detalles o cancelar un movimiento de otra sede, el servidor deniega la petición con código de protección `403 Prohibido`.
+- **Super Administradores (`id_role = 1`)**: No tienen restricción por recinto y cuentan con atribuciones y alcance global para supervisar, registrar, aceptar, declinar o cancelar cualquier movimiento en toda la red de 31 museos y dependencias.
 
 ---
 

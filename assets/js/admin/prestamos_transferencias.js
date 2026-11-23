@@ -215,8 +215,19 @@ $(document).ready(function () {
         $('#loading-state-prestamos').addClass('d-none');
 
         if (res.status === 200) {
+          if (res.user_context) {
+            if (res.user_context.is_super_admin !== undefined) {
+              $('#auth_user_is_super_admin').val(res.user_context.is_super_admin ? '1' : '0');
+            }
+            if (res.user_context.id_museo !== undefined) {
+              $('#auth_user_museum_id').val(res.user_context.id_museo || '');
+            }
+            if (res.user_context.nombre_museo !== undefined) {
+              $('#auth_user_museum_name').val(res.user_context.nombre_museo || '');
+            }
+          }
           actualizarKPIs(res.kpis || {});
-          renderizarTabla(res.data || []);
+          renderizarTabla(res.data || [], res.total || 0);
           renderizarPaginacion(res.total || 0, res.page || 1, res.per_page || 10, res.total_pages || 1);
         } else {
           toastr.error(res.msg || 'Error al obtener la lista de movimientos.');
@@ -245,7 +256,7 @@ $(document).ready(function () {
   // =========================================================================
   // RENDERIZADO DE TABLA DE MOVIMIENTOS
   // =========================================================================
-  function renderizarTabla(movimientos) {
+  function renderizarTabla(movimientos, total) {
     const $tbody = $('#tbody-prestamos');
     $tbody.empty();
 
@@ -255,7 +266,8 @@ $(document).ready(function () {
       return;
     }
 
-    $('#lbl-total-registros').text(movimientos.length + ' registros');
+    const totalMostrar = (total !== undefined && total !== null) ? total : movimientos.length;
+    $('#lbl-total-registros').text(totalMostrar + ' registros');
 
     movimientos.forEach(function (m) {
       const tr = document.createElement('tr');

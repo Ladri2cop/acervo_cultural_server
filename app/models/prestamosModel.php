@@ -110,26 +110,59 @@ class PrestamosModel extends Model
      * Obtiene los indicadores numéricos (KPIs) de préstamos y transferencias
      * Soporta filtrado por museo asignado para administradores
      */
-    public static function getKPIs($idMuseo = null, $nombreMuseo = null)
+    public static function getKPIs($idMuseo = null, $nombreMuseo = null, $esSuperAdmin = null)
     {
         $db = Db::connect();
         $today = date('Y-m-d');
         $where = [];
         $params = ['today' => $today];
 
-        if (!empty($idMuseo)) {
-            $idM = (int)$idMuseo;
-            $nomM = !empty($nombreMuseo) ? trim($nombreMuseo) : '';
-            if (!empty($nomM)) {
-                $where[] = "(id_museo_origen = :kpi_m_id1 OR id_museo_destino = :kpi_m_id2 OR lugar_origen = :kpi_m_nom1 OR lugar_destino = :kpi_m_nom2)";
-                $params['kpi_m_id1'] = $idM;
-                $params['kpi_m_id2'] = $idM;
-                $params['kpi_m_nom1'] = $nomM;
-                $params['kpi_m_nom2'] = $nomM;
+        $numArgs = func_num_args();
+        if ($esSuperAdmin === null && $numArgs < 3) {
+            $esSuperAdmin = function_exists('is_super_admin') ? is_super_admin() : false;
+        }
+
+        // Si no es super administrador, aplicar restricción estricta de museo
+        if (!$esSuperAdmin) {
+            if ($idMuseo === null && $numArgs === 0 && function_exists('get_user_museum_id')) {
+                $idMuseo = get_user_museum_id();
+            }
+            if ($nombreMuseo === null && $numArgs === 0 && function_exists('get_user_museum_name')) {
+                $nombreMuseo = get_user_museum_name();
+            }
+
+            if (!empty($idMuseo)) {
+                $idM = (int)$idMuseo;
+                $nomM = !empty($nombreMuseo) ? trim($nombreMuseo) : '';
+                if (!empty($nomM)) {
+                    $where[] = "(id_museo_origen = :kpi_m_id1 
+                                OR id_museo_destino = :kpi_m_id2 
+                                OR lugar_origen = :kpi_m_nom1 
+                                OR lugar_destino = :kpi_m_nom2 
+                                OR lugar_origen LIKE :kpi_m_like1 
+                                OR lugar_destino LIKE :kpi_m_like2)";
+                    $params['kpi_m_id1'] = $idM;
+                    $params['kpi_m_id2'] = $idM;
+                    $params['kpi_m_nom1'] = $nomM;
+                    $params['kpi_m_nom2'] = $nomM;
+                    $params['kpi_m_like1'] = '%' . $nomM . '%';
+                    $params['kpi_m_like2'] = '%' . $nomM . '%';
+                } else {
+                    $where[] = "(id_museo_origen = :kpi_m_id1 OR id_museo_destino = :kpi_m_id2)";
+                    $params['kpi_m_id1'] = $idM;
+                    $params['kpi_m_id2'] = $idM;
+                }
             } else {
-                $where[] = "(id_museo_origen = :kpi_m_id1 OR id_museo_destino = :kpi_m_id2)";
-                $params['kpi_m_id1'] = $idM;
-                $params['kpi_m_id2'] = $idM;
+                // Administrador sin museo asignado: no tiene acceso a ningún indicador global
+                return [
+                    'total'                 => 0,
+                    'pendientes_aprobacion' => 0,
+                    'prestamos_activos'     => 0,
+                    'prestamos_vencidos'    => 0,
+                    'prestamos_devueltos'   => 0,
+                    'transferencias'        => 0,
+                    'declinados'            => 0
+                ];
             }
         }
 
@@ -172,20 +205,41 @@ class PrestamosModel extends Model
         $params = [];
 
         // Filtro de alcance territorial por museo asignado (para rol Administrador)
-        if (!empty($filters['id_museo_usuario'])) {
-            $idMUser = (int)$filters['id_museo_usuario'];
-            $nomMUser = !empty($filters['nombre_museo_usuario']) ? trim($filters['nombre_museo_usuario']) : '';
+        $esSuperAdmin = isset($filters['es_super_admin'])
+            ? (bool)$filters['es_super_admin']
+            : (function_exists('is_super_admin') ? is_super_admin() : false);
 
-            if (!empty($nomMUser)) {
-                $where[] = "(pt.id_museo_origen = :user_m_id1 OR pt.id_museo_destino = :user_m_id2 OR pt.lugar_origen = :user_m_nom1 OR pt.lugar_destino = :user_m_nom2)";
-                $params['user_m_id1'] = $idMUser;
-                $params['user_m_id2'] = $idMUser;
-                $params['user_m_nom1'] = $nomMUser;
-                $params['user_m_nom2'] = $nomMUser;
+        if (!$esSuperAdmin) {
+            $idMUser = array_key_exists('id_museo_usuario', $filters)
+                ? (!empty($filters['id_museo_usuario']) ? (int)$filters['id_museo_usuario'] : null)
+                : (function_exists('get_user_museum_id') ? get_user_museum_id() : null);
+
+            $nomMUser = array_key_exists('nombre_museo_usuario', $filters)
+                ? trim((string)($filters['nombre_museo_usuario'] ?? ''))
+                : (function_exists('get_user_museum_name') ? (string)get_user_museum_name() : '');
+
+            if (!empty($idMUser)) {
+                if (!empty($nomMUser)) {
+                    $where[] = "(pt.id_museo_origen = :user_m_id1 
+                                OR pt.id_museo_destino = :user_m_id2 
+                                OR pt.lugar_origen = :user_m_nom1 
+                                OR pt.lugar_destino = :user_m_nom2 
+                                OR pt.lugar_origen LIKE :user_m_like1 
+                                OR pt.lugar_destino LIKE :user_m_like2)";
+                    $params['user_m_id1'] = $idMUser;
+                    $params['user_m_id2'] = $idMUser;
+                    $params['user_m_nom1'] = $nomMUser;
+                    $params['user_m_nom2'] = $nomMUser;
+                    $params['user_m_like1'] = '%' . $nomMUser . '%';
+                    $params['user_m_like2'] = '%' . $nomMUser . '%';
+                } else {
+                    $where[] = "(pt.id_museo_origen = :user_m_id1 OR pt.id_museo_destino = :user_m_id2)";
+                    $params['user_m_id1'] = $idMUser;
+                    $params['user_m_id2'] = $idMUser;
+                }
             } else {
-                $where[] = "(pt.id_museo_origen = :user_m_id1 OR pt.id_museo_destino = :user_m_id2)";
-                $params['user_m_id1'] = $idMUser;
-                $params['user_m_id2'] = $idMUser;
+                // Si el administrador no tiene museo asignado, NO debe ver registros
+                $where[] = "1 = 0";
             }
         }
 

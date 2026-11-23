@@ -3354,9 +3354,16 @@ class adminController extends Controller implements ControllerInterface
     $stmt = $db->query("SELECT id_museo, nombre_museo, ubicacion, responsable_museo FROM museos WHERE status = 1 ORDER BY nombre_museo ASC");
     $museos = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 
+    $isSuperAdmin = is_super_admin();
+    $userMuseumId = get_user_museum_id();
+    $userMuseumName = get_user_museum_name();
+
     $this->setTitle('Préstamos y Transferencias de Acervo');
     $this->addToData('slug', 'prestamos_transferencias');
     $this->addToData('museos', $museos);
+    $this->addToData('is_super_admin', $isSuperAdmin);
+    $this->addToData('user_museum_id', $userMuseumId);
+    $this->addToData('user_museum_name', $userMuseumName);
     $this->setView('prestamos/prestamos');
     $this->render();
   }
@@ -3377,14 +3384,21 @@ class adminController extends Controller implements ControllerInterface
       $page = isset($_REQUEST['page']) ? max(1, (int)$_REQUEST['page']) : 1;
       $perPage = isset($_REQUEST['per_page']) ? max(5, (int)$_REQUEST['per_page']) : 10;
 
+      $isSuperAdmin = is_super_admin();
+      $userMuseumId = get_user_museum_id();
+      $userMuseumName = get_user_museum_name();
+
       $filters = [
-        'tipo_movimiento' => $tipoMovimiento,
-        'estatus' => $estatus,
-        'tipo_acervo' => $tipoAcervo,
-        'search' => $search
+        'tipo_movimiento'      => $tipoMovimiento,
+        'estatus'              => $estatus,
+        'tipo_acervo'          => $tipoAcervo,
+        'search'               => $search,
+        'es_super_admin'       => $isSuperAdmin,
+        'id_museo_usuario'     => $userMuseumId,
+        'nombre_museo_usuario' => $userMuseumName
       ];
 
-      $kpis = PrestamosModel::getKPIs();
+      $kpis = PrestamosModel::getKPIs($userMuseumId, $userMuseumName, $isSuperAdmin);
       $result = PrestamosModel::getMovimientosList($filters, $page, $perPage);
 
       header('Content-Type: application/json');
@@ -3395,7 +3409,12 @@ class adminController extends Controller implements ControllerInterface
         'total' => $result['total'],
         'page' => $result['page'],
         'per_page' => $result['per_page'],
-        'total_pages' => $result['total_pages']
+        'total_pages' => $result['total_pages'],
+        'user_context' => [
+          'is_super_admin' => $isSuperAdmin,
+          'id_museo'       => $userMuseumId,
+          'nombre_museo'   => $userMuseumName
+        ]
       ]);
     } catch (Throwable $e) {
       header('Content-Type: application/json');
@@ -3983,6 +4002,33 @@ class adminController extends Controller implements ControllerInterface
         exit;
       }
 
+      // Restricción para administradores que no sean super administradores: solo ver movimientos de su museo asignado
+      if (!is_super_admin()) {
+        $userMuseumId = get_user_museum_id();
+        $userMuseumName = get_user_museum_name();
+        $matchesMuseum = false;
+
+        if (!empty($userMuseumId)) {
+          if ((int)($mov['id_museo_origen'] ?? 0) === (int)$userMuseumId || (int)($mov['id_museo_destino'] ?? 0) === (int)$userMuseumId) {
+            $matchesMuseum = true;
+          }
+        }
+
+        if (!$matchesMuseum && !empty($userMuseumName)) {
+          $orig = trim((string)($mov['lugar_origen'] ?? ''));
+          $dest = trim((string)($mov['lugar_destino'] ?? ''));
+          if (mb_stripos($orig, $userMuseumName) !== false || mb_stripos($dest, $userMuseumName) !== false) {
+            $matchesMuseum = true;
+          }
+        }
+
+        if (!$matchesMuseum) {
+          header('Content-Type: application/json');
+          echo json_encode(['status' => 403, 'msg' => 'No tiene autorización para consultar este movimiento fuera de su museo asignado.']);
+          exit;
+        }
+      }
+
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 200,
@@ -4023,7 +4069,31 @@ class adminController extends Controller implements ControllerInterface
         exit;
       }
 
-      if ($mov['estatus'] === 'cancelado') {
+      // Restricción para administradores que no sean super administradores: solo ver movimientos de su museo asignado
+      if (!is_super_admin()) {
+        $userMuseumId = get_user_museum_id();
+        $userMuseumName = get_user_museum_name();
+        $matchesMuseum = false;
+
+        if (!empty($userMuseumId)) {
+          if ((int)($mov['id_museo_origen'] ?? 0) === (int)$userMuseumId || (int)($mov['id_museo_destino'] ?? 0) === (int)$userMuseumId) {
+            $matchesMuseum = true;
+          }
+        }
+
+        if (!$matchesMuseum && !empty($userMuseumName)) {
+          $orig = trim((string)($mov['lugar_origen'] ?? ''));
+          $dest = trim((string)($mov['lugar_destino'] ?? ''));
+          if (mb_stripos($orig, $userMuseumName) !== false || mb_stripos($dest, $userMuseumName) !== false) {
+            $matchesMuseum = true;
+          }
+        }
+
+        if (!$matchesMuseum) {
+          header('Content-Type: application/json');
+          echo json_encode(['status' => 403, 'msg' => 'No tiene autorización para cancelar este movimiento fuera de su museo asignado.']);
+          exit;
+        }
         header('Content-Type: application/json');
         echo json_encode(['status' => 400, 'msg' => 'El movimiento ya se encuentra cancelado']);
         exit;

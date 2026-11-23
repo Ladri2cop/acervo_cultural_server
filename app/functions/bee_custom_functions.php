@@ -136,24 +136,39 @@ function registrar_auditoria(string $tipo_accion, string $nombre_tabla, ?int $id
  */
 function is_admin_user(): bool
 {
-  $userRole = get_user('id_role');
+  $userRole = get_user('id_role') ?: (isset($_SESSION['user_session']['user']['id_role']) ? $_SESSION['user_session']['user']['id_role'] : (isset($_SESSION['user']['id_role']) ? $_SESSION['user']['id_role'] : null));
+  if (!$userRole) {
+    $userId = get_user_id();
+    if ($userId) {
+      try {
+        $db = Db::connect();
+        $stmt = $db->prepare("SELECT id_role FROM bee_users WHERE id = :id LIMIT 1");
+        $stmt->execute(['id' => $userId]);
+        $val = $stmt->fetchColumn();
+        if ($val) $userRole = $val;
+      } catch (Throwable $t) {}
+    }
+  }
+
   if (!$userRole) return false;
 
   if ((int)$userRole === 1 || (int)$userRole === 2) {
     return true;
   }
 
-  $roleRow = userModel::query("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1", ['id' => $userRole]);
-  $roleSlug = ($roleRow && isset($roleRow[0]['slug'])) ? $roleRow[0]['slug'] : '';
-
-  if (in_array($roleSlug, ['super-admin', 'super-administrador', 'admin', 'administrador'])) {
-    return true;
-  }
-
   try {
+    $db = Db::connect();
+    $stmt = $db->prepare("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1");
+    $stmt->execute(['id' => $userRole]);
+    $roleSlug = $stmt->fetchColumn() ?: '';
+
+    if (in_array($roleSlug, ['super-admin', 'super-administrador', 'admin', 'administrador'])) {
+      return true;
+    }
+
     $roleManager = new BeeRoleManager($roleSlug);
     return $roleManager->can('admin-access');
-  } catch (Exception $e) {
+  } catch (Throwable $e) {
     return false;
   }
 }
@@ -166,12 +181,31 @@ function is_admin_user(): bool
 function is_super_admin(): bool
 {
   $userRole = get_user('id_role') ?: (isset($_SESSION['user_session']['user']['id_role']) ? $_SESSION['user_session']['user']['id_role'] : (isset($_SESSION['user']['id_role']) ? $_SESSION['user']['id_role'] : null));
+  if (!$userRole) {
+    $userId = get_user_id();
+    if ($userId) {
+      try {
+        $db = Db::connect();
+        $stmt = $db->prepare("SELECT id_role FROM bee_users WHERE id = :id LIMIT 1");
+        $stmt->execute(['id' => $userId]);
+        $val = $stmt->fetchColumn();
+        if ($val) $userRole = $val;
+      } catch (Throwable $t) {}
+    }
+  }
+
   if (!$userRole) return false;
   if ((int)$userRole === 1) return true;
 
-  $roleRow = userModel::query("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1", ['id' => $userRole]);
-  $roleSlug = ($roleRow && isset($roleRow[0]['slug'])) ? $roleRow[0]['slug'] : '';
-  return in_array($roleSlug, ['super-admin', 'super-administrador']);
+  try {
+    $db = Db::connect();
+    $stmt = $db->prepare("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1");
+    $stmt->execute(['id' => $userRole]);
+    $roleSlug = $stmt->fetchColumn() ?: '';
+    return in_array($roleSlug, ['super-admin', 'super-administrador']);
+  } catch (Throwable $e) {
+    return false;
+  }
 }
 
 /**
@@ -188,6 +222,34 @@ function get_user_museum_id(): ?int
   if (!$idMuseo && isset($_SESSION['user']['id_museo'])) {
     $idMuseo = $_SESSION['user']['id_museo'];
   }
+
+  // Si no está en sesión o es null, consultar en la base de datos para sincronizar
+  if (empty($idMuseo)) {
+    $userId = get_user_id();
+    if ($userId) {
+      try {
+        $db = Db::connect();
+        $stmt = $db->prepare("SELECT id_museo FROM bee_users WHERE id = :id LIMIT 1");
+        $stmt->execute(['id' => $userId]);
+        $val = $stmt->fetchColumn();
+        if ($val) {
+          $idMuseo = (int)$val;
+          if (isset($_SESSION['user_session']['user'])) {
+            $_SESSION['user_session']['user']['id_museo'] = $idMuseo;
+          }
+          if (isset($_SESSION['user'])) {
+            $_SESSION['user']['id_museo'] = $idMuseo;
+          }
+          if (isset($GLOBALS['Bee_User']) && is_array($GLOBALS['Bee_User'])) {
+            $GLOBALS['Bee_User']['id_museo'] = $idMuseo;
+          }
+        }
+      } catch (Throwable $t) {
+        // Fallback silencioso
+      }
+    }
+  }
+
   return !empty($idMuseo) ? (int)$idMuseo : null;
 }
 
@@ -200,8 +262,16 @@ function get_user_museum_name(): ?string
 {
   $idMuseo = get_user_museum_id();
   if (!$idMuseo) return null;
-  $row = Model::query("SELECT nombre_museo FROM museos WHERE id_museo = :id LIMIT 1", ['id' => $idMuseo]);
-  return ($row && isset($row[0]['nombre_museo'])) ? $row[0]['nombre_museo'] : null;
+
+  try {
+    $db = Db::connect();
+    $stmt = $db->prepare("SELECT nombre_museo FROM museos WHERE id_museo = :id LIMIT 1");
+    $stmt->execute(['id' => $idMuseo]);
+    $nombre = $stmt->fetchColumn();
+    return $nombre ?: null;
+  } catch (Throwable $t) {
+    return null;
+  }
 }
 
 /**
