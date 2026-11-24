@@ -171,6 +171,29 @@ $(document).ready(function () {
       }
     });
 
+    // Manejo de cambio en el combo box de Colección
+    $('#select_coleccion').on('change', function () {
+      const val = $(this).val();
+      if (val === '__otra__') {
+        $('#wrapper-otra-coleccion').removeClass('d-none');
+        $('#input_otra_coleccion').prop('required', true).focus();
+        const otraVal = $('#input_otra_coleccion').val().trim();
+        $('#sel-pieza-coleccion').text(otraVal || '-');
+      } else {
+        $('#wrapper-otra-coleccion').addClass('d-none');
+        $('#input_otra_coleccion').prop('required', false).val('');
+        $('#sel-pieza-coleccion').text(val || '-');
+      }
+    });
+
+    // Sincronizar texto de colección personalizada con la vista previa
+    $('#input_otra_coleccion').on('input', function () {
+      if ($('#select_coleccion').val() === '__otra__') {
+        const otraVal = $(this).val().trim();
+        $('#sel-pieza-coleccion').text(otraVal || '-');
+      }
+    });
+
     // Enviar formulario de nuevo movimiento
     $('#formNuevoMovimiento').on('submit', function (e) {
       e.preventDefault();
@@ -697,14 +720,53 @@ $(document).ready(function () {
     if (p.tipo_acervo === 'numismatica') catBadgeText = 'Numismático';
     $('#sel-pieza-badge-catalogo').text(catBadgeText);
 
-    let coleccionTexto = p.coleccion || '';
+    let coleccionTexto = (p.coleccion || '').trim();
     if (!coleccionTexto) {
       if (p.tipo_acervo === 'general') coleccionTexto = 'Acervo General';
       else if (p.tipo_acervo === 'arqueologico') coleccionTexto = 'Acervo Arqueológico';
       else if (p.tipo_acervo === 'numismatica') coleccionTexto = 'Acervo Numismático';
     }
-    $('#sel-pieza-coleccion').text(coleccionTexto);
-    $('#input_coleccion').val(coleccionTexto);
+    $('#sel-pieza-coleccion').text(coleccionTexto || '-');
+
+    // =======================================================================
+    // RECUPERACIÓN AUTOMÁTICA DE LA COLECCIÓN EN EL COMBO BOX
+    // =======================================================================
+    let coleccionEncontrada = false;
+    $('#select_coleccion option').each(function () {
+      const optVal = ($(this).val() || '').trim();
+      if (optVal && optVal.toLowerCase() === coleccionTexto.toLowerCase()) {
+        $('#select_coleccion').val(optVal);
+        coleccionEncontrada = true;
+        return false;
+      }
+    });
+
+    if (!coleccionEncontrada && coleccionTexto !== '') {
+      // Si la colección de la pieza no existía en las opciones, se agrega al combo box y se selecciona
+      const nuevaOpcion = new Option(coleccionTexto, coleccionTexto, true, true);
+      const $optOtra = $('#select_coleccion option[value="__otra__"]');
+      if ($optOtra.length > 0) {
+        $optOtra.before(nuevaOpcion);
+      } else {
+        $('#select_coleccion').append(nuevaOpcion);
+      }
+      $('#select_coleccion').val(coleccionTexto);
+    } else if (!coleccionTexto) {
+      $('#select_coleccion').val('');
+    }
+
+    // Ocultar campo de otra colección si estuviera visible
+    $('#wrapper-otra-coleccion').addClass('d-none');
+    $('#input_otra_coleccion').prop('required', false).val('');
+
+    // Mostrar badge indicando la recuperación automática de la colección
+    if (coleccionTexto) {
+      $('#badge-coleccion-recuperada')
+        .removeClass('d-none')
+        .html("<i class='bx bx-check-circle me-1'></i> Colección recuperada: <strong>" + escapeHtml(coleccionTexto) + "</strong>");
+    } else {
+      $('#badge-coleccion-recuperada').addClass('d-none');
+    }
 
     // =======================================================================
     // RECUPERACIÓN AUTOMÁTICA DEL ORIGEN DE LA PIEZA
@@ -787,7 +849,10 @@ $(document).ready(function () {
     $('#input_tipo_acervo').val('');
     $('#input_id_pieza').val('');
     $('#sel-pieza-coleccion').text('-');
-    $('#input_coleccion').val('');
+    $('#select_coleccion').val('');
+    $('#badge-coleccion-recuperada').addClass('d-none');
+    $('#wrapper-otra-coleccion').addClass('d-none');
+    $('#input_otra_coleccion').prop('required', false).val('');
     $('#modal-pieza-seleccionada').addClass('d-none');
     $('#badge-origen-autodetectado').addClass('d-none');
     $('#select_museo_origen_catalogo').val('');
@@ -909,7 +974,30 @@ $(document).ready(function () {
       return;
     }
 
+    // Validar colección seleccionada
+    let coleccionFinal = $('#select_coleccion').val();
+    if (!coleccionFinal) {
+      Swal.fire({
+        icon: 'warning',
+        title: 'Colección requerida',
+        text: 'Por favor seleccione la colección a la que pertenece la pieza.'
+      });
+      return;
+    }
+    if (coleccionFinal === '__otra__') {
+      coleccionFinal = $('#input_otra_coleccion').val().trim();
+      if (!coleccionFinal) {
+        Swal.fire({
+          icon: 'warning',
+          title: 'Colección personalizada requerida',
+          text: 'Por favor escriba el nombre de la colección.'
+        });
+        return;
+      }
+    }
+
     const formData = new FormData($('#formNuevoMovimiento')[0]);
+    formData.set('coleccion', coleccionFinal);
     const $btn = $('#btn-guardar-movimiento');
     $btn.prop('disabled', true).html("<i class='bx bx-loader-alt bx-spin me-1'></i> Procesando...");
 

@@ -22,6 +22,10 @@ class loginController extends Controller implements ControllerInterface
 
   function index()
   {
+    if (isset($_GET['timeout']) && empty($_SESSION['flashes'])) {
+      Flasher::new('Tu sesión se ha cerrado automáticamente después de 30 minutos de inactividad por seguridad. Por favor, vuelve a iniciar sesión.', 'warning');
+    }
+
     $this->setTitle('BIENVENIDO');
     $this->setView('login');
     $this->render();
@@ -37,37 +41,21 @@ class loginController extends Controller implements ControllerInterface
       $usuario  = sanitize_input($_POST['usuario']);
       $password = sanitize_input($_POST['password']);
 
-      if (persistent_session() === false) {
-        $user =
-          [
-            'id'       => 123,
-            'name'     => 'Bee Default',
-            'email'    => 'hellow@joystick.com.mx',
-            'avatar'   => 'myavatar.jpg',
-            'tel'      => '11223344',
-            'color'    => '#112233',
-            'username' => 'bee',
-            'password' => '$2y$10$xHEI5cJ3q7rBJaL.M9qBRe909ahHvIZVTfRRxlLqfnWwAYwWQE/Wu' // 123456
-          ];
-
-        if ($usuario !== $user['username'] || !password_verify($password . AUTH_SALT, $user['password'])) {
-          throw new Exception('Las credenciales no son correctas.');
-        }
-
-        Auth::login($user['id'], $user);
-      } else {
-        if (!$user = Model::list(BEE_USERS_TABLE, ['username' => $usuario], 1)) {
-          throw new Exception('Las credenciales no son correctas.');
-        }
-
-        if (!password_verify($password . AUTH_SALT, $user['password'])) {
-          throw new Exception('Las credenciales no son correctas.');
-        }
-
-        BeeSession::new_session($user['id']);
-        $user = Model::list(BEE_USERS_TABLE, ['id' => $user['id']], 1);
-        Auth::login($user['id'], $user);
+      if (!$user = Model::list(BEE_USERS_TABLE, ['username' => $usuario], 1)) {
+        throw new Exception('Las credenciales no son correctas.');
       }
+
+      if (!password_verify($password . AUTH_SALT, $user['password'])) {
+        throw new Exception('Las credenciales no son correctas.');
+      }
+
+      // Eliminar cookies persistentes obsoletas si existieran
+      if (function_exists('destroy_cookie') && defined('BEE_COOKIE_ID')) {
+        destroy_cookie(BEE_COOKIE_ID, BEE_COOKIE_PATH, BEE_COOKIE_DOMAIN);
+        destroy_cookie(BEE_COOKIE_TOKEN, BEE_COOKIE_PATH, BEE_COOKIE_DOMAIN);
+      }
+
+      Auth::login($user['id'], $user);
 
       registrar_auditoria('LOGIN', 'bee_users', null, 'Inicio de sesión exitoso', null, (int)$user['id']);
 

@@ -699,3 +699,19 @@ td .btn-group.btn-group-sm > .btn i {
 .table-responsive .dropdown-menu {
   z-index: 1055 !important;
 }
+
+/* Compatibilidad de iconos Boxicons v3 */
+.bx-check-shield:before {
+  content: "\f2b4"; /* bx-clipboard-check */
+}
+.bx-transfer-alt:before,
+.bx-transfer:before {
+  content: "\f6ab"; /* bx-swap-horizontal */
+}
+
+/* SIDEBAR & NAV ICONS */
+.sidebar .nav-item .nav-link i.bx {
+  font-size: 1.1rem;
+  margin-right: 0.35rem;
+  vertical-align: middle;
+}

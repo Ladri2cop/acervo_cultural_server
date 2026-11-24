@@ -8,6 +8,12 @@ if (empty($listaMuseos)) {
   $stmt = $db->query("SELECT id_museo, nombre_museo, ubicacion, responsable_museo FROM museos WHERE status = 1 ORDER BY nombre_museo ASC");
   $listaMuseos = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
 }
+
+// Catálogo de colecciones disponibles
+$listaColecciones = !empty($d->colecciones) ? $d->colecciones : (!empty($data['colecciones']) ? $data['colecciones'] : []);
+if (empty($listaColecciones) && class_exists('PrestamosModel')) {
+  $listaColecciones = PrestamosModel::getColeccionesDisponibles();
+}
 ?>
 
 <!-- Contenedor Principal: Préstamos y Transferencias -->
@@ -53,7 +59,7 @@ if (empty($listaMuseos)) {
   <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
       <h1 class="h3 mb-1 text-gray-800 font-weight-bold">
-        <i class='bx bx-transfer-alt text-primary'></i> Préstamos y Transferencias
+        <i class='bx bx-swap-horizontal text-primary'></i> Préstamos y Transferencias
       </h1>
       <p class="text-muted small mb-0">
         Control y seguimiento institucional de movimientos de bienes culturales entre museos, unidades administrativas, áreas de la Secretaría de Cultura y Turismo y dependencias de gobierno.
@@ -350,7 +356,7 @@ if (empty($listaMuseos)) {
     <form id="formNuevoMovimiento" class="modal-content border-0 shadow-lg" novalidate>
       <div class="modal-header bg-primary text-white py-3">
         <h5 class="modal-title font-weight-bold d-flex align-items-center" id="modalNuevoMovimientoLabel">
-          <i class='bx bx-transfer-alt me-2' style="font-size: 1.4rem;"></i>
+          <i class='bx bx-swap-horizontal me-2' style="font-size: 1.4rem;"></i>
           Registrar Préstamo o Transferencia de Pieza
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -468,13 +474,32 @@ if (empty($listaMuseos)) {
                 </div>
               </div>
 
-              <!-- Campo Colección de la pieza -->
+              <!-- Campo Colección de la pieza (Combo Box con recuperación automática) -->
               <div class="mt-3" id="wrapper-coleccion-pieza">
-                <label class="form-label small font-weight-bold text-gray-800">
-                  Colección a la que pertenece la pieza
+                <label class="form-label small font-weight-bold text-gray-800 d-flex justify-content-between align-items-center mb-1">
+                  <span><i class='bx bx-collection text-secondary me-1'></i> Colección a la que pertenece la pieza <span class="text-danger">*</span></span>
+                  <span id="badge-coleccion-recuperada" class="badge bg-light text-primary border border-primary font-weight-normal py-1 px-2 d-none" style="font-size: 0.72rem;">
+                    <i class='bx bx-check-circle me-1'></i> Colección recuperada
+                  </span>
                 </label>
-                <input type="text" class="form-control form-control-sm" name="coleccion" id="input_coleccion" placeholder="Ej. Acervo General, Pintura, Culturas Populares...">
-                <small class="text-muted" style="font-size: 0.75rem;">Se prellena automáticamente con la colección de la pieza seleccionada o puede personalizarse.</small>
+                <select class="form-select form-select-sm" name="coleccion" id="select_coleccion" required>
+                  <option value="">-- Seleccionar colección --</option>
+                  <?php if (!empty($listaColecciones)): ?>
+                    <?php foreach ($listaColecciones as $col): ?>
+                      <option value="<?php echo htmlspecialchars($col); ?>">
+                        <?php echo htmlspecialchars($col); ?>
+                      </option>
+                    <?php endforeach; ?>
+                  <?php endif; ?>
+                  <option value="__otra__">-- Otra colección (especificar) --</option>
+                </select>
+                <div class="mt-2 d-none" id="wrapper-otra-coleccion">
+                  <input type="text" class="form-control form-control-sm" id="input_otra_coleccion" placeholder="Escriba el nombre de la colección personalizada...">
+                  <small class="text-muted" style="font-size: 0.72rem;">Indique el nombre exacto de la colección.</small>
+                </div>
+                <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">
+                  Se recupera automáticamente la colección que ya tenía la pieza seleccionada o puede seleccionar otra opción del catálogo.
+                </small>
               </div>
 
               <!-- Inputs ocultos para enviar la pieza seleccionada -->
@@ -711,7 +736,7 @@ if (empty($listaMuseos)) {
     <form id="formDevolverPrestamo" class="modal-content border-0 shadow-lg" novalidate>
       <div class="modal-header bg-success text-white py-3">
         <h5 class="modal-title font-weight-bold d-flex align-items-center" id="modalDevolucionPrestamoLabel">
-          <i class='bx bx-check-shield me-2' style="font-size: 1.4rem;"></i>
+          <i class='bx bx-clipboard-check me-2' style="font-size: 1.4rem;"></i>
           Registrar Devolución de Préstamo
         </h5>
         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
@@ -943,7 +968,7 @@ if (empty($listaMuseos)) {
         <!-- Dictamen Institucional de la Sede Receptora -->
         <div class="card border mb-3 d-none" id="det-card-dictamen">
           <div class="card-header bg-light py-2 font-weight-bold text-gray-800 small d-flex justify-content-between align-items-center">
-            <span><i class='bx bx-check-shield me-1'></i> Dictamen de la Sede Receptora</span>
+            <span><i class='bx bx-clipboard-check me-1'></i> Dictamen de la Sede Receptora</span>
             <span class="badge" id="det-dictamen-badge">Dictamen</span>
           </div>
           <div class="card-body p-3 small">

@@ -53,7 +53,8 @@ class adminController extends Controller implements ControllerInterface
     // Validación de sesión de usuario
     if (!Auth::validate()) {
       Flasher::new('Debes iniciar sesión primero.', 'danger');
-      exit; // 👈 Detiene la ejecución inmediatamente
+      Redirect::to('login');
+      exit;
     }
 
     // Ejecutar la funcionalidad del Controller padre
@@ -3357,10 +3358,12 @@ class adminController extends Controller implements ControllerInterface
     $isSuperAdmin = is_super_admin();
     $userMuseumId = get_user_museum_id();
     $userMuseumName = get_user_museum_name();
+    $colecciones = PrestamosModel::getColeccionesDisponibles();
 
     $this->setTitle('Préstamos y Transferencias de Acervo');
     $this->addToData('slug', 'prestamos_transferencias');
     $this->addToData('museos', $museos);
+    $this->addToData('colecciones', $colecciones);
     $this->addToData('is_super_admin', $isSuperAdmin);
     $this->addToData('user_museum_id', $userMuseumId);
     $this->addToData('user_museum_name', $userMuseumName);
@@ -3426,6 +3429,20 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  public function ping_session()
+  {
+    // adminController::__construct() ya ejecutó Auth::validate(), renovando last_activity
+    header('Content-Type: application/json');
+    echo json_encode([
+      'status' => 200,
+      'msg' => 'Sesión activa renovada',
+      'time' => time(),
+      'last_activity' => $_SESSION['user_session']['last_activity'] ?? time(),
+      'timeout_seconds' => defined('SESSION_TIMEOUT') ? SESSION_TIMEOUT : 1800
+    ]);
+    exit;
+  }
+
   public function buscar_piezas_para_movimiento()
   {
     if (!is_admin_user()) {
@@ -3486,7 +3503,8 @@ class adminController extends Controller implements ControllerInterface
           'id_pieza' => $id,
           'codigo_interno' => $pieza['codigo_interno'] ?? '',
           'titulo' => $pieza['titulo'] ?? ($pieza['nombre_titulo_pieza'] ?? ''),
-          'ubicacion_fisica' => $pieza['ubicacion_fisica'] ?? ''
+          'ubicacion_fisica' => $pieza['ubicacion_fisica'] ?? '',
+          'coleccion' => $pieza['coleccion'] ?? ''
         ]
       ]);
     } catch (Throwable $e) {

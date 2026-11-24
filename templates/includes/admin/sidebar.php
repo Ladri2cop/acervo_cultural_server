@@ -56,13 +56,13 @@
   <?php if (is_admin_user()): ?>
   <li class="nav-item" data-page="revision">
     <a class="nav-link" href="admin/revision">
-      <i class='bx bx-check-shield'></i>
+      <i class='bx  bx-clipboard-check'></i>
       <span>Revisión de Acervo</span>
     </a>
   </li>
   <li class="nav-item" data-page="prestamos_transferencias">
     <a class="nav-link" href="admin/prestamos_transferencias">
-      <i class='bx bx-transfer-alt'></i>
+      <i class='bx  bx-swap-horizontal'></i>
       <span>Préstamos y Transferencias</span>
     </a>
   </li>

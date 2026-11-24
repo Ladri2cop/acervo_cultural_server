@@ -165,6 +165,7 @@ class Bee
   private function init_session()
   {
     if (session_status() == PHP_SESSION_NONE) {
+      ini_set('session.gc_maxlifetime', 3600); // Prevenir recolección de basura prematura antes de los 30 min de inactividad
       session_start();
     }
   }
@@ -317,8 +318,7 @@ class Bee
   }
 
   /**
-   * Inicia la validación de sesión en caso de existir 
-   * sesiones persistentes de Bee framework
+   * Inicia la validación y carga de la sesión del usuario
    *
    * @return mixed
    */
@@ -326,45 +326,34 @@ class Bee
   {
     global $Bee_User;
 
-    // Para mantener abierta una sesión de usuario al ser persistente
-    if (persistent_session()) {
-      try {
-        // Autenticamos al usuario en caso de existir los cookies
-        // y de que sean válidos
-        $user = BeeSession::authenticate();
-
-        // En caso de que validación sea negativa y exista una sesión en curso abierta
-        // se destruye para prevenir cualquier error o ataque
-        if ($user === false && Auth::validate()) {
-          Auth::logout();
-
-          return true; // para prevenir que siga ejecutando
-        }
-
-        // En esta parte se puede cargar información diferente o adicional del usuario
-        // ya que sabemos que su autenticación es válida
-        ////////////////////////////////////
-
-        $Bee_User = !empty($user) ? $user : [];
-        // ---> $user = usuarioModel::by_id($id);
-
-        ////////////////////////////////////
-        // Se agrega la información del usuario a sesión
-        if (!empty($Bee_User)) {
-          /**
-           * Para prevenir la regeneración del token e id de sesión
-           * en caso de que ya haya ocurrido un inicio de sesión previo
-           */
-          if (!Auth::validate()) {
-            Auth::login($Bee_User['id'], $Bee_User);
-          }
-        }
-
-        return true;
-      } catch (Exception $e) {
-        bee_die($e->getMessage());
+    // Eliminar cookies persistentes obsoletas que pudieran haber quedado en el cliente
+    if (function_exists('cookie_exists') && function_exists('destroy_cookie') && defined('BEE_COOKIE_ID')) {
+      if (cookie_exists(BEE_COOKIE_ID) || cookie_exists(BEE_COOKIE_TOKEN)) {
+        destroy_cookie(BEE_COOKIE_ID, BEE_COOKIE_PATH, BEE_COOKIE_DOMAIN);
+        destroy_cookie(BEE_COOKIE_TOKEN, BEE_COOKIE_PATH, BEE_COOKIE_DOMAIN);
       }
     }
+
+    // Validar sesión activa existente
+    if (isset($_SESSION['user_session']['logged']) && $_SESSION['user_session']['logged'] === true) {
+      if (!Auth::validate()) {
+        // Auth::validate() ya maneja la expiración por inactividad y redirección a login
+        return false;
+      }
+
+      // Si la sesión es válida y vigente, refrescar datos del usuario desde la BD
+      $userId = $_SESSION['user_session']['id'] ?? null;
+      if ($userId && $freshUser = Model::list(BEE_USERS_TABLE, ['id' => $userId], 1)) {
+        $Bee_User = $freshUser;
+        $_SESSION['user_session']['user'] = $freshUser;
+      } elseif (isset($_SESSION['user_session']['user'])) {
+        $Bee_User = $_SESSION['user_session']['user'];
+      }
+    } else {
+      $Bee_User = [];
+    }
+
+    return true;
   }
 
   /**

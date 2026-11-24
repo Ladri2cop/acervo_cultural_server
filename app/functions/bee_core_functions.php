@@ -1277,7 +1277,7 @@ function get_user($key = null)
 	 * @version 1.5.5
 	 */
 	// $user = $session['user']; // información de la base de datos o directamente insertada del usuario
-	$user = $Bee_User;
+	$user = !empty($Bee_User) ? $Bee_User : ($session['user'] ?? []);
 
 	// Regresa la información del usuario o de la clave pasada
 	return $key === null ? $user : (isset($user[$key]) ? $user[$key] : false);

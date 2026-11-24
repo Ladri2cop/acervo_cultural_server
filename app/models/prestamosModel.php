@@ -660,4 +660,97 @@ class PrestamosModel extends Model
         $haystack = [self::$primaryKey => $id];
         return parent::update(self::$table, $haystack, $data);
     }
+
+    /**
+     * Obtiene la lista completa y ordenada de colecciones disponibles
+     * combinando la tabla 'colecciones' y las colecciones registradas en los acervos
+     */
+    public static function getColeccionesDisponibles()
+    {
+        $db = Db::connect();
+        $colecciones = [
+            'Acervo General',
+            'Acervo Arqueológico',
+            'Acervo Numismático'
+        ];
+
+        // 1. Desde la tabla colecciones
+        try {
+            $stmtC = $db->query("SELECT nombre_coleccion FROM colecciones WHERE status = 1 AND nombre_coleccion IS NOT NULL AND TRIM(nombre_coleccion) != ''");
+            if ($stmtC) {
+                while ($r = $stmtC->fetchColumn()) {
+                    $c = trim($r);
+                    if ($c !== '' && !in_array($c, $colecciones, true)) {
+                        $colecciones[] = $c;
+                    }
+                }
+            }
+        } catch (Throwable $t) {}
+
+        // 2. Desde acervo_general
+        try {
+            $stmtG = $db->query("
+                SELECT DISTINCT TRIM(coleccion) AS col 
+                FROM acervo_general 
+                WHERE status = 1 
+                  AND coleccion IS NOT NULL 
+                  AND TRIM(coleccion) != '' 
+                  AND coleccion NOT IN ('N/A', 'No aplica', 'Sin colección', 'Sin collección', 'S/F', '1', 'Sin registro')
+                ORDER BY col ASC
+            ");
+            if ($stmtG) {
+                while ($r = $stmtG->fetchColumn()) {
+                    $c = trim($r);
+                    if ($c !== '' && !in_array($c, $colecciones, true)) {
+                        $colecciones[] = $c;
+                    }
+                }
+            }
+        } catch (Throwable $t) {}
+
+        // 3. Desde acervo_arqueologico
+        try {
+            $stmtA = $db->query("
+                SELECT DISTINCT TRIM(coleccion) AS col 
+                FROM acervo_arqueologico 
+                WHERE status = 1 
+                  AND coleccion IS NOT NULL 
+                  AND TRIM(coleccion) != '' 
+                  AND coleccion NOT IN ('N/A', 'No aplica', 'Sin colección', 'Sin collección', 'S/F', '1', 'Sin registro')
+                ORDER BY col ASC
+            ");
+            if ($stmtA) {
+                while ($r = $stmtA->fetchColumn()) {
+                    $c = trim($r);
+                    if ($c !== '' && !in_array($c, $colecciones, true)) {
+                        $colecciones[] = $c;
+                    }
+                }
+            }
+        } catch (Throwable $t) {}
+
+        // 4. Desde prestamos_transferencias
+        try {
+            $stmtP = $db->query("
+                SELECT DISTINCT TRIM(coleccion) AS col 
+                FROM prestamos_transferencias 
+                WHERE coleccion IS NOT NULL 
+                  AND TRIM(coleccion) != '' 
+                  AND coleccion NOT IN ('N/A', 'No aplica', 'Sin colección', 'Sin collección', 'S/F', '1', 'Sin registro')
+                ORDER BY col ASC
+            ");
+            if ($stmtP) {
+                while ($r = $stmtP->fetchColumn()) {
+                    $c = trim($r);
+                    if ($c !== '' && !in_array($c, $colecciones, true)) {
+                        $colecciones[] = $c;
+                    }
+                }
+            }
+        } catch (Throwable $t) {}
+
+        natcasesort($colecciones);
+
+        return array_values($colecciones);
+    }
 }

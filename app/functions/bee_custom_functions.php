@@ -122,9 +122,11 @@ function registrar_auditoria(string $tipo_accion, string $nombre_tabla, ?int $id
       'mac_address'   => $mac_address
     ];
 
-    return Model::add('auditoria', $data) ? true : false;
-  } catch (Exception $e) {
-    logger('Error al registrar auditoría: ' . $e->getMessage(), 'auditoria_err');
+    return (class_exists('Model') && Model::add('auditoria', $data)) ? true : false;
+  } catch (Throwable $e) {
+    if (function_exists('logger')) {
+      logger('Error al registrar auditoría: ' . $e->getMessage(), 'auditoria_err');
+    }
     return false;
   }
 }
@@ -479,4 +481,4 @@ function get_user_id(): ?int
 // Carga de catálogos oficiales del SIPAC
 require_once __DIR__ . '/acervo_catalogos.php';
 
-
+

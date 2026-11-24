@@ -89,12 +89,13 @@ define('SITE_DESC', 'Un framework hecho con pasión y amor, flexible, sencillo y
 
 // Sesiones de usuario persistentes
 define('BEE_USERS_TABLE', 'bee_users');         // Nombre de la tabla para autenticación de usuarios
-define('BEE_COOKIES', true);                // Es utilizada para determinar si se usarán sesiones persistentes con cookies en el sistema
+define('BEE_COOKIES', false);               // Es utilizada para determinar si se usarán sesiones persistentes con cookies en el sistema (desactivado para forzar re-login por inactividad)
 define('BEE_COOKIE_ID', 'bee__cookie_id');    // Nombre del cookie para el identificador de usuario
 define('BEE_COOKIE_TOKEN', 'bee__cookie_tkn');   // Nombre del cookie para el token generado para usuario
 define('BEE_COOKIE_LIFETIME', 60 * 60 * 24 * 7);    // Duración o vida de un cookie para cada usuario, por defecto 1 semana
 define('BEE_COOKIE_PATH', '/');
 define('BEE_COOKIE_DOMAIN', '');
+define('SESSION_TIMEOUT', 1800);            // Tiempo límite de inactividad de la sesión: 30 minutos (1800 segundos)
 
 // Configuración de correos electrónicos
 define('PHPMAILER_EXCEPTIONS', true);                // Mantener activo para recibir excepciones en errores de Phpmailer
