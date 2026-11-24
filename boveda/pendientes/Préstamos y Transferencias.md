@@ -40,3 +40,9 @@
 5. **Alcance Territorial y Filtrado de Visualización por Museo Asignado**:
    - **Administradores (`id_role = 2`)**: Únicamente pueden visualizar, consultar y gestionar los préstamos y transferencias donde el museo que tienen asignado participe como **origen** o como **destino**. Tanto la tabla de movimientos como los indicadores KPIs se filtran en tiempo real para reflejar exclusivamente la estadística de su recinto. Intentos de acceso directo a expedientes de otros recintos son bloqueados con código de seguridad 403.
    - **Super Administradores (`id_role = 1`)**: Mantienen jurisdicción global, pudiendo auditar y gestionar el 100% de los movimientos y KPIs de toda la red estatal de museos.
+
+6. **Combo Box de Colecciones con Recuperación Automática en Modal de Movimiento**:
+   - El campo de colección en el modal de registro de movimiento se sustituyó por un **combo box dinámico** que agrupa y normaliza las 317 colecciones registradas en la plataforma (`PrestamosModel::getColeccionesDisponibles()`).
+   - Al seleccionar la pieza del catálogo a prestar o transferir, el sistema recupera y selecciona automáticamente la colección que ya tenía la obra en su ficha técnica, visualizándose con el badge *Colección recuperada*.
+   - Si la pieza cuenta con una colección histórica no listada, se agrega como opción al combo box de forma automática.
+   - Permite al usuario cambiarla libremente o seleccionar `-- Otra colección (especificar) --` para capturar una denominación personalizada.

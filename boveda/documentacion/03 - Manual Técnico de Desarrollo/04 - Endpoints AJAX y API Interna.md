@@ -158,9 +158,38 @@ sequenceDiagram
 - **Ruta**: `POST /admin/post_cancelar_movimiento`
 - **Payload**: `id_movimiento=45&motivo_cancelacion="Suspensión del evento por remodelación del recinto destino"`
 
+### 4.5. Búsqueda de Piezas Disponibles para Movimiento
+- **Ruta**: `GET /admin/buscar_piezas_para_movimiento`
+- **Parámetros Query**: `q` (búsqueda de texto), `tipo_acervo` (`general`, `arqueologico`, `numismatica`, `todos`), `limit` (entero).
+- **Respuesta**: Lista de piezas en estatus `aprobado` con `id_pieza`, `codigo_interno`, `titulo`, `coleccion`, `ubicacion_fisica`, `fotografia` y resolución de origen.
+
+### 4.6. Detección Inteligente de Origen de Pieza
+- **Ruta**: `GET /admin/obtener_origen_pieza`
+- **Parámetros Query**: `tipo_acervo`, `id_pieza`.
+- **Respuesta**: Resuelve el museo institucional o dependencia donde se encuentra físicamente la obra basándose en su catálogo y movimientos históricos.
+
 ---
 
-## 5. Referencias Cruzadas
+## 5. Endpoints de Sesión y Seguridad
+
+### 5.1. Heartbeat y Renovación de Sesión Activa
+- **Ruta**: `GET /admin/ping_session`
+- **Función**: Verifica la vigencia de la sesión en servidor y actualiza `$_SESSION['user_session']['last_activity'] = time()`.
+- **Respuesta 200 OK**:
+  ```json
+  {
+    "status": 200,
+    "msg": "Sesión activa renovada",
+    "time": 1795479550,
+    "last_activity": 1795479550,
+    "timeout_seconds": 1800
+  }
+  ```
+- **Respuesta 401 Unauthorized**: Si transcurrieron más de 1,800 segundos de inactividad, devuelve estado 401 ordenando redirección a `login?timeout=1`.
+
+---
+
+## 6. Referencias Cruzadas
 - Conoce los scripts que invocan estos servicios: [[05 - Componentes Frontend, Estilos CSS y JavaScript]]
 - Revisa el controlador backend en: [[01 - Controladores y Flujo de Peticiones]]
 - Modelo de auditoría que registra estas llamadas: [[04 - Sistema de Auditoría y Trazabilidad]]

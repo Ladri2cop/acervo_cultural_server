@@ -165,7 +165,47 @@ $('#ubicacion_fisica').on('change', function () {
 
 ---
 
-## 6. Referencias Cruzadas
+## 6. Monitor Global de Inactividad de Sesión (`admin.js`)
+
+Para implementar la directriz de seguridad de 30 minutos de inactividad, `admin.js` opera un monitor en tiempo de ejecución:
+
+```mermaid
+flowchart TD
+    EV["Eventos: mousemove, keydown, scroll, touchstart"] --> ACT["Actualizar timestamp local y localStorage"]
+    ACT --> PING{"¿Hubo actividad en los últimos 5 min?"}
+    PING -- Sí --> CALL_PING["$.get('admin/ping_session') -> Renueva sesión PHP"]
+    PING -- No --> WAIT["Sin llamadas al servidor (Permite caducidad natural)"]
+
+    TIMER["Verificador cada 5 seg"] --> CHK{"Tiempo inactivo transcurrido"}
+    CHK -- ">= 28 min" --> WARN["Modal SweetAlert2: Cuenta regresiva de 120 seg"]
+    WARN --> EXT{"¿Usuario confirma?"}
+    EXT -- "Mantener sesión" --> CALL_PING
+    EXT -- "Salir" --> LOGOUT["Redirigir a /logout"]
+    CHK -- ">= 30 min" --> TIMEOUT["Cierre automático -> Redirigir a login?timeout=1"]
+```
+
+### Características Técnicas:
+1. **Sincronización multi-pestaña**: Registra `Date.now()` en `localStorage['sipac_last_active_time']` para que la actividad en una pestaña mantenga activas las demás.
+2. **Heartbeat pasivo**: Solo envía peticiones cada 5 minutos si el usuario interactuó (`hasPendingActivity = true`); si el usuario se retira de la estación de trabajo, el cliente no envía pings, permitiendo la caducidad certera en el servidor.
+3. **Interceptor AJAX Global**: Captura códigos `401 Unauthorized` en cualquier petición asíncrona redirigiendo al inicio de sesión inmediatamente.
+
+---
+
+## 7. Combo Box Dinámico de Colecciones (`prestamos_transferencias.js`)
+
+Sustituye la captura de texto manual por un combo box inteligente con recuperación automática:
+
+1. **Catálogo Consolidado**: Carga las colecciones del acervo provistas por `PrestamosModel::getColeccionesDisponibles()`.
+2. **Recuperación Automática**: Al invocar `seleccionarPieza(p)`:
+   - Extrae `p.coleccion` (o determina el valor por defecto institucional del catálogo).
+   - Busca la opción coincidente en `#select_coleccion` y la selecciona.
+   - Si la obra contenía una colección histórica no registrada, la inyecta dinámicamente como opción del combo box y la selecciona.
+   - Despliega el badge visual `#badge-coleccion-recuperada` confirmando la detección.
+3. **Opción `-- Otra colección (especificar) --`**: Si el usuario requiere una colección personalizada, conmuta el campo de texto `#input_otra_coleccion`.
+
+---
+
+## 8. Referencias Cruzadas
 - Consulta los endpoints que alimentan estos scripts: [[04 - Endpoints AJAX y API Interna]]
 - Conoce la operación de usuario del formulario: [[03 - Registro y Edición de Piezas Culturales]]
 - Guía de navegación general: [[01 - Mapa de Navegación del Sistema]]

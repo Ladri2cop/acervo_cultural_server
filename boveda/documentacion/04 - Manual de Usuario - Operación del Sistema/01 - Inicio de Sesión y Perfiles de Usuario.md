@@ -100,7 +100,24 @@ Para actualizar tus datos o salir de la plataforma:
 
 ---
 
-## 5. Referencias Cruzadas
+## 5. Política de Seguridad: Expiración por Inactividad (30 Minutos)
+
+Para salvaguardar la confidencialidad del patrimonio cultural y evitar accesos no autorizados en estaciones de trabajo desatendidas:
+
+1. **Tiempo Límite**: El sistema otorga un máximo de **30 minutos de inactividad**.
+2. **Monitor Activo**: Mientras estés navegando, haciendo clic, escribiendo o desplazando la página, tu sesión se renueva de forma transparente en segundo plano.
+3. **Advertencia Preventiva a los 28 Minutos**:
+   - Si transcurren 28 minutos sin interacción, se desplegará en pantalla una alerta interactiva con una **cuenta regresiva de 120 segundos**.
+   - Puedes hacer clic en **"Mantener sesión activa"** para continuar trabajando sin interrupción.
+   - O bien, pulsar **"Salir"** para cerrar la sesión voluntariamente.
+4. **Cierre Automático**:
+   - Si el temporizador llega a cero (30 minutos cumplidos), la sesión se destruye en el servidor, se registra la auditoría institucional y la pantalla te redirige a `/login` con el aviso:
+     > *"Tu sesión se ha cerrado automáticamente después de 30 minutos de inactividad por seguridad. Por favor, vuelve a iniciar sesión."*
+   - Por motivos de seguridad bancaria/gubernamental, **las sesiones no se mantienen abiertas indefinidamente mediante cookies**; al recargar el navegador tras expirar el tiempo, el sistema exigirá forzosamente tus credenciales.
+
+---
+
+## 6. Referencias Cruzadas
 - Aprende a buscar obras en: [[02 - Exploración, Búsqueda y Filtrado del Acervo]]
 - Guía de alta de obras: [[03 - Registro y Edición de Piezas Culturales]]
 - Guía curatorial: [[04 - Flujo de Revisión y Semáforo de Aprobación]]

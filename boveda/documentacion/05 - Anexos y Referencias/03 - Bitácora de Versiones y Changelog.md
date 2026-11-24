@@ -15,6 +15,34 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 
 ---
 
+## [Versión 1.8.0] - 2026-11-24
+### 🔒 Seguridad de Sesión y Combo Box Dinámico de Colecciones en Préstamos
+- **Política Estricta de Expiración por Inactividad (30 Minutos)**:
+  - Implementación de `SESSION_TIMEOUT = 1800` (1,800 segundos / 30 minutos) en `settings.php`.
+  - **Desactivación definitiva de sesiones persistentes semanales**: Configuración de `BEE_COOKIES = false` y remoción forzosa de cookies `bee__cookie_id` y `bee__cookie_tkn` en el navegador del cliente mediante encabezados de caducidad en el pasado.
+  - El usuario que permanezca inactivo por más de 30 minutos es expulsado de inmediato hacia `/login?timeout=1` al intentar cualquier interacción o recargar el navegador (F5), requiriendo forzosamente reingresar credenciales.
+  - Registro auditable del evento `LOGOUT` por inactividad en la tabla `auditoria`.
+- **Monitor Global de Actividad en Frontend (`admin.js`)**:
+  - Detección de eventos de interacción (`mousemove`, `mousedown`, `keydown`, `scroll`, `touchstart`).
+  - Sincronización multi-pestaña mediante `localStorage` (`sipac_last_active_time`).
+  - Heartbeat periódico cada 5 minutos mediante endpoint `GET /admin/ping_session` únicamente si el usuario registró actividad.
+  - Alerta modal interactiva a los 28 minutos de inactividad con SweetAlert2 y temporizador regresivo de 120 segundos para renovar sesión o salir voluntariamente.
+  - Cierre automático y redirección forzada a los 30 minutos sin actividad.
+  - Interceptor global de errores HTTP `401 Unauthorized` para redirección automática en llamadas AJAX.
+  - Implementación de *cache-buster* `admin.js?v=...` en `footer.php` para asegurar la descarga del script más reciente en el navegador.
+- **Combo Box Dinámico de Colecciones con Recuperación Automática**:
+  - Reemplazo del campo de texto libre de colección en el modal de nuevo movimiento (`#modalNuevoMovimiento`) por un combo box `<select name="coleccion" id="select_coleccion">`.
+  - Creación del método `PrestamosModel::getColeccionesDisponibles()` que consolida, deduplica y clasifica alfabéticamente las 317 colecciones registradas en el sistema (tabla `colecciones`, `acervo_general`, `acervo_arqueologico` y `prestamos_transferencias`).
+  - **Recuperación Automática de la Colección**: Al seleccionar cualquier pieza del catálogo cultural, el sistema recupera la colección que ya tenía la obra y la selecciona de inmediato en el combo box, activando la insignia visual *Colección recuperada*.
+  - Si la pieza contiene una colección histórica no listada, el sistema la inyecta dinámicamente como opción del combo box y la selecciona.
+  - Opción de selección libre `-- Otra colección (especificar) --` con campo de texto emergente si se requiere capturar una denominación inédita.
+- **Armonización de Iconografía Institucional**:
+  - Actualización de iconos en el sidebar y vistas operativas:
+    - *Revisión de Acervo*: Icono `bx-clipboard-check`.
+    - *Préstamos y Transferencias*: Icono `bx-swap-horizontal`.
+
+---
+
 ## [Versión 1.7.0] - 2026-11-23
 ### 🚚 Dictamen de Préstamos y Transferencias por Museo Receptora y Carga de Oficios
 - **Asignación de Usuarios Administradores a Museos de la Red**:

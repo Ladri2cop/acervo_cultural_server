@@ -49,7 +49,11 @@ flowchart TD
 ### Campos Obligatorios y Documentación:
 - **Tipo de Movimiento**: *Préstamo Temporal* (requiere fecha estimada de retorno) o *Transferencia Definitiva*.
 - **Pieza a Movilizar**: Buscador interactivo por código interno o título. Solo se despliegan obras en estatus curatorial **Aprobado**.
-- **Sede de Origen**: Recinto actual y funcionario que entrega.
+- **Colección a la que pertenece la pieza (Combo Box Dinámico)**:
+  - Ya no es un campo de texto rígido; se despliega un **combo box precargado** con las colecciones del catálogo institucional.
+  - **Recuperación Automática**: Al seleccionar la pieza, el sistema detecta y selecciona automáticamente la colección que la obra ya tenía asignada, mostrando la insignia azul *Colección recuperada*.
+  - **Flexibilidad Curatorial**: El usuario puede mantener la colección recuperada, elegir cualquier otra del catálogo desplegable, o seleccionar `-- Otra colección (especificar) --` para escribir una colección inédita en el campo emergente.
+- **Sede de Origen**: Recinto actual y funcionario que entrega. Se autocompleta con el recinto de la pieza.
 - **Sede de Destino**: Museo o recinto que recibirá la obra. Al elegir un museo registrado, el sistema asocia automáticamente la entidad receptora.
 - **Fechas**: Fecha de salida y fecha estimada de devolución (para préstamos).
 - **Oficio Digital Adjunto (OBLIGATORIO)**: Se debe adjuntar el archivo digital escaneado del oficio o memorándum de autorización (.pdf, .doc, .docx, .jpg o .png, máx. 20MB).
