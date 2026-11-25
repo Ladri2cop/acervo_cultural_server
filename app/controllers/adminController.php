@@ -187,23 +187,165 @@ class adminController extends Controller implements ControllerInterface
 
   function perfil()
   {
-    $this->setTitle('Perfil de usuario');
+    $this->setTitle('Perfil de Usuario - SIPAC');
     $this->setView('perfil');
+
+    try {
+      $userId = (int) get_user('id');
+      $db = Db::connect();
+      $stmt = $db->prepare("SELECT u.*, r.nombre AS rol_nombre, m.nombre_museo 
+                            FROM bee_users u 
+                            LEFT JOIN bee_roles r ON u.id_role = r.id 
+                            LEFT JOIN museos m ON u.id_museo = m.id_museo 
+                            WHERE u.id = :id LIMIT 1");
+      $stmt->execute(['id' => $userId]);
+      $perfilUsuario = $stmt->fetch(PDO::FETCH_OBJ);
+
+      $this->addToData('perfil', $perfilUsuario);
+    } catch (Throwable $t) {
+      // Fallback si falla la consulta
+      $this->addToData('perfil', (object) get_user());
+    }
+
     $this->render();
   }
 
-  function botones()
+  /**
+   * Procesa el cambio de contraseña solicitado por el propio usuario desde su perfil
+   */
+  public function post_cambiar_password()
   {
-    $this->setTitle('Botones');
-    $this->setView('botones');
-    $this->render();
+    try {
+      if (!check_posted_data(['password_actual', 'password_nuevo', 'password_confirmar'], $_POST)) {
+        throw new Exception('Por favor completa todos los campos requeridos.');
+      }
+
+      if (!Csrf::validate($_POST['csrf'] ?? null)) {
+        throw new Exception(get_bee_message(0));
+      }
+
+      $userId = (int) get_user('id');
+      if (empty($userId)) {
+        throw new Exception('Sesión de usuario no válida.');
+      }
+
+      $passwordActual    = (string) $_POST['password_actual'];
+      $passwordNuevo     = (string) $_POST['password_nuevo'];
+      $passwordConfirmar = (string) $_POST['password_confirmar'];
+
+      // 1. Validar que los campos no vengan vacíos
+      if (empty(trim($passwordActual)) || empty(trim($passwordNuevo)) || empty(trim($passwordConfirmar))) {
+        throw new Exception('Ningún campo de contraseña puede quedar en blanco.');
+      }
+
+      // 2. Validar que la nueva contraseña coincida con su confirmación
+      if ($passwordNuevo !== $passwordConfirmar) {
+        throw new Exception('La nueva contraseña y su confirmación no coinciden.');
+      }
+
+      // 3. Validar longitud mínima
+      if (strlen($passwordNuevo) < 8) {
+        throw new Exception('La nueva contraseña debe tener al menos 8 caracteres.');
+      }
+
+      // 4. Obtener usuario de la base de datos
+      $user = userModel::by_id($userId);
+      if (!$user) {
+        throw new Exception('No se encontró el registro del usuario.');
+      }
+
+      // 5. Validar contraseña actual con el salt de seguridad institucional
+      if (!password_verify($passwordActual . AUTH_SALT, $user['password'])) {
+        throw new Exception('La contraseña actual ingresada es incorrecta.');
+      }
+
+      // 6. Validar que la nueva contraseña no sea igual a la actual
+      if (password_verify($passwordNuevo . AUTH_SALT, $user['password'])) {
+        throw new Exception('La nueva contraseña no puede ser idéntica a tu contraseña actual.');
+      }
+
+      // 7. Encriptar y actualizar en la base de datos
+      $nuevoHash = password_hash($passwordNuevo . AUTH_SALT, PASSWORD_BCRYPT);
+      $resultado = userModel::update(userModel::$t1, ['id' => $userId], ['password' => $nuevoHash]);
+      if (!$resultado) {
+        throw new Exception('Ocurrió un error al intentar actualizar la contraseña.');
+      }
+
+      // 8. Registrar en bitácora de auditoría
+      if (function_exists('registrar_auditoria')) {
+        registrar_auditoria('UPDATE', 'bee_users', $userId, sprintf('Cambio exitoso de contraseña para usuario ID %d (%s) desde su perfil', $userId, $user['username']));
+      }
+
+      Flasher::success('Tu contraseña ha sido actualizada con éxito.');
+      Redirect::to('admin/perfil#seguridad');
+    } catch (Exception $e) {
+      Flasher::error($e->getMessage());
+      Redirect::to('admin/perfil#seguridad');
+    }
   }
 
-  function cartas()
+  /**
+   * Procesa la actualización de datos básicos de perfil (correo electrónico)
+   */
+  public function post_actualizar_perfil()
   {
-    $this->setTitle('Cartas');
-    $this->setView('cartas');
-    $this->render();
+    try {
+      if (!check_posted_data(['email'], $_POST)) {
+        throw new Exception('Por favor ingresa un correo electrónico.');
+      }
+
+      if (!Csrf::validate($_POST['csrf'] ?? null)) {
+        throw new Exception(get_bee_message(0));
+      }
+
+      $userId = (int) get_user('id');
+      if (empty($userId)) {
+        throw new Exception('Sesión de usuario no válida.');
+      }
+
+      $email = filter_var(trim($_POST['email']), FILTER_VALIDATE_EMAIL);
+      if (!$email) {
+        throw new Exception('El formato del correo electrónico institucional no es válido.');
+      }
+
+      $user = userModel::by_id($userId);
+      if (!$user) {
+        throw new Exception('No se encontró el registro del usuario.');
+      }
+
+      // Validar si el correo ya pertenece a otro usuario
+      $db = Db::connect();
+      $check = $db->prepare("SELECT id FROM bee_users WHERE email = :email AND id != :id LIMIT 1");
+      $check->execute(['email' => $email, 'id' => $userId]);
+      if ($check->fetch()) {
+        throw new Exception('El correo electrónico ingresado ya está asignado a otra cuenta.');
+      }
+
+      if ($email !== $user['email']) {
+        $resultado = userModel::update(userModel::$t1, ['id' => $userId], ['email' => $email]);
+        if (!$resultado) {
+          throw new Exception('Ocurrió un error al actualizar los datos de perfil.');
+        }
+
+        // Actualizar datos en sesión activa
+        if (isset($_SESSION['user_session']['email'])) {
+          $_SESSION['user_session']['email'] = $email;
+        }
+
+        if (function_exists('registrar_auditoria')) {
+          registrar_auditoria('UPDATE', 'bee_users', $userId, sprintf('Actualización de correo de %s a %s', $user['email'], $email));
+        }
+
+        Flasher::success('Tu información de perfil ha sido actualizada correctamente.');
+      } else {
+        Flasher::info('No se detectaron cambios en tu correo electrónico.');
+      }
+
+      Redirect::to('admin/perfil');
+    } catch (Exception $e) {
+      Flasher::error($e->getMessage());
+      Redirect::to('admin/perfil');
+    }
   }
 
   ////////////////////////////////////////////////////

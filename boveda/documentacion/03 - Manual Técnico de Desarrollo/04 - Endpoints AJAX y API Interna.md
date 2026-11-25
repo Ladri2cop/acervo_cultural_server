@@ -230,6 +230,25 @@ sequenceDiagram
   ```
 - **Respuesta 401 Unauthorized**: Si transcurrieron más de 1,800 segundos de inactividad, devuelve estado 401 ordenando redirección a `login?timeout=1`.
 
+### 5.2. Cambio de Contraseña por el Propio Usuario (Autoservicio)
+- **Ruta**: `POST /admin/post_cambiar_password`
+- **Payload**:
+  - `password_actual`: Contraseña vigente del usuario.
+  - `password_nuevo`: Nueva clave (mínimo 8 caracteres).
+  - `password_confirmar`: Confirmación idéntica.
+  - `csrf`: Token de validación CSRF.
+- **Validaciones**:
+  1. Comprobación de sesión activa y token CSRF.
+  2. Validación de `password_verify($password_actual . AUTH_SALT, $user['password'])`.
+  3. Rechazo de contraseñas idénticas a la actual.
+  4. Cifrado mediante `password_hash($password_nuevo . AUTH_SALT, PASSWORD_BCRYPT)`.
+  5. Registro automático en la tabla `auditoria`.
+
+### 5.3. Actualización de Correo de Perfil
+- **Ruta**: `POST /admin/post_actualizar_perfil`
+- **Payload**: `email` (string con formato válido) + `csrf`.
+- **Comprobación**: Valida unicidad en `bee_users` (`WHERE email = :email AND id != :id`) y sincroniza `$_SESSION['user_session']['email']`.
+
 ---
 
 ## 6. Referencias Cruzadas

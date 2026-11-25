@@ -101,12 +101,29 @@ Una vez autenticado, visualizarás:
 
 ---
 
-## 4. Gestión de tu Cuenta y Cierre de Sesión
+## 4. Gestión de tu Cuenta, Autoservicio de Contraseña y Cierre de Sesión
 
 Para actualizar tus datos o salir de la plataforma:
-1. Haz clic sobre tu nombre o avatar en la esquina superior derecha.
-2. Selecciona **"Mi Perfil"** para modificar tu correo institucional o cambiar tu contraseña de acceso.
-3. Al finalizar tu jornada laboral, selecciona **"Cerrar Sesión"** (`/logout`) para proteger la integridad de tus credenciales institucionales.
+1. Haz clic sobre tu nombre o avatar en la esquina superior derecha (`topbar`).
+2. En el menú desplegable dispones de accesos directos estructurados:
+   - **Mi Perfil**: Te lleva a tu cédula institucional y datos de contacto.
+   - **Seguridad y Contraseña**: Te posiciona directamente en el formulario de cambio de clave.
+   - **Bitácora de Auditoría** (para Administradores) o **Mis Registros** (para Capturistas): Consulta rápida de actividad.
+   - **Cerrar Sesión**: Abre el cuadro de diálogo de confirmación para terminar la sesión de trabajo.
+
+### 4.1. Actualización de Correo Institucional
+En la pestaña **"Datos de la Cuenta"** de tu perfil:
+1. Podrás verificar tu identificador de usuario, tu rol institucional y tu museo asignado (estos datos están protegidos contra alteraciones arbitrarias).
+2. Para cambiar tu dirección de contacto, edita el campo **"Correo Electrónico Institucional"**.
+3. Haz clic en **"Guardar Cambios"**. El sistema verificará que el correo no esté ocupado por otro funcionario y registrará la actualización en la auditoría.
+
+### 4.2. Cambio de Contraseña Seguro (Autoservicio)
+En la pestaña **"Seguridad y Contraseña"**:
+1. Introduce tu **Contraseña Actual** en el primer campo (puedes pulsar el ícono de ojo para verificar que no haya errores tipográficos).
+2. Escribe tu **Nueva Contraseña** (el indicador dinámico te señalará en verde cuando cumplas con el mínimo de **8 caracteres**).
+3. Reescribe la contraseña en **Confirmar Nueva Contraseña** (el asistente te indicará si coinciden con exactitud).
+4. Haz clic en el botón amarillo **"Actualizar Contraseña"**.
+5. Por seguridad, la contraseña se cifra con el algoritmo seguro `BCRYPT` y la sal secreta institucional, impidiendo que sea igual a la contraseña actual y registrando la firma temporal en la auditoría forense.
 
 ---
 

@@ -17,21 +17,28 @@
       </a>
       <!-- Dropdown - User Information -->
       <div class="dropdown-menu dropdown-menu-right shadow animated--grow-in" aria-labelledby="userDropdown">
-        <a class="dropdown-item" href="admin/perfil">
-          <i class="fas fa-user fa-sm fa-fw mr-2 text-gray-400"></i>
-          Perfil
+        <a class="dropdown-item" href="<?php echo URL; ?>admin/perfil">
+          <i class="fas fa-user fa-sm fa-fw mr-2 text-primary"></i>
+          Mi Perfil
         </a>
-        <a class="dropdown-item" href="">
-          <i class="fas fa-cogs fa-sm fa-fw mr-2 text-gray-400"></i>
-          Configuración
+        <a class="dropdown-item" href="<?php echo URL; ?>admin/perfil#seguridad">
+          <i class="fas fa-key fa-sm fa-fw mr-2 text-warning"></i>
+          Seguridad y Contraseña
         </a>
-        <a class="dropdown-item" href="">
-          <i class="fas fa-list fa-sm fa-fw mr-2 text-gray-400"></i>
-          Actividad
+        <?php if (is_admin_user()): ?>
+        <a class="dropdown-item" href="<?php echo URL; ?>admin/auditoria">
+          <i class="fas fa-history fa-sm fa-fw mr-2 text-info"></i>
+          Bitácora de Auditoría
         </a>
+        <?php else: ?>
+        <a class="dropdown-item" href="<?php echo URL; ?>admin/revision">
+          <i class="fas fa-clipboard-check fa-sm fa-fw mr-2 text-info"></i>
+          Mis Registros
+        </a>
+        <?php endif; ?>
         <div class="dropdown-divider"></div>
-        <a class="dropdown-item" href="" data-toggle="modal" data-target="#logoutModal">
-          <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-gray-400"></i>
+        <a class="dropdown-item text-danger" href="#" data-toggle="modal" data-target="#logoutModal">
+          <i class="fas fa-sign-out-alt fa-sm fa-fw mr-2 text-danger"></i>
           Cerrar sesión
         </a>
       </div>

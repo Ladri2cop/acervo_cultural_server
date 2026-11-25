@@ -15,6 +15,23 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 
 ---
 
+## [Versión 1.9.1] - 2026-11-25
+### 🔑 Módulo de Autoservicio de Perfil, Cambio de Contraseña y Saneamiento del Topbar
+- **Gestión Autónoma de Seguridad y Contraseña (`/admin/perfil`)**:
+  - Implementación del formulario interactivo de **Cambio de Contraseña** con validación en dos capas (JavaScript en cliente y PHP en backend).
+  - Verificación estricta de la contraseña actual del usuario mediante `password_verify()` combinado con la constante criptográfica `AUTH_SALT`.
+  - Requisito de longitud mínima de 8 caracteres, validación en tiempo real de coincidencia entre nueva contraseña y confirmación, y restricción que impide reutilizar la misma clave actual.
+  - Generación de nuevo hash con `PASSWORD_BCRYPT` y registro formal en la bitácora de auditoría forense (`registrar_auditoria`).
+  - Botones conmutadores de visibilidad (mostrar/ocultar mediante ícono de ojo) para los tres campos de contraseña.
+- **Actualización de Datos de Contacto de Perfil**:
+  - Endpoint `post_actualizar_perfil()` para modificación del correo institucional con validación de sintaxis RFC y verificación de no duplicidad en la tabla `bee_users`.
+  - Sincronización inmediata de la variable de sesión `$_SESSION['user_session']['email']`.
+- **Saneamiento y Optimización del Topbar (`topbar.php`)**:
+  - Eliminación de enlaces muertos de la plantilla SB Admin 2 (`href=""` en "Configuración" y "Actividad").
+  - Menú de usuario contextualizado: acceso directo a *Mi Perfil*, salto directo a *Seguridad y Contraseña* (`admin/perfil#seguridad`), acceso a *Bitácora de Auditoría* para administradores o *Mis Registros* para capturistas, y modal de cierre de sesión con rutas absolutas sanitizadas.
+
+---
+
 ## [Versión 1.9.0] - 2026-11-25
 ### 🛡️ Identidad Institucional SIPAC, Herencia Territorial RBAC, Dictamen de Piezas y Transaccionalidad
 - **Identidad Oficial SIPAC y Presencia Institucional**:
