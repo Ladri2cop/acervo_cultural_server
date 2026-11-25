@@ -90,7 +90,8 @@ class Db
   {
     $id          = null;
     $last_id     = false;
-    $transaction = isset($options['transaction']) ? ($options['transaction'] === true ? true : false) : true;
+    $isSelect    = stripos(ltrim($sql), 'SELECT') === 0;
+    $transaction = isset($options['transaction']) ? ($options['transaction'] === true ? true : false) : ($isSelect ? false : true);
     $debug       = isset($options['debug']) ? ($options['debug'] === true ? true : false) : false;
     $start       = isset($options['start']) ? ($options['start'] === true ? true : false) : false;
     $commit      = isset($options['commit']) ? ($options['commit'] === true ? true : false) : false;
@@ -98,10 +99,12 @@ class Db
 
     // Inicia conexión PDO
     $link  = self::connect();
+    $weStartedTransaction = false;
     
-    // Inicio de la transacción en caso de existir y estar abierta
-    if (($transaction === true || $start === true) && !$link->inTransaction()) {
+    // Inicio de la transacción en caso de existir solicitud y no estar previamente abierta
+    if (!$isSelect && ($transaction === true || $start === true) && !$link->inTransaction()) {
       $link->beginTransaction();
+      $weStartedTransaction = true;
     }
 
     try {
@@ -116,7 +119,7 @@ class Db
       // Manejando el tipo de query
       // SELECT | INSERT
       // SELECT * FROM usuarios;
-      if(strpos($sql, 'SELECT') !== false) {
+      if($isSelect || strpos($sql, 'SELECT') !== false) {
         
         return $query->rowCount() > 0 ? $query->fetchAll() : false; // no hay resultados
   
@@ -128,7 +131,7 @@ class Db
       }
 
       // UPDATE | DELETE | ALTER TABLE | DROP TABLE | TRUNCATE | etc
-      if (($transaction === true || $commit === true) && $link->inTransaction()) {
+      if (($weStartedTransaction || $commit === true) && $link->inTransaction()) {
         $link->commit();
       }
 
@@ -140,7 +143,7 @@ class Db
       }
 
       // Manejando errores en el query o la petición
-      if (($transaction === true || $rollback === true) && $link->inTransaction()) {
+      if (($weStartedTransaction || $rollback === true) && $link->inTransaction()) {
         $link->rollBack();
       }
 

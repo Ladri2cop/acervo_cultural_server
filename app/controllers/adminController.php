@@ -62,28 +62,53 @@ class adminController extends Controller implements ControllerInterface
   }
 
   /**
-   * Valida si el usuario en sesión tiene autorización geográfica/museística sobre la pieza (Control IDOR)
+   * Valida si el usuario en sesión tiene autorización geográfica/museística sobre la pieza (Control IDOR y Tenancy)
    * Super Administrador (id_role = 1): acceso a todos los recintos.
-   * Administrador / Capturista: solo sobre su museo asignado (o piezas creadas por él).
+   * Administrador: tiene control sobre su museo asignado, piezas creadas por él y piezas de usuarios creados por él / de su museo.
+   * Capturista: solo sobre su museo asignado o piezas creadas por él.
    */
   private function check_museo_tenancy(array $piezaRow): bool
   {
     $idRole = (int)get_user('id_role');
-    if ($idRole === 1) {
-      return true; // Super Admin tiene acceso global
+    if ($idRole === 1 || is_super_admin()) {
+      return true; // Super Admin tiene acceso global irrestricto
     }
 
     $currentUserId = (int)get_user('id');
-    if ($currentUserId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === $currentUserId) {
+    $idCreador = isset($piezaRow['id_usuario_creador']) ? (int)$piezaRow['id_usuario_creador'] : 0;
+
+    // 1. Creada directamente por el usuario actual
+    if ($currentUserId && $idCreador === $currentUserId) {
       return true;
     }
 
+    $db = Db::connect();
+
+    // 2. Si el usuario actual es Administrador o tiene usuarios a su cargo:
+    // Puede validar/editar piezas registradas o modificadas por usuarios que él mismo creó o de su mismo museo
+    if ($currentUserId && $idCreador > 0) {
+      $stmtDep = $db->prepare("SELECT created_by, id_museo FROM bee_users WHERE id = :id_creador LIMIT 1");
+      $stmtDep->execute(['id_creador' => $idCreador]);
+      $depUser = $stmtDep->fetch(PDO::FETCH_ASSOC);
+      if ($depUser) {
+        // Creado por este administrador
+        if ((int)($depUser['created_by'] ?? 0) === $currentUserId) {
+          return true;
+        }
+        // Del mismo museo
+        $idMuseo = (int)get_user('id_museo');
+        if ($idMuseo > 0 && !empty($depUser['id_museo']) && (int)$depUser['id_museo'] === $idMuseo) {
+          return true;
+        }
+      }
+    }
+
+    // 3. Perteneciente al museo asignado mediante coincidencia geográfica
     $idMuseo = (int)get_user('id_museo');
     if ($idMuseo <= 0) {
       return false;
     }
 
-    $db = Db::connect();
     $stmtM = $db->prepare("SELECT nombre_museo FROM museos WHERE id_museo = :id LIMIT 1");
     $stmtM->execute(['id' => $idMuseo]);
     $nombreMuseo = $stmtM->fetchColumn();
@@ -473,6 +498,13 @@ class adminController extends Controller implements ControllerInterface
         throw new Exception('No tienes permisos para asignar el rol de Super Administrador.');
       }
 
+      // Herencia de museo: Si el usuario creador tiene un museo asignado (ej. Administrador de museo),
+      // los usuarios creados por él deben pertenecer obligatoriamente a su mismo museo.
+      $creatorMuseumId = get_user_museum_id();
+      if (!empty($creatorMuseumId) && $currentRole != 1) {
+        $id_museo = (int)$creatorMuseumId;
+      }
+
       if ($id_role === 2 && empty($id_museo)) {
         throw new Exception('Todo usuario con rol de Administrador debe estar asignado obligatoriamente a un museo.');
       }
@@ -561,8 +593,16 @@ class adminController extends Controller implements ControllerInterface
       $id_role      = (int)$_POST['id_role'];
       $id_museo     = !empty($_POST['id_museo']) ? (int)$_POST['id_museo'] : null;
       $password     = isset($_POST['password']) ? trim($_POST['password']) : '';
+      $currentRole  = get_user('id_role');
       $errorMessage = '';
       $errors       = 0;
+
+      // Herencia de museo: Si quien edita es un administrador de museo (no Super Admin),
+      // los usuarios asignados a su ámbito conservan o heredan su museo
+      $creatorMuseumId = get_user_museum_id();
+      if (!empty($creatorMuseumId) && $currentRole != 1) {
+        $id_museo = (int)$creatorMuseumId;
+      }
 
       if ($id_role === 2 && empty($id_museo)) {
         throw new Exception('Todo usuario con rol de Administrador debe estar asignado obligatoriamente a un museo.');
@@ -3025,15 +3065,26 @@ class adminController extends Controller implements ControllerInterface
     $offset = ($page - 1) * $perPage;
 
     $db = Db::connect();
+    $isSuperAdmin = is_super_admin();
+    $currentUserId = (int)get_user('id');
+    $idMuseo = (int)get_user('id_museo');
+    $nombreMuseo = get_user_museum_name() ?: '';
 
-    // KPIs globales (o filtrados por tipo si no es 'todos')
-    $kpiGeneralSql = ($tipo === 'arqueologico' || $tipo === 'numismatica') ? '' : "SELECT estatus_revision FROM acervo_general";
-    $kpiArqSql = ($tipo === 'general' || $tipo === 'numismatica') ? '' : "SELECT estatus_revision FROM acervo_arqueologico";
-    $kpiNumSql = ($tipo === 'general' || $tipo === 'arqueologico') ? '' : "SELECT estatus_revision FROM acervo_numismatica";
+    // Condición de tenencia / ámbito para Administradores de museo
+    $tenancyWhere = '';
+    $tenancyParams = [];
+    if (!$isSuperAdmin) {
+      $tenancyWhere = "(t.id_usuario_creador = :uid1 OR uc.created_by = :uid2" 
+        . ($idMuseo > 0 ? " OR (uc.id_museo IS NOT NULL AND uc.id_museo = :umuseo)" : "") 
+        . (!empty($nombreMuseo) ? " OR (t.ubicacion_fisica IS NOT NULL AND t.ubicacion_fisica != '' AND t.ubicacion_fisica LIKE :umuseoname)" : "") 
+        . ")";
+      $tenancyParams['uid1'] = $currentUserId;
+      $tenancyParams['uid2'] = $currentUserId;
+      if ($idMuseo > 0) $tenancyParams['umuseo'] = $idMuseo;
+      if (!empty($nombreMuseo)) $tenancyParams['umuseoname'] = '%' . $nombreMuseo . '%';
+    }
 
-    $kpiSubqueries = array_filter([$kpiGeneralSql, $kpiArqSql, $kpiNumSql]);
-    $kpiUnion = implode(' UNION ALL ', $kpiSubqueries);
-
+    // Cálculo optimizado de KPIs
     $kpis = [
       'pendientes' => 0,
       'cambios' => 0,
@@ -3042,51 +3093,96 @@ class adminController extends Controller implements ControllerInterface
       'total' => 0
     ];
 
-    if (!empty($kpiUnion)) {
-      $stmtKpi = $db->query("
-        SELECT 
-          SUM(CASE WHEN estatus_revision = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
-          SUM(CASE WHEN estatus_revision = 'cambios_solicitados' THEN 1 ELSE 0 END) AS cambios,
-          SUM(CASE WHEN estatus_revision = 'rechazado' THEN 1 ELSE 0 END) AS rechazados,
-          SUM(CASE WHEN estatus_revision = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
-          COUNT(*) AS total
-        FROM ({$kpiUnion}) AS t_kpi
-      ");
-      $kpiRow = $stmtKpi ? $stmtKpi->fetch(PDO::FETCH_ASSOC) : null;
-      if ($kpiRow) {
-        $kpis = [
-          'pendientes' => (int)($kpiRow['pendientes'] ?? 0),
-          'cambios' => (int)($kpiRow['cambios'] ?? 0),
-          'rechazados' => (int)($kpiRow['rechazados'] ?? 0),
-          'aprobados' => (int)($kpiRow['aprobados'] ?? 0),
-          'total' => (int)($kpiRow['total'] ?? 0)
-        ];
-      }
-    }
-
-    // Armar subconsultas para listado
-    $listSubqueries = [];
-    if ($tipo === 'todos' || $tipo === 'general') {
-      $listSubqueries[] = "SELECT 'general' AS tipo, id_acervo_general AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_general";
-    }
-    if ($tipo === 'todos' || $tipo === 'arqueologico') {
-      $listSubqueries[] = "SELECT 'arqueologico' AS tipo, id_acervo_arq AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_arqueologico";
-    }
-    if ($tipo === 'todos' || $tipo === 'numismatica') {
-      $listSubqueries[] = "SELECT 'numismatica' AS tipo, id_acervo_numismatica AS id, codigo_interno, denominacion AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_numismatica";
-    }
-
-    $subQuery = implode(' UNION ALL ', $listSubqueries);
-
-    $whereParts = [];
-    $params = [];
-
     try {
+      if ($isSuperAdmin) {
+        $tablasKpi = [];
+        if ($tipo === 'todos' || $tipo === 'general') $tablasKpi[] = 'acervo_general';
+        if ($tipo === 'todos' || $tipo === 'arqueologico') $tablasKpi[] = 'acervo_arqueologico';
+        if ($tipo === 'todos' || $tipo === 'numismatica') $tablasKpi[] = 'acervo_numismatica';
+
+        foreach ($tablasKpi as $tbl) {
+          $stmtK = $db->query("SELECT estatus_revision, COUNT(*) as c FROM {$tbl} WHERE estatus_revision != 'aprobado' GROUP BY estatus_revision");
+          while ($r = $stmtK->fetch(PDO::FETCH_ASSOC)) {
+            if ($r['estatus_revision'] === 'pendiente') $kpis['pendientes'] += (int)$r['c'];
+            if ($r['estatus_revision'] === 'cambios_solicitados') $kpis['cambios'] += (int)$r['c'];
+            if ($r['estatus_revision'] === 'rechazado') $kpis['rechazados'] += (int)$r['c'];
+          }
+          $stmtA = $db->query("SELECT COUNT(*) FROM {$tbl} WHERE estatus_revision = 'aprobado'");
+          $kpis['aprobados'] += (int)$stmtA->fetchColumn();
+        }
+        $kpis['total'] = $kpis['pendientes'] + $kpis['cambios'] + $kpis['rechazados'] + $kpis['aprobados'];
+      } else {
+        $kpiSub = [];
+        if ($tipo === 'todos' || $tipo === 'general') {
+          $kpiSub[] = "SELECT estatus_revision, id_usuario_creador, ubicacion_fisica FROM acervo_general";
+        }
+        if ($tipo === 'todos' || $tipo === 'arqueologico') {
+          $kpiSub[] = "SELECT estatus_revision, id_usuario_creador, ubicacion_fisica FROM acervo_arqueologico";
+        }
+        if ($tipo === 'todos' || $tipo === 'numismatica') {
+          $kpiSub[] = "SELECT estatus_revision, id_usuario_creador, ubicacion_fisica FROM acervo_numismatica";
+        }
+        $kpiSubUnion = implode(' UNION ALL ', $kpiSub);
+        $kpiSql = "
+          SELECT 
+            SUM(CASE WHEN t.estatus_revision = 'pendiente' THEN 1 ELSE 0 END) AS pendientes,
+            SUM(CASE WHEN t.estatus_revision = 'cambios_solicitados' THEN 1 ELSE 0 END) AS cambios,
+            SUM(CASE WHEN t.estatus_revision = 'rechazado' THEN 1 ELSE 0 END) AS rechazados,
+            SUM(CASE WHEN t.estatus_revision = 'aprobado' THEN 1 ELSE 0 END) AS aprobados,
+            COUNT(*) AS total
+          FROM ({$kpiSubUnion}) AS t
+          LEFT JOIN bee_users uc ON t.id_usuario_creador = uc.id
+          WHERE {$tenancyWhere}
+        ";
+        $stmtKpi = $db->prepare($kpiSql);
+        foreach ($tenancyParams as $k => $v) {
+          $stmtKpi->bindValue(':' . $k, $v);
+        }
+        $stmtKpi->execute();
+        $kpiRow = $stmtKpi->fetch(PDO::FETCH_ASSOC);
+        if ($kpiRow) {
+          $kpis = [
+            'pendientes' => (int)($kpiRow['pendientes'] ?? 0),
+            'cambios' => (int)($kpiRow['cambios'] ?? 0),
+            'rechazados' => (int)($kpiRow['rechazados'] ?? 0),
+            'aprobados' => (int)($kpiRow['aprobados'] ?? 0),
+            'total' => (int)($kpiRow['total'] ?? 0)
+          ];
+        }
+      }
+
+      // Armar subconsultas para listado con WHERE pushdown para velocidad extrema
+      $subWhereSql = '';
+      if ($semaforo !== 'todos' && in_array($semaforo, ['pendiente', 'cambios_solicitados', 'rechazado', 'aprobado'])) {
+        $subWhereSql = " WHERE estatus_revision = " . $db->quote($semaforo);
+      } elseif ($search === '') {
+        // En vista "todos" sin búsqueda, priorizar piezas en flujo de revisión (no aprobado)
+        $subWhereSql = " WHERE estatus_revision != 'aprobado'";
+      }
+
+      $listSubqueries = [];
+      if ($tipo === 'todos' || $tipo === 'general') {
+        $listSubqueries[] = "SELECT 'general' AS tipo, id_acervo_general AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_general" . $subWhereSql;
+      }
+      if ($tipo === 'todos' || $tipo === 'arqueologico') {
+        $listSubqueries[] = "SELECT 'arqueologico' AS tipo, id_acervo_arq AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_arqueologico" . $subWhereSql;
+      }
+      if ($tipo === 'todos' || $tipo === 'numismatica') {
+        $listSubqueries[] = "SELECT 'numismatica' AS tipo, id_acervo_numismatica AS id, codigo_interno, denominacion AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor, ubicacion_fisica FROM acervo_numismatica" . $subWhereSql;
+      }
+
+      $subQuery = implode(' UNION ALL ', $listSubqueries);
+
+      $whereParts = [];
+      $params = [];
+
+      // Filtro de semáforo a nivel exterior si fue 'todos'
       if ($semaforo !== 'todos' && in_array($semaforo, ['pendiente', 'cambios_solicitados', 'rechazado', 'aprobado'])) {
         $whereParts[] = "t.estatus_revision = :semaforo";
         $params['semaforo'] = $semaforo;
       }
 
+      // Filtro de búsqueda
       if ($search !== '') {
         $whereParts[] = "(t.codigo_interno LIKE :s1 OR t.titulo LIKE :s2 OR uc.username LIKE :s3 OR t.observacion_revision LIKE :s4)";
         $term = '%' . $search . '%';
@@ -3096,11 +3192,20 @@ class adminController extends Controller implements ControllerInterface
         $params['s4'] = $term;
       }
 
+      // Filtro de tenencia para administrador
+      if (!$isSuperAdmin) {
+        $whereParts[] = $tenancyWhere;
+        $params = array_merge($params, $tenancyParams);
+      }
+
       $whereSql = !empty($whereParts) ? 'WHERE ' . implode(' AND ', $whereParts) : '';
 
       $countSql = "SELECT COUNT(*) FROM ({$subQuery}) AS t LEFT JOIN bee_users uc ON t.id_usuario_creador = uc.id {$whereSql}";
       $stmtCount = $db->prepare($countSql);
-      $stmtCount->execute($params);
+      foreach ($params as $k => $v) {
+        $stmtCount->bindValue(':' . $k, $v);
+      }
+      $stmtCount->execute();
       $totalRecords = (int)$stmtCount->fetchColumn();
 
       $sql = "
@@ -3178,6 +3283,11 @@ class adminController extends Controller implements ControllerInterface
     $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($row) {
+      if (!$this->check_museo_tenancy($row)) {
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 403, 'msg' => 'Acceso denegado: no cuenta con permisos para ver este registro o recinto.']);
+        exit;
+      }
       $row['fotografia_url'] = !empty($row['fotografia']) ? 'assets/uploads/' . $row['fotografia'] : '';
       $row['tipo_acervo_label'] = $info['nombre'];
       $row['tipo_acervo'] = $tipo;
@@ -3210,16 +3320,29 @@ class adminController extends Controller implements ControllerInterface
     $db = Db::connect();
 
     try {
-      $db->beginTransaction();
+      if (!$db->inTransaction()) {
+        $db->beginTransaction();
+      }
 
       $stmtAntes = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
       $stmtAntes->execute(['id' => $id]);
       $datosAntes = $stmtAntes->fetch(PDO::FETCH_ASSOC);
 
       if (!$datosAntes) {
-        $db->rollBack();
+        if ($db->inTransaction()) {
+          $db->rollBack();
+        }
         header('Content-Type: application/json');
         echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+        exit;
+      }
+
+      if (!$this->check_museo_tenancy($datosAntes)) {
+        if ($db->inTransaction()) {
+          $db->rollBack();
+        }
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 403, 'msg' => 'Acceso denegado: no cuenta con permisos para dictaminar piezas fuera de su recinto asignado o de usuarios no dependientes.']);
         exit;
       }
 
@@ -3266,7 +3389,9 @@ class adminController extends Controller implements ControllerInterface
         $datosDespues
       );
 
-      $db->commit();
+      if ($db->inTransaction()) {
+        $db->commit();
+      }
 
       header('Content-Type: application/json');
       echo json_encode([
@@ -3316,6 +3441,12 @@ class adminController extends Controller implements ControllerInterface
     if (!$datosAntes) {
       header('Content-Type: application/json');
       echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+
+    if (!$this->check_museo_tenancy($datosAntes)) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado: no cuenta con permisos para solicitar cambios en piezas fuera de su recinto asignado o de usuarios no dependientes.']);
       exit;
     }
 
@@ -3393,6 +3524,12 @@ class adminController extends Controller implements ControllerInterface
     if (!$datosAntes) {
       header('Content-Type: application/json');
       echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+
+    if (!$this->check_museo_tenancy($datosAntes)) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado: no cuenta con permisos para rechazar piezas fuera de su recinto asignado o de usuarios no dependientes.']);
       exit;
     }
 
@@ -3515,15 +3652,21 @@ class adminController extends Controller implements ControllerInterface
     try {
       $db = Db::connect();
 
+      $userFilter = "id_usuario_creador = " . $userId;
+      if (is_admin_user() && !is_super_admin()) {
+        $idMuseo = (int)get_user_museum_id();
+        $userFilter = "(id_usuario_creador = " . $userId . " OR id_usuario_creador IN (SELECT id FROM bee_users WHERE created_by = " . $userId . ($idMuseo > 0 ? " OR (id_museo = " . $idMuseo . " AND id_museo IS NOT NULL)" : "") . "))";
+      }
+
       $subqueries = [];
       if ($tipo === 'todos' || $tipo === 'general') {
-        $subqueries[] = "SELECT 'general' AS tipo, id_acervo_general AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor FROM acervo_general WHERE id_usuario_creador = " . $userId;
+        $subqueries[] = "SELECT 'general' AS tipo, id_acervo_general AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor FROM acervo_general WHERE " . $userFilter;
       }
       if ($tipo === 'todos' || $tipo === 'arqueologico') {
-        $subqueries[] = "SELECT 'arqueologico' AS tipo, id_acervo_arq AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor FROM acervo_arqueologico WHERE id_usuario_creador = " . $userId;
+        $subqueries[] = "SELECT 'arqueologico' AS tipo, id_acervo_arq AS id, codigo_interno, nombre_titulo_pieza AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor FROM acervo_arqueologico WHERE " . $userFilter;
       }
       if ($tipo === 'todos' || $tipo === 'numismatica') {
-        $subqueries[] = "SELECT 'numismatica' AS tipo, id_acervo_numismatica AS id, codigo_interno, denominacion AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor FROM acervo_numismatica WHERE id_usuario_creador = " . $userId;
+        $subqueries[] = "SELECT 'numismatica' AS tipo, id_acervo_numismatica AS id, codigo_interno, denominacion AS titulo, fotografia, estatus_revision, observacion_revision, fecha_revision, created_at, updated_at, id_usuario_creador, id_usuario_revisor FROM acervo_numismatica WHERE " . $userFilter;
       }
 
       $unionSql = implode(' UNION ALL ', $subqueries);
@@ -3577,8 +3720,9 @@ class adminController extends Controller implements ControllerInterface
       $whereSql = !empty($whereParts) ? 'WHERE ' . implode(' AND ', $whereParts) : '';
 
       $sql = "
-        SELECT t.*, ur.username AS revisor_username
+        SELECT t.*, uc.username AS creador_username, ur.username AS revisor_username
         FROM ({$unionSql}) AS t
+        LEFT JOIN bee_users uc ON t.id_usuario_creador = uc.id
         LEFT JOIN bee_users ur ON t.id_usuario_revisor = ur.id
         {$whereSql}
         ORDER BY 
@@ -4009,7 +4153,9 @@ class adminController extends Controller implements ControllerInterface
       );
       registrar_auditoria('INSERT', 'prestamos_transferencias', $idMovimiento, $descAudit);
 
-      $db->commit();
+      if ($db->inTransaction()) {
+        $db->commit();
+      }
 
       header('Content-Type: application/json');
       echo json_encode([
@@ -4113,7 +4259,9 @@ class adminController extends Controller implements ControllerInterface
       );
       registrar_auditoria('UPDATE', 'prestamos_transferencias', $idMovimiento, $descAudit);
 
-      $db->commit();
+      if ($db->inTransaction()) {
+        $db->commit();
+      }
 
       header('Content-Type: application/json');
       echo json_encode([
@@ -4302,7 +4450,9 @@ class adminController extends Controller implements ControllerInterface
       );
       registrar_auditoria('UPDATE', 'prestamos_transferencias', $idMovimiento, $descAudit);
 
-      $db->commit();
+      if ($db->inTransaction()) {
+        $db->commit();
+      }
 
       header('Content-Type: application/json');
       echo json_encode([

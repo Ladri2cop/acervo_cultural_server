@@ -42,22 +42,33 @@
             </select>
           </div>
 
-          <div class="mb-3" id="wrapper_id_museo" style="display: none;">
-            <label for="id_museo" class="form-label">Museo asignado <span class="text-danger">*</span></label>
-            <select class="form-control" id="id_museo" name="id_museo">
-              <option value="">-- Selecciona un museo --</option>
-              <?php if (!empty($d->museos)): ?>
-                <?php foreach ($d->museos as $mus): ?>
-                  <?php 
-                    $mId = is_object($mus) ? $mus->id_museo : $mus['id_museo'];
-                    $mNombre = is_object($mus) ? $mus->nombre_museo : $mus['nombre_museo'];
-                  ?>
-                  <option value="<?php echo $mId; ?>"><?php echo htmlspecialchars($mNombre); ?></option>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </select>
-            <small class="text-muted" style="font-size: 0.75rem;">Obligatorio para el rol de Administrador.</small>
-          </div>
+          <?php if (!is_super_admin() && get_user_museum_id()): ?>
+            <div class="mb-3">
+              <label class="form-label font-weight-bold">Museo asignado</label>
+              <div class="p-2 bg-light rounded border text-muted small">
+                <i class="fas fa-landmark text-primary me-1"></i> <?php echo htmlspecialchars(get_user_museum_name() ?: 'Museo Adscrito'); ?>
+              </div>
+              <input type="hidden" name="id_museo" value="<?php echo get_user_museum_id(); ?>">
+              <small class="text-muted" style="font-size: 0.75rem;">Los usuarios que cree pertenecerán a su mismo recinto.</small>
+            </div>
+          <?php else: ?>
+            <div class="mb-3" id="wrapper_id_museo" style="display: none;">
+              <label for="id_museo" class="form-label">Museo asignado <span class="text-danger">*</span></label>
+              <select class="form-control" id="id_museo" name="id_museo">
+                <option value="">-- Selecciona un museo --</option>
+                <?php if (!empty($d->museos)): ?>
+                  <?php foreach ($d->museos as $mus): ?>
+                    <?php 
+                      $mId = is_object($mus) ? $mus->id_museo : $mus['id_museo'];
+                      $mNombre = is_object($mus) ? $mus->nombre_museo : $mus['nombre_museo'];
+                    ?>
+                    <option value="<?php echo $mId; ?>"><?php echo htmlspecialchars($mNombre); ?></option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+              <small class="text-muted" style="font-size: 0.75rem;">Obligatorio para el rol de Administrador.</small>
+            </div>
+          <?php endif; ?>
 
           <button class="btn btn-success btn-lg btn-block" type="submit">Agregar ahora</button>
         </form>
@@ -87,7 +98,17 @@
               <?php if (!empty($d->users->rows)): ?>
                 <?php foreach ($d->users->rows as $user) : ?>
                   <tr>
-                    <td><?php echo $user->id == get_user('id') ? $user->username . ' (Tú)' : $user->username; ?></td>
+                    <td>
+                      <div class="d-flex align-items-center">
+                        <img src="<?php echo get_user_avatar(); ?>" alt="Avatar" class="rounded-circle border shadow-sm me-2" style="width: 32px; height: 32px; object-fit: cover;">
+                        <div>
+                          <span class="font-weight-bold text-gray-800"><?php echo htmlspecialchars($user->username); ?></span>
+                          <?php if ($user->id == get_user('id')): ?>
+                            <span class="badge bg-light text-primary border ms-1 small">Tú</span>
+                          <?php endif; ?>
+                        </div>
+                      </div>
+                    </td>
                     <td class="text-center"><?php echo $user->email; ?></td>
                     <td class="text-center"><span class="badge bg-primary text-white"><?php echo !empty($user->role_name) ? $user->role_name : 'Sin rol'; ?></span></td>
                     <td class="text-center">
@@ -184,22 +205,32 @@
             </select>
           </div>
 
-          <div class="mb-3" id="wrapper_edit_id_museo" style="display: none;">
-            <label for="edit_id_museo" class="form-label font-weight-bold">Museo asignado <span class="text-danger">*</span></label>
-            <select class="form-control" id="edit_id_museo" name="id_museo">
-              <option value="">-- Selecciona un museo --</option>
-              <?php if (!empty($d->museos)): ?>
-                <?php foreach ($d->museos as $mus): ?>
-                  <?php 
-                    $mId = is_object($mus) ? $mus->id_museo : $mus['id_museo'];
-                    $mNombre = is_object($mus) ? $mus->nombre_museo : $mus['nombre_museo'];
-                  ?>
-                  <option value="<?php echo $mId; ?>"><?php echo htmlspecialchars($mNombre); ?></option>
-                <?php endforeach; ?>
-              <?php endif; ?>
-            </select>
-            <small class="text-muted" style="font-size: 0.75rem;">Obligatorio para el rol de Administrador.</small>
-          </div>
+          <?php if (!is_super_admin() && get_user_museum_id()): ?>
+            <div class="mb-3">
+              <label class="form-label font-weight-bold">Museo asignado</label>
+              <div class="p-2 bg-light rounded border text-muted small">
+                <i class="fas fa-landmark text-primary me-1"></i> <?php echo htmlspecialchars(get_user_museum_name() ?: 'Museo Adscrito'); ?>
+              </div>
+              <input type="hidden" id="edit_id_museo" name="id_museo" value="<?php echo get_user_museum_id(); ?>">
+            </div>
+          <?php else: ?>
+            <div class="mb-3" id="wrapper_edit_id_museo" style="display: none;">
+              <label for="edit_id_museo" class="form-label font-weight-bold">Museo asignado <span class="text-danger">*</span></label>
+              <select class="form-control" id="edit_id_museo" name="id_museo">
+                <option value="">-- Selecciona un museo --</option>
+                <?php if (!empty($d->museos)): ?>
+                  <?php foreach ($d->museos as $mus): ?>
+                    <?php 
+                      $mId = is_object($mus) ? $mus->id_museo : $mus['id_museo'];
+                      $mNombre = is_object($mus) ? $mus->nombre_museo : $mus['nombre_museo'];
+                    ?>
+                    <option value="<?php echo $mId; ?>"><?php echo htmlspecialchars($mNombre); ?></option>
+                  <?php endforeach; ?>
+                <?php endif; ?>
+              </select>
+              <small class="text-muted" style="font-size: 0.75rem;">Obligatorio para el rol de Administrador.</small>
+            </div>
+          <?php endif; ?>
 
           <div class="mb-3">
             <label for="edit_password" class="form-label font-weight-bold">Nueva contraseña <small class="text-muted">(Opcional, dejar en blanco para conservar la actual)</small></label>

@@ -211,6 +211,17 @@ function is_super_admin(): bool
 }
 
 /**
+ * Retorna la URL del avatar institucional oficial para usuarios del sistema
+ *
+ * @param string|null $username
+ * @return string
+ */
+function get_user_avatar(?string $username = null): string
+{
+  return get_image('avatar_institucional.png');
+}
+
+/**
  * Obtiene el ID del museo asignado al usuario en sesión
  *
  * @return int|null

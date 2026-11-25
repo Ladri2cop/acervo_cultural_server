@@ -1212,43 +1212,17 @@ function get_logo()
 function get_favicon()
 {
 	$path        = FAVICON; // path del archivo favicon
-	$favicon     = SITE_FAVICON; // nombre del archivo favicon
-	$type        = '';
-	$href        = '';
-	$placeholder = '<link rel="icon" type="%s" href="%s">';
+	$favicon     = defined('SITE_FAVICON') ? SITE_FAVICON : 'favicon.ico';
+	$version     = '?v=2.1';
 
-	switch (pathinfo($path . $favicon, PATHINFO_EXTENSION)) {
-		case 'ico':
-			$type = 'image/vnd.microsoft.icon';
-			$href = $path . $favicon;
-			break;
+	$html = '';
+	$html .= '<link rel="icon" type="image/x-icon" href="' . $path . $favicon . $version . '">' . "\n";
+	$html .= '  <link rel="shortcut icon" href="' . $path . $favicon . $version . '">' . "\n";
+	$html .= '  <link rel="icon" type="image/png" sizes="32x32" href="' . $path . 'favicon-32x32.png' . $version . '">' . "\n";
+	$html .= '  <link rel="icon" type="image/png" sizes="16x16" href="' . $path . 'favicon-16x16.png' . $version . '">' . "\n";
+	$html .= '  <link rel="apple-touch-icon" sizes="180x180" href="' . $path . 'apple-touch-icon.png' . $version . '">';
 
-		case 'png':
-			$type = 'image/png';
-			$href = $path . $favicon;
-			break;
-
-		case 'gif':
-			$type = 'image/gif';
-			$href = $path . $favicon;
-			break;
-
-		case 'svg':
-			$type = 'image/svg+xml';
-			$href = $path . $favicon;
-			break;
-
-		case 'jpg':
-		case 'jpeg':
-			$type = 'image/jpg';
-			$href = $path . $favicon;
-			break;
-
-		default:
-			return false;
-	}
-
-	return sprintf($placeholder, $type, $href);
+	return $html;
 }
 
 /**

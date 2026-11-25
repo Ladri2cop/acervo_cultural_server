@@ -86,11 +86,11 @@ define('USE_TWIG', false); // define si será usado Twig por defecto para render
 
 // Datos de la empresa / negocio / sistema
 define('SITE_CHARSET', 'UTF-8');
-define('SITE_NAME', 'EmpresaCool');    // Nombre del sitio
+define('SITE_NAME', 'SIPAC');          // Nombre del sitio
 define('SITE_VERSION', '1.0.0');          // Versión del sitio
 define('SITE_LOGO', 'logo.png');       // Nombre del archivo del logotipo base
-define('SITE_FAVICON', 'piramide.ico');    // Nombre del archivo del favicon base
-define('SITE_DESC', 'Un framework hecho con pasión y amor, flexible, sencillo y fácil de implementar desarrollado por la Academia de Joystick.'); // Descripción meta del sitio
+define('SITE_FAVICON', 'favicon.ico');    // Nombre del archivo del favicon base (Institucional)
+define('SITE_DESC', 'Sistema de Información del Patrimonio Cultural (SIPAC)'); // Descripción meta del sitio
 
 // Sesiones de usuario persistentes
 define('BEE_USERS_TABLE', 'bee_users');         // Nombre de la tabla para autenticación de usuarios
