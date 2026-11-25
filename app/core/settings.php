@@ -16,6 +16,11 @@
 // Definir el uso horario o timezone del sistema
 date_default_timezone_set('America/Mexico_City');
 
+// Configuración de errores para servidor de producción (blindaje contra fuga de rutas internas)
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED & ~E_NOTICE);
+
 /**
  * Keys para consumo de la API de esta instancia de bee framework
  * puedes regenerarlas en bee/generate
@@ -47,7 +52,7 @@ define('API_AUTH', true);
 define('SITE_LANG', 'es');
 
 // Prepros 2023
-define('PREPROS', true);              // Activar en caso de trabajar el desarrollo en prepros como servidor local
+define('PREPROS', false);              // Desactivado para entorno de producción / servidor web
 define('PORT', '8848');            // Puerto por defecto de Prepros 2020 >
 
 /**

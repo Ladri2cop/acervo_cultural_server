@@ -85,4 +85,80 @@ class AcervoNumismaticaModel extends Model
         $rows = parent::query($sql);
         return $rows && isset($rows[0]['total']) ? (int)$rows[0]['total'] : 0;
     }
+
+    /**
+     * Obtiene piezas filtradas y paginadas directamente desde la base de datos (Optimización SQL)
+     *
+     * @param array $filtros
+     * @param int $limit
+     * @param int $offset
+     * @return array ['piezas' => array, 'total' => int]
+     */
+    public static function getPiezasFiltradas(array $filtros = [], int $limit = 10, int $offset = 0): array
+    {
+        $db = Db::connect();
+        $whereParts = ["status = 1", "estatus_revision = 'aprobado'"];
+        $params = [];
+
+        // 1. Búsqueda por término
+        if (!empty($filtros['search'])) {
+            $whereParts[] = "(codigo_interno LIKE :s1 OR denominacion LIKE :s2 OR ensayador LIKE :s3 OR material LIKE :s4 OR descripcion_cara_a LIKE :s5 OR descripcion_cara_b LIKE :s6 OR observaciones LIKE :s7)";
+            $term = '%' . trim($filtros['search']) . '%';
+            $params['s1'] = $term;
+            $params['s2'] = $term;
+            $params['s3'] = $term;
+            $params['s4'] = $term;
+            $params['s5'] = $term;
+            $params['s6'] = $term;
+            $params['s7'] = $term;
+        }
+
+        // 2. Filtro por ubicación física
+        if (!empty($filtros['ubicacion'])) {
+            $mapUbi = [
+                '1' => 'Acambay',
+                '2' => 'Tenancingo',
+                '3' => 'Toluca',
+                '4' => 'Zinacantepec'
+            ];
+            $ubiText = $mapUbi[$filtros['ubicacion']] ?? $filtros['ubicacion'];
+            $whereParts[] = "(ubicacion_fisica LIKE :ubi OR denominacion LIKE :ubi2)";
+            $params['ubi'] = '%' . trim($ubiText) . '%';
+            $params['ubi2'] = '%' . trim($ubiText) . '%';
+        }
+
+        // 3. Filtro por año / época
+        if (!empty($filtros['anio'])) {
+            $whereParts[] = "(fecha_epoca LIKE :fechaEpoca OR observaciones LIKE :obsAnio)";
+            $params['fechaEpoca'] = '%' . trim($filtros['anio']) . '%';
+            $params['obsAnio'] = '%' . trim($filtros['anio']) . '%';
+        }
+
+        $whereSql = implode(' AND ', $whereParts);
+
+        // Conteo eficiente a nivel SQL
+        $countSql = "SELECT COUNT(*) FROM " . self::$table . " WHERE {$whereSql}";
+        $stmtCount = $db->prepare($countSql);
+        $stmtCount->execute($params);
+        $total = (int)$stmtCount->fetchColumn();
+
+        // Extracción acotada de columnas requeridas para vista
+        $dataSql = "SELECT id_acervo_numismatica, denominacion, tipo_obra, codigo_interno, material, ubicacion_fisica, fecha_epoca, fotografia 
+                    FROM " . self::$table . " 
+                    WHERE {$whereSql} 
+                    ORDER BY id_acervo_numismatica DESC 
+                    LIMIT :offset, :limit";
+        $stmtData = $db->prepare($dataSql);
+        foreach ($params as $k => $v) {
+            $stmtData->bindValue($k, $v, PDO::PARAM_STR);
+        }
+        $stmtData->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        $stmtData->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmtData->execute();
+
+        return [
+            'piezas' => $stmtData->fetchAll(PDO::FETCH_ASSOC) ?: [],
+            'total'  => $total
+        ];
+    }
 }

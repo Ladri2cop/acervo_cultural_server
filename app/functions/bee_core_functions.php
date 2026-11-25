@@ -1529,8 +1529,7 @@ function bee_obj_default_config()
 			'waitme'        => WAITME,
 			'lightbox'      => LIGHTBOX,
 			'vuejs'         => VUEJS,
-			'public_key'    => get_bee_api_public_key(),
-			'private_key'   => get_bee_api_private_key()
+			'public_key'    => get_bee_api_public_key()
 		];
 
 	return $options;

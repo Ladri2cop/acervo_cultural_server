@@ -44,10 +44,11 @@ Las respuestas de la API utilizan el tipo MIME `application/json; charset=UTF-8`
 ### 2.1. Listado Filtrado de Acervo General
 - **Ruta**: `GET /admin/get_acervo_general`
 - **Parámetros Query**:
-  - `busqueda` *(string, opcional)*: Término de texto en código o título.
-  - `filtro_ubicacion` *(string, opcional)*: Museo o sede física.
-  - `filtro_anio` *(string, opcional)*: Año o temporalidad.
-  - `filtro_autor_cultura` *(string, opcional)*: Nombre del autor.
+  - `search` / `busqueda` *(string, opcional)*: Término de texto en código, título, autor o descripción.
+  - `ubicacion` / `filtro_ubicacion` *(string, opcional)*: Museo, sede física o ID de ubicación.
+  - `anio` / `filtro_anio` *(string, opcional)*: Año o temporalidad.
+  - `page` *(int, opcional, por defecto 1)*: Número de página solicitada.
+  - `per_page` *(int, opcional, por defecto 10)*: Cantidad de registros por página (optimizado a nivel SQL).
 - **Respuesta (200 OK)**:
 ```json
 {

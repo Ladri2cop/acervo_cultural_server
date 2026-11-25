@@ -14,3 +14,6 @@ templates/views/pruebas/
 .env
 assets/uploads/oficios_movimientos/*
 !assets/uploads/oficios_movimientos/.gitkeep
+!assets/uploads/oficios_movimientos/.htaccess
+*.sql
+backup_*.sql

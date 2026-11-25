@@ -1,0 +1,23 @@
+# Desactivar completamente la ejecución de motores de script en la carpeta de subidas
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php8.c>
+    php_flag engine off
+</IfModule>
+
+# Denegar el acceso y ejecución directa de archivos potencialmente peligrosos
+<FilesMatch "(?i)\.(php|phtml|php3|php4|php5|php7|php8|phps|pht|phar|inc|pl|py|cgi|sh|bash|exe|bin)$">
+    Order Deny,Allow
+    Deny from all
+</FilesMatch>
+
+# Forzar opciones seguras
+Options -Indexes -ExecCGI
+AddType text/plain .html .htm .shtml .xhtml
+<IfModule mod_headers.c>
+    Header set X-Content-Type-Options "nosniff"
+</IfModule>

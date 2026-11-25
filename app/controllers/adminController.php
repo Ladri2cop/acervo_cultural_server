@@ -22,13 +22,26 @@ class adminController extends Controller implements ControllerInterface
   private function check_user_permission(string $permissionSlug)
   {
     $id_role = get_user('id_role');
+    // Regla de seguridad: Denegación por defecto (Fail-closed)
     if (!$id_role) {
-      $id_role = 1; // Fallback por defecto si no está definido
+      $isAjax = is_ajax() || (isset($_SERVER['HTTP_X_REQUESTED_WITH']) && strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest') || (isset($_SERVER['HTTP_ACCEPT']) && strpos($_SERVER['HTTP_ACCEPT'], 'application/json') !== false) || !empty($_POST);
+      if ($isAjax) {
+        http_response_code(403);
+        header('Content-Type: application/json');
+        echo json_encode([
+          'status' => 403,
+          'msg' => 'Sesión sin privilegios asignados. Acceso denegado.'
+        ]);
+        exit;
+      }
+      Flasher::error('No tienes permisos suficientes para acceder a esta sección.');
+      Redirect::to('login');
+      exit;
     }
     
     // Obtener slug del rol
     $roleRow = userModel::query("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1", ['id' => $id_role]);
-    $roleSlug = ($roleRow && isset($roleRow[0]['slug'])) ? $roleRow[0]['slug'] : 'admin';
+    $roleSlug = ($roleRow && isset($roleRow[0]['slug'])) ? $roleRow[0]['slug'] : '';
 
     $roleManager = new BeeRoleManager($roleSlug);
     if (!$roleManager->can($permissionSlug)) {
@@ -46,6 +59,45 @@ class adminController extends Controller implements ControllerInterface
       Redirect::to(is_admin_user() ? 'admin' : 'admin/acervo');
       exit;
     }
+  }
+
+  /**
+   * Valida si el usuario en sesión tiene autorización geográfica/museística sobre la pieza (Control IDOR)
+   * Super Administrador (id_role = 1): acceso a todos los recintos.
+   * Administrador / Capturista: solo sobre su museo asignado (o piezas creadas por él).
+   */
+  private function check_museo_tenancy(array $piezaRow): bool
+  {
+    $idRole = (int)get_user('id_role');
+    if ($idRole === 1) {
+      return true; // Super Admin tiene acceso global
+    }
+
+    $currentUserId = (int)get_user('id');
+    if ($currentUserId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === $currentUserId) {
+      return true;
+    }
+
+    $idMuseo = (int)get_user('id_museo');
+    if ($idMuseo <= 0) {
+      return false;
+    }
+
+    $db = Db::connect();
+    $stmtM = $db->prepare("SELECT nombre_museo FROM museos WHERE id_museo = :id LIMIT 1");
+    $stmtM->execute(['id' => $idMuseo]);
+    $nombreMuseo = $stmtM->fetchColumn();
+
+    if (empty($nombreMuseo)) {
+      return false;
+    }
+
+    $ubi = $piezaRow['ubicacion_fisica'] ?? '';
+    if (stripos($ubi, $nombreMuseo) !== false) {
+      return true;
+    }
+
+    return false;
   }
 
   function __construct()
@@ -1097,18 +1149,15 @@ class adminController extends Controller implements ControllerInterface
       'id_modulo'             => 5
     ];
 
-    // Procesar imagen si se envió
-    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === 0) {
-      $tmp_name = $_FILES['fotografia']['tmp_name'];
-      $filename = $_FILES['fotografia']['name'];
-      $upload_path = UPLOADS . $filename;
-      if (move_uploaded_file($tmp_name, $upload_path)) {
-        $data['fotografia'] = $filename;
-      } else {
+    // Procesar imagen de forma segura si se envió
+    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
+      try {
+        $data['fotografia'] = procesar_fotografia_segura($_FILES['fotografia']);
+      } catch (Throwable $e) {
         header('Content-Type: application/json');
         echo json_encode([
-          'status' => 500,
-          'msg' => 'Error al subir la imagen.'
+          'status' => 400,
+          'msg' => 'Error en la fotografía: ' . $e->getMessage()
         ]);
         exit;
       }
@@ -1173,18 +1222,15 @@ class adminController extends Controller implements ControllerInterface
       'id_modulo'               => 3
     ];
 
-    // Processar imagen si se envió
-    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === 0) {
-      $tmp_name = $_FILES['fotografia']['tmp_name'];
-      $filename = $_FILES['fotografia']['name'];
-      $upload_path = UPLOADS . $filename;
-      if (move_uploaded_file($tmp_name, $upload_path)) {
-        $data['fotografia'] = $filename;
-      } else {
+    // Procesar imagen de forma segura si se envió
+    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
+      try {
+        $data['fotografia'] = procesar_fotografia_segura($_FILES['fotografia']);
+      } catch (Throwable $e) {
         header('Content-Type: application/json');
         echo json_encode([
-          'status' => 500,
-          'msg' => 'Error al subir la imagen.'
+          'status' => 400,
+          'msg' => 'Error en la fotografía: ' . $e->getMessage()
         ]);
         exit;
       }
@@ -1252,18 +1298,15 @@ class adminController extends Controller implements ControllerInterface
       'id_modulo'             => 4
     ];
 
-    // Procesar imagen si se envió
-    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === 0) {
-      $tmp_name = $_FILES['fotografia']['tmp_name'];
-      $filename = $_FILES['fotografia']['name'];
-      $upload_path = UPLOADS . $filename;
-      if (move_uploaded_file($tmp_name, $upload_path)) {
-        $data['fotografia'] = $filename;
-      } else {
+    // Procesar imagen de forma segura si se envió
+    if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
+      try {
+        $data['fotografia'] = procesar_fotografia_segura($_FILES['fotografia']);
+      } catch (Throwable $e) {
         header('Content-Type: application/json');
         echo json_encode([
-          'status' => 500,
-          'msg' => 'Error al subir la imagen.'
+          'status' => 400,
+          'msg' => 'Error en la fotografía: ' . $e->getMessage()
         ]);
         exit;
       }
@@ -1445,13 +1488,19 @@ class adminController extends Controller implements ControllerInterface
   public function get_acervo_general()
   {
     $this->check_user_permission('ver_acervo_general');
-    $page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
-    $perPage = isset($_REQUEST['per_page']) ? (int)$_REQUEST['per_page'] : 10;
+    $page = isset($_REQUEST['page']) ? max(1, (int)$_REQUEST['page']) : 1;
+    $perPage = isset($_REQUEST['per_page']) ? max(1, min(100, (int)$_REQUEST['per_page'])) : 10;
     $offset = ($page - 1) * $perPage;
 
-    $all = $this->get_filtered_acervo_data('general');
-    $total = count($all);
-    $piezas = array_slice($all, $offset, $perPage);
+    require_once APP . 'models/acervoGeneralModel.php';
+    $filtros = [
+      'search'    => $_REQUEST['search'] ?? ($_REQUEST['busqueda'] ?? ''),
+      'ubicacion' => $_REQUEST['ubicacion'] ?? ($_REQUEST['filtro_ubicacion'] ?? ''),
+      'anio'      => $_REQUEST['anio'] ?? ($_REQUEST['filtro_anio'] ?? '')
+    ];
+    $res = AcervoGeneralModel::getPiezasFiltradas($filtros, $perPage, $offset);
+    $total = $res['total'];
+    $piezas = $res['piezas'];
 
     // Formatear datos para la tabla
     $data = array_map(function ($pieza) {
@@ -1468,7 +1517,7 @@ class adminController extends Controller implements ControllerInterface
     // Paginación
     $pagination = [
       'current_page' => $page,
-      'total_pages' => max(1, ceil($total / $perPage)),
+      'total_pages' => max(1, (int)ceil($total / $perPage)),
       'total' => $total,
       'per_page' => $perPage
     ];
@@ -1486,13 +1535,19 @@ class adminController extends Controller implements ControllerInterface
   public function get_acervo_arq()
   {
     $this->check_user_permission('ver_acervo_arqueologico');
-    $page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
-    $perPage = isset($_REQUEST['per_page']) ? (int)$_REQUEST['per_page'] : 10;
+    $page = isset($_REQUEST['page']) ? max(1, (int)$_REQUEST['page']) : 1;
+    $perPage = isset($_REQUEST['per_page']) ? max(1, min(100, (int)$_REQUEST['per_page'])) : 10;
     $offset = ($page - 1) * $perPage;
 
-    $all = $this->get_filtered_acervo_data('arqueologico');
-    $total = count($all);
-    $piezas = array_slice($all, $offset, $perPage);
+    require_once APP . 'models/acervoArqueologicoModel.php';
+    $filtros = [
+      'search'    => $_REQUEST['search'] ?? ($_REQUEST['busqueda'] ?? ''),
+      'ubicacion' => $_REQUEST['ubicacion'] ?? ($_REQUEST['filtro_ubicacion'] ?? ''),
+      'anio'      => $_REQUEST['anio'] ?? ($_REQUEST['filtro_anio'] ?? '')
+    ];
+    $res = AcervoArqueologicoModel::getPiezasFiltradas($filtros, $perPage, $offset);
+    $total = $res['total'];
+    $piezas = $res['piezas'];
 
     // Formatear datos para la tabla
     $data = array_map(function ($pieza) {
@@ -1512,7 +1567,7 @@ class adminController extends Controller implements ControllerInterface
     // Paginación
     $pagination = [
       'current_page' => $page,
-      'total_pages' => max(1, ceil($total / $perPage)),
+      'total_pages' => max(1, (int)ceil($total / $perPage)),
       'total' => $total,
       'per_page' => $perPage
     ];
@@ -1530,13 +1585,19 @@ class adminController extends Controller implements ControllerInterface
   public function get_acervo_numismatica()
   {
     $this->check_user_permission('ver_acervo_numismatica');
-    $page = isset($_REQUEST['page']) ? (int)$_REQUEST['page'] : 1;
-    $perPage = isset($_REQUEST['per_page']) ? (int)$_REQUEST['per_page'] : 10;
+    $page = isset($_REQUEST['page']) ? max(1, (int)$_REQUEST['page']) : 1;
+    $perPage = isset($_REQUEST['per_page']) ? max(1, min(100, (int)$_REQUEST['per_page'])) : 10;
     $offset = ($page - 1) * $perPage;
 
-    $all = $this->get_filtered_acervo_data('numismatica');
-    $total = count($all);
-    $piezas = array_slice($all, $offset, $perPage);
+    require_once APP . 'models/acervoNumismaticaModel.php';
+    $filtros = [
+      'search'    => $_REQUEST['search'] ?? ($_REQUEST['busqueda'] ?? ''),
+      'ubicacion' => $_REQUEST['ubicacion'] ?? ($_REQUEST['filtro_ubicacion'] ?? ''),
+      'anio'      => $_REQUEST['anio'] ?? ($_REQUEST['filtro_anio'] ?? '')
+    ];
+    $res = AcervoNumismaticaModel::getPiezasFiltradas($filtros, $perPage, $offset);
+    $total = $res['total'];
+    $piezas = $res['piezas'];
 
     // Formatear datos para la tabla
     $data = array_map(function ($pieza) {
@@ -1555,7 +1616,7 @@ class adminController extends Controller implements ControllerInterface
     // Paginación
     $pagination = [
       'current_page' => $page,
-      'total_pages' => max(1, ceil($total / $perPage)),
+      'total_pages' => max(1, (int)ceil($total / $perPage)),
       'total' => $total,
       'per_page' => $perPage
     ];
@@ -2000,6 +2061,11 @@ class adminController extends Controller implements ControllerInterface
       exit;
     }
 
+    if (!$this->check_museo_tenancy($piezaRow)) {
+      echo json_encode(['status' => 403, 'msg' => 'Violación de custodia: No tienes autorización para editar piezas de otro recinto cultural.']);
+      exit;
+    }
+
     $fotoActual = $piezaRow['fotografia'] ?? '';
 
     $data = $_POST;
@@ -2026,16 +2092,13 @@ class adminController extends Controller implements ControllerInterface
     }
 
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
-      $tmpName = $_FILES['fotografia']['tmp_name'];
-      $fileName = $_FILES['fotografia']['name'];
-      $newName = basename($fileName);
-
-      if (!move_uploaded_file($tmpName, UPLOADS . $newName)) {
-        echo json_encode(['status' => 500, 'msg' => 'Error al subir la nueva fotografía']);
+      try {
+        $newName = procesar_fotografia_segura($_FILES['fotografia']);
+        $data['fotografia'] = $newName;
+      } catch (Throwable $e) {
+        echo json_encode(['status' => 400, 'msg' => 'Error en la fotografía: ' . $e->getMessage()]);
         exit;
       }
-
-      $data['fotografia'] = $newName;
     } elseif (!empty($_POST['fotografia_actual'])) {
       $data['fotografia'] = $_POST['fotografia_actual'];
     } elseif (!empty($fotoActual)) {
@@ -2106,6 +2169,11 @@ class adminController extends Controller implements ControllerInterface
       exit;
     }
 
+    if (!$this->check_museo_tenancy($piezaRow)) {
+      echo json_encode(['status' => 403, 'msg' => 'Violación de custodia: No tienes autorización para editar piezas de otro recinto cultural.']);
+      exit;
+    }
+
     $fotoActual = $piezaRow['fotografia'] ?? '';
 
     $data = $_POST;
@@ -2123,16 +2191,13 @@ class adminController extends Controller implements ControllerInterface
     unset($data['ubicacion_fisica_otro']);
 
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
-      $tmpName = $_FILES['fotografia']['tmp_name'];
-      $fileName = $_FILES['fotografia']['name'];
-      $newName = basename($fileName);
-
-      if (!move_uploaded_file($tmpName, UPLOADS . $newName)) {
-        echo json_encode(['status' => 500, 'msg' => 'Error al subir la nueva fotografía']);
+      try {
+        $newName = procesar_fotografia_segura($_FILES['fotografia']);
+        $data['fotografia'] = $newName;
+      } catch (Throwable $e) {
+        echo json_encode(['status' => 400, 'msg' => 'Error en la fotografía: ' . $e->getMessage()]);
         exit;
       }
-
-      $data['fotografia'] = $newName;
     } elseif (!empty($_POST['fotografia_actual'])) {
       $data['fotografia'] = $_POST['fotografia_actual'];
     } elseif (!empty($fotoActual)) {
@@ -2203,6 +2268,11 @@ class adminController extends Controller implements ControllerInterface
       exit;
     }
 
+    if (!$this->check_museo_tenancy($piezaRow)) {
+      echo json_encode(['status' => 403, 'msg' => 'Violación de custodia: No tienes autorización para editar piezas de otro recinto cultural.']);
+      exit;
+    }
+
     $fotoActual = $piezaRow['fotografia'] ?? '';
 
     $data = $_POST;
@@ -2241,16 +2311,13 @@ class adminController extends Controller implements ControllerInterface
     unset($data['editar_tipo_dimension']);
 
     if (isset($_FILES['fotografia']) && $_FILES['fotografia']['error'] === UPLOAD_ERR_OK) {
-      $tmpName = $_FILES['fotografia']['tmp_name'];
-      $fileName = $_FILES['fotografia']['name'];
-      $newName = basename($fileName);
-
-      if (!move_uploaded_file($tmpName, UPLOADS . $newName)) {
-        echo json_encode(['status' => 500, 'msg' => 'Error al subir la nueva fotografía']);
+      try {
+        $newName = procesar_fotografia_segura($_FILES['fotografia']);
+        $data['fotografia'] = $newName;
+      } catch (Throwable $e) {
+        echo json_encode(['status' => 400, 'msg' => 'Error en la fotografía: ' . $e->getMessage()]);
         exit;
       }
-
-      $data['fotografia'] = $newName;
     } elseif (!empty($_POST['fotografia_actual'])) {
       $data['fotografia'] = $_POST['fotografia_actual'];
     } elseif (!empty($fotoActual)) {
@@ -2301,15 +2368,30 @@ class adminController extends Controller implements ControllerInterface
   public function acervo_general_eliminar()
   {
     $this->check_user_permission('eliminar_acervo_general');
+    if (isset($_POST['csrf']) && !check_csrf($_POST['csrf'])) {
+      echo json_encode(['status' => 403, 'msg' => 'Token CSRF inválido o expirado.']);
+      exit;
+    }
     $id = isset($_POST['id_acervo_general']) ? (int)$_POST['id_acervo_general'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
       exit;
     }
     require_once APP . 'models/acervoGeneralModel.php';
+    $pieza = AcervoGeneralModel::getById($id);
+    if (empty($pieza) || !isset($pieza[0])) {
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+    $piezaRow = $pieza[0];
+    if (!$this->check_museo_tenancy($piezaRow)) {
+      echo json_encode(['status' => 403, 'msg' => 'Violación de custodia: No tienes autorización para eliminar piezas de otro recinto cultural.']);
+      exit;
+    }
+
     $ok = AcervoGeneralModel::deletePieza($id);
     if ($ok) {
-      registrar_auditoria('DELETE', 'acervo_general', $id, 'Eliminación de pieza de acervo general', 5);
+      registrar_auditoria('DELETE', 'acervo_general', $id, 'Eliminación de pieza de acervo general', 5, null, $piezaRow, ['status' => 0]);
       echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al eliminar la pieza']);
@@ -2321,15 +2403,30 @@ class adminController extends Controller implements ControllerInterface
   public function acervo_arq_eliminar()
   {
     $this->check_user_permission('eliminar_acervo_arqueologico');
+    if (isset($_POST['csrf']) && !check_csrf($_POST['csrf'])) {
+      echo json_encode(['status' => 403, 'msg' => 'Token CSRF inválido o expirado.']);
+      exit;
+    }
     $id = isset($_POST['id_acervo_arq']) ? (int)$_POST['id_acervo_arq'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
       exit;
     }
     require_once APP . 'models/acervoArqueologicoModel.php';
+    $pieza = AcervoArqueologicoModel::getById($id);
+    if (empty($pieza) || !isset($pieza[0])) {
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+    $piezaRow = $pieza[0];
+    if (!$this->check_museo_tenancy($piezaRow)) {
+      echo json_encode(['status' => 403, 'msg' => 'Violación de custodia: No tienes autorización para eliminar piezas de otro recinto cultural.']);
+      exit;
+    }
+
     $ok = AcervoArqueologicoModel::deletePieza($id);
     if ($ok) {
-      registrar_auditoria('DELETE', 'acervo_arqueologico', $id, 'Eliminación de pieza de acervo arqueológico', 3);
+      registrar_auditoria('DELETE', 'acervo_arqueologico', $id, 'Eliminación de pieza de acervo arqueológico', 3, null, $piezaRow, ['status' => 0]);
       echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al eliminar la pieza']);
@@ -2341,15 +2438,30 @@ class adminController extends Controller implements ControllerInterface
   public function acervo_numismatica_eliminar()
   {
     $this->check_user_permission('eliminar_acervo_numismatica');
+    if (isset($_POST['csrf']) && !check_csrf($_POST['csrf'])) {
+      echo json_encode(['status' => 403, 'msg' => 'Token CSRF inválido o expirado.']);
+      exit;
+    }
     $id = isset($_POST['id_acervo_numismatica']) ? (int)$_POST['id_acervo_numismatica'] : (isset($_POST['id']) ? (int)$_POST['id'] : 0);
     if ($id <= 0) {
       echo json_encode(['status' => 400, 'msg' => 'ID inválido']);
       exit;
     }
     require_once APP . 'models/acervoNumismaticaModel.php';
+    $pieza = AcervoNumismaticaModel::getById($id);
+    if (empty($pieza) || !isset($pieza[0])) {
+      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+      exit;
+    }
+    $piezaRow = $pieza[0];
+    if (!$this->check_museo_tenancy($piezaRow)) {
+      echo json_encode(['status' => 403, 'msg' => 'Violación de custodia: No tienes autorización para eliminar piezas de otro recinto cultural.']);
+      exit;
+    }
+
     $ok = AcervoNumismaticaModel::deletePieza($id);
     if ($ok) {
-      registrar_auditoria('DELETE', 'acervo_numismatica', $id, 'Eliminación de pieza numismática', 4);
+      registrar_auditoria('DELETE', 'acervo_numismatica', $id, 'Eliminación de pieza numismática', 4, null, $piezaRow, ['status' => 0]);
       echo json_encode(['status' => 200, 'msg' => 'Pieza eliminada correctamente']);
     } else {
       echo json_encode(['status' => 500, 'msg' => 'Error al eliminar la pieza']);
@@ -2946,64 +3058,77 @@ class adminController extends Controller implements ControllerInterface
     $info = $this->resolverTablaAcervo($tipo);
     $db = Db::connect();
 
-    $stmtAntes = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
-    $stmtAntes->execute(['id' => $id]);
-    $datosAntes = $stmtAntes->fetch(PDO::FETCH_ASSOC);
+    try {
+      $db->beginTransaction();
 
-    if (!$datosAntes) {
-      header('Content-Type: application/json');
-      echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
-      exit;
-    }
+      $stmtAntes = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
+      $stmtAntes->execute(['id' => $id]);
+      $datosAntes = $stmtAntes->fetch(PDO::FETCH_ASSOC);
 
-    $user_id = get_user('id');
+      if (!$datosAntes) {
+        $db->rollBack();
+        header('Content-Type: application/json');
+        echo json_encode(['status' => 404, 'msg' => 'Pieza no encontrada']);
+        exit;
+      }
 
-    // Si era una edición y cambió la fotografía, limpiamos la foto previa que fue reemplazada
-    if (!empty($datosAntes['datos_anteriores_edicion'])) {
-      $datosOrig = json_decode($datosAntes['datos_anteriores_edicion'], true);
-      if (!empty($datosOrig['fotografia']) && !empty($datosAntes['fotografia']) && $datosOrig['fotografia'] !== $datosAntes['fotografia']) {
-        if (is_file(UPLOADS . $datosOrig['fotografia'])) {
-          @unlink(UPLOADS . $datosOrig['fotografia']);
+      $user_id = get_user('id');
+
+      // Si era una edición y cambió la fotografía, limpiamos la foto previa que fue reemplazada
+      if (!empty($datosAntes['datos_anteriores_edicion'])) {
+        $datosOrig = json_decode($datosAntes['datos_anteriores_edicion'], true);
+        if (!empty($datosOrig['fotografia']) && !empty($datosAntes['fotografia']) && $datosOrig['fotografia'] !== $datosAntes['fotografia']) {
+          if (is_file(UPLOADS . $datosOrig['fotografia'])) {
+            @unlink(UPLOADS . $datosOrig['fotografia']);
+          }
         }
       }
+
+      $stmt = $db->prepare("
+        UPDATE {$info['tabla']} 
+        SET status = 1, 
+            estatus_revision = 'aprobado', 
+            datos_anteriores_edicion = NULL,
+            id_usuario_revisor = :revisor, 
+            fecha_revision = NOW(),
+            updated_at = NOW()
+        WHERE {$info['pk']} = :id
+      ");
+      $stmt->execute([
+        'revisor' => $user_id,
+        'id' => $id
+      ]);
+
+      $stmtDespues = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
+      $stmtDespues->execute(['id' => $id]);
+      $datosDespues = $stmtDespues->fetch(PDO::FETCH_ASSOC);
+
+      $tituloPieza = $datosAntes['nombre_titulo_pieza'] ?? ($datosAntes['denominacion'] ?? ('ID ' . $id));
+      registrar_auditoria(
+        'APROBAR_PIEZA',
+        $info['tabla'],
+        $id,
+        "Aprobación y autorización de pieza ({$info['nombre']}): {$tituloPieza}",
+        $info['modulo'],
+        null,
+        $datosAntes,
+        $datosDespues
+      );
+
+      $db->commit();
+
+      header('Content-Type: application/json');
+      echo json_encode([
+        'status' => 200,
+        'msg' => 'La pieza ha sido autorizada y aprobada correctamente. Ahora está reflejada en el catálogo oficial.'
+      ]);
+    } catch (Throwable $e) {
+      if ($db->inTransaction()) {
+        $db->rollBack();
+      }
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 500, 'msg' => 'Error al autorizar la pieza: ' . $e->getMessage()]);
     }
-
-    $stmt = $db->prepare("
-      UPDATE {$info['tabla']} 
-      SET status = 1, 
-          estatus_revision = 'aprobado', 
-          datos_anteriores_edicion = NULL,
-          id_usuario_revisor = :revisor, 
-          fecha_revision = NOW(),
-          updated_at = NOW()
-      WHERE {$info['pk']} = :id
-    ");
-    $stmt->execute([
-      'revisor' => $user_id,
-      'id' => $id
-    ]);
-
-    $stmtDespues = $db->prepare("SELECT * FROM {$info['tabla']} WHERE {$info['pk']} = :id LIMIT 1");
-    $stmtDespues->execute(['id' => $id]);
-    $datosDespues = $stmtDespues->fetch(PDO::FETCH_ASSOC);
-
-    $tituloPieza = $datosAntes['nombre_titulo_pieza'] ?? ($datosAntes['denominacion'] ?? ('ID ' . $id));
-    registrar_auditoria(
-      'APROBAR_PIEZA',
-      $info['tabla'],
-      $id,
-      "Aprobación y autorización de pieza ({$info['nombre']}): {$tituloPieza}",
-      $info['modulo'],
-      null,
-      $datosAntes,
-      $datosDespues
-    );
-
-    header('Content-Type: application/json');
-    echo json_encode([
-      'status' => 200,
-      'msg' => 'La pieza ha sido autorizada y aprobada correctamente. Ahora está reflejada en el catálogo oficial.'
-    ]);
     exit;
   }
 
@@ -3599,10 +3724,28 @@ class adminController extends Controller implements ControllerInterface
       $fileOficio = $_FILES['archivo_oficio'];
       $extOficio = strtolower(pathinfo($fileOficio['name'], PATHINFO_EXTENSION));
       $allowedOficioExts = ['pdf', 'doc', 'docx', 'jpg', 'jpeg', 'png'];
-      if (!in_array($extOficio, $allowedOficioExts)) {
+      if (!in_array($extOficio, $allowedOficioExts, true)) {
         header('Content-Type: application/json');
         echo json_encode(['status' => 400, 'msg' => 'Formato de oficio no válido. Se permiten únicamente archivos PDF, Word (.doc, .docx) o imágenes (.jpg, .png).']);
         exit;
+      }
+
+      // Validación estricta de tipo MIME binario real
+      if (class_exists('finfo')) {
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $realMimeOficio = $finfo->file($fileOficio['tmp_name']);
+        $allowedMimesOficio = [
+          'application/pdf',
+          'application/msword',
+          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+          'image/jpeg',
+          'image/png'
+        ];
+        if (!in_array($realMimeOficio, $allowedMimesOficio, true)) {
+          header('Content-Type: application/json');
+          echo json_encode(['status' => 400, 'msg' => 'El contenido del archivo no corresponde a un documento u oficio válido (.pdf, .doc, .docx, .jpg, .png).']);
+          exit;
+        }
       }
 
       if ($fileOficio['size'] > 20 * 1024 * 1024) {
@@ -3613,7 +3756,7 @@ class adminController extends Controller implements ControllerInterface
 
       $uploadDirOficios = ROOT . 'assets' . DS . 'uploads' . DS . 'oficios_movimientos' . DS;
       if (!is_dir($uploadDirOficios)) {
-        @mkdir($uploadDirOficios, 0777, true);
+        @mkdir($uploadDirOficios, 0755, true);
       }
 
       $folio = PrestamosModel::generarFolio($tipoMovimiento);
@@ -3626,6 +3769,7 @@ class adminController extends Controller implements ControllerInterface
         echo json_encode(['status' => 500, 'msg' => 'Error al guardar el archivo de oficio en el servidor.']);
         exit;
       }
+      @chmod($rutaDestinoOficio, 0644);
 
       // Resolver IDs de museos origen y destino si aplican
       $idMuseoOrigen = isset($_POST['id_museo_origen']) && (int)$_POST['id_museo_origen'] > 0 ? (int)$_POST['id_museo_origen'] : null;
@@ -3685,9 +3829,13 @@ class adminController extends Controller implements ControllerInterface
         'id_usuario_registro' => $idUser
       ];
 
+      $db = Db::connect();
+      $db->beginTransaction();
+
       $idMovimiento = PrestamosModel::addMovimiento($movData);
 
       if (!$idMovimiento) {
+        $db->rollBack();
         // Eliminar archivo subido si falla el insert
         if (file_exists($rutaDestinoOficio)) {
           @unlink($rutaDestinoOficio);
@@ -3710,6 +3858,8 @@ class adminController extends Controller implements ControllerInterface
       );
       registrar_auditoria('INSERT', 'prestamos_transferencias', $idMovimiento, $descAudit);
 
+      $db->commit();
+
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 201,
@@ -3718,6 +3868,13 @@ class adminController extends Controller implements ControllerInterface
         'id' => $idMovimiento
       ]);
     } catch (Throwable $e) {
+      $db = Db::connect();
+      if ($db->inTransaction()) {
+        $db->rollBack();
+      }
+      if (isset($rutaDestinoOficio) && file_exists($rutaDestinoOficio)) {
+        @unlink($rutaDestinoOficio);
+      }
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 500,
@@ -3768,6 +3925,9 @@ class adminController extends Controller implements ControllerInterface
       $tipoMovimiento = $mov['tipo_movimiento'];
       $nuevoEstatus = ($tipoMovimiento === 'transferencia') ? 'completada' : 'activo';
 
+      $db = Db::connect();
+      $db->beginTransaction();
+
       // Actualizar ubicación física de la pieza ahora que ha sido formalmente aceptada
       if ($tipoMovimiento === 'transferencia') {
         $nuevaUbicacion = $mov['lugar_destino'];
@@ -3802,6 +3962,8 @@ class adminController extends Controller implements ControllerInterface
       );
       registrar_auditoria('UPDATE', 'prestamos_transferencias', $idMovimiento, $descAudit);
 
+      $db->commit();
+
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 200,
@@ -3809,6 +3971,10 @@ class adminController extends Controller implements ControllerInterface
         'estatus' => $nuevoEstatus
       ]);
     } catch (Throwable $e) {
+      $db = Db::connect();
+      if ($db->inTransaction()) {
+        $db->rollBack();
+      }
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 500,
@@ -3959,6 +4125,9 @@ class adminController extends Controller implements ControllerInterface
         $obsFinal = trim($obsFinal . "\n[Devolución " . date('d/m/Y H:i') . "]: " . $observacionesDevolucion);
       }
 
+      $db = Db::connect();
+      $db->beginTransaction();
+
       $updateData = [
         'estatus' => 'devuelto',
         'fecha_devolucion_real' => $fechaDevolucion,
@@ -3982,12 +4151,18 @@ class adminController extends Controller implements ControllerInterface
       );
       registrar_auditoria('UPDATE', 'prestamos_transferencias', $idMovimiento, $descAudit);
 
+      $db->commit();
+
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 200,
         'msg' => sprintf('Devolución del préstamo %s registrada exitosamente. La pieza ha sido reincorporada a %s.', $mov['folio'], $lugarDevolucion)
       ]);
     } catch (Throwable $e) {
+      $db = Db::connect();
+      if ($db->inTransaction()) {
+        $db->rollBack();
+      }
       header('Content-Type: application/json');
       echo json_encode([
         'status' => 500,

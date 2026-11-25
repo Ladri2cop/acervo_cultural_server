@@ -481,4 +481,78 @@ function get_user_id(): ?int
 // Carga de catálogos oficiales del SIPAC
 require_once __DIR__ . '/acervo_catalogos.php';
 
+/**
+ * Procesa y valida de manera segura la carga de fotografías patrimoniales
+ * Blindaje contra RCE, path traversal y sobreescrituras accidentales
+ *
+ * @param array $file Arreglo $_FILES['fotografia']
+ * @param string $destDir Directorio de destino absoluto
+ * @return string Nombre del archivo sanitizado y resguardado
+ * @throws Exception En caso de formato inválido, exceso de tamaño o falla de guardado
+ */
+function procesar_fotografia_segura(array $file, string $destDir = UPLOADS): string
+{
+  if (!isset($file['error']) || is_array($file['error'])) {
+    throw new Exception('Parámetros de subida de archivo inválidos.');
+  }
+
+  if ($file['error'] !== UPLOAD_ERR_OK) {
+    throw new Exception('Error en el archivo subido (Código: ' . $file['error'] . ').');
+  }
+
+  // 1. Limitar tamaño a 15 MB
+  $maxBytes = 15 * 1024 * 1024;
+  if ($file['size'] > $maxBytes) {
+    throw new Exception('La fotografía excede el tamaño máximo permitido de 15 MB.');
+  }
+
+  // 2. Validación de extensión en lista blanca estricta
+  $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+  $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+  if (!in_array($extension, $allowedExtensions, true)) {
+    throw new Exception('Formato de imagen no permitido. Se aceptan exclusivamente JPG, PNG y WEBP.');
+  }
+
+  // 3. Validación estricta de encabezados binarios reales (MIME Magic Bytes)
+  if (class_exists('finfo')) {
+    $finfo = new finfo(FILEINFO_MIME_TYPE);
+    $realMime = $finfo->file($file['tmp_name']);
+    $allowedMimes = [
+      'image/jpeg' => ['jpg', 'jpeg'],
+      'image/png'  => ['png'],
+      'image/webp' => ['webp']
+    ];
+
+    if (!array_key_exists($realMime, $allowedMimes) || !in_array($extension, $allowedMimes[$realMime], true)) {
+      throw new Exception('El contenido binario del archivo no coincide con una imagen válida permitida.');
+    }
+  }
+
+  // 4. Nombre aleatorio criptográfico inmune a colisiones y path traversal
+  $nuevoNombre = 'pieza_' . bin2hex(random_bytes(16)) . '_' . time() . '.' . $extension;
+  $rutaFinal = rtrim($destDir, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR . $nuevoNombre;
+
+  if (!move_uploaded_file($file['tmp_name'], $rutaFinal)) {
+    throw new Exception('Fallo al resguardar la fotografía en el servidor.');
+  }
+
+  // Asegurar permisos de lectura sin ejecución (0644)
+  @chmod($rutaFinal, 0644);
+
+  return $nuevoNombre;
+}
+
+/**
+ * Valida el token CSRF enviado vía POST, GET o cabecera HTTP
+ *
+ * @param string|null $token
+ * @return bool
+ */
+function check_csrf(?string $token = null): bool
+{
+  $t = $token ?? ($_POST['csrf'] ?? ($_REQUEST['csrf'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? null)));
+  if (!$t) return false;
+  return class_exists('Csrf') && Csrf::validate($t);
+}
+
 

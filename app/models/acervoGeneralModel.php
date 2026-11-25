@@ -85,4 +85,80 @@ class AcervoGeneralModel extends Model
         $rows = parent::query($sql);
         return $rows && isset($rows[0]['total']) ? (int)$rows[0]['total'] : 0;
     }
+
+    /**
+     * Obtiene piezas filtradas y paginadas directamente desde la base de datos (Optimización SQL)
+     *
+     * @param array $filtros
+     * @param int $limit
+     * @param int $offset
+     * @return array ['piezas' => array, 'total' => int]
+     */
+    public static function getPiezasFiltradas(array $filtros = [], int $limit = 10, int $offset = 0): array
+    {
+        $db = Db::connect();
+        $whereParts = ["status = 1", "estatus_revision = 'aprobado'"];
+        $params = [];
+
+        // 1. Búsqueda por término
+        if (!empty($filtros['search'])) {
+            $whereParts[] = "(codigo_interno LIKE :s1 OR nombre_titulo_pieza LIKE :s2 OR autor LIKE :s3 OR descripcion LIKE :s4 OR observaciones LIKE :s5)";
+            $term = '%' . trim($filtros['search']) . '%';
+            $params['s1'] = $term;
+            $params['s2'] = $term;
+            $params['s3'] = $term;
+            $params['s4'] = $term;
+            $params['s5'] = $term;
+        }
+
+        // 2. Filtro por ubicación física
+        if (!empty($filtros['ubicacion'])) {
+            $mapUbi = [
+                '1' => 'Acambay',
+                '2' => 'Tenancingo',
+                '3' => 'Toluca',
+                '4' => 'Zinacantepec'
+            ];
+            $ubiText = $mapUbi[$filtros['ubicacion']] ?? $filtros['ubicacion'];
+            $whereParts[] = "(ubicacion_fisica LIKE :ubi OR nombre_titulo_pieza LIKE :ubi2 OR descripcion LIKE :ubi3)";
+            $params['ubi'] = '%' . trim($ubiText) . '%';
+            $params['ubi2'] = '%' . trim($ubiText) . '%';
+            $params['ubi3'] = '%' . trim($ubiText) . '%';
+        }
+
+        // 3. Filtro por año / época
+        if (!empty($filtros['anio'])) {
+            $whereParts[] = "(anio LIKE :anio OR epoca LIKE :epoca OR descripcion LIKE :anioDesc)";
+            $params['anio'] = '%' . trim($filtros['anio']) . '%';
+            $params['epoca'] = '%' . trim($filtros['anio']) . '%';
+            $params['anioDesc'] = '%' . trim($filtros['anio']) . '%';
+        }
+
+        $whereSql = implode(' AND ', $whereParts);
+
+        // Conteo eficiente a nivel SQL
+        $countSql = "SELECT COUNT(*) FROM " . self::$table . " WHERE {$whereSql}";
+        $stmtCount = $db->prepare($countSql);
+        $stmtCount->execute($params);
+        $total = (int)$stmtCount->fetchColumn();
+
+        // Extracción acotada de columnas requeridas para vista
+        $dataSql = "SELECT id_acervo_general, nombre_titulo_pieza, codigo_interno, autor, descripcion, fotografia 
+                    FROM " . self::$table . " 
+                    WHERE {$whereSql} 
+                    ORDER BY id_acervo_general DESC 
+                    LIMIT :offset, :limit";
+        $stmtData = $db->prepare($dataSql);
+        foreach ($params as $k => $v) {
+            $stmtData->bindValue($k, $v, PDO::PARAM_STR);
+        }
+        $stmtData->bindValue(':offset', (int)$offset, PDO::PARAM_INT);
+        $stmtData->bindValue(':limit', (int)$limit, PDO::PARAM_INT);
+        $stmtData->execute();
+
+        return [
+            'piezas' => $stmtData->fetchAll(PDO::FETCH_ASSOC) ?: [],
+            'total'  => $total
+        ];
+    }
 }

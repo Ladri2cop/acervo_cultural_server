@@ -25,7 +25,7 @@ Esta entidad gestiona pinturas, grabados, esculturas, mobiliario histórico, tex
 | Campo | Tipo SQL | Nulo | Descripción y Reglas de Negocio |
 | :--- | :--- | :--- | :--- |
 | `id_acervo_general` | `int` (Auto Inc) | NO | Llave primaria única del registro. |
-| `id_modulo` | `int` | NO | Identificador del módulo (`1` para General). |
+| `id_modulo` | `int` | NO | Identificador del módulo (`5` para General; `3` para Arqueológico, `4` para Numismático). |
 | `codigo_interno` | `varchar(255)` | SÍ | Código patrimonial institucional asignado. |
 | `no_inventario` | `varchar(255)` | SÍ | Número oficial de inventario de bienes muebles. |
 | `nombre_titulo_pieza`| `text` | SÍ | Título formal de la obra o denominación genérica. |
