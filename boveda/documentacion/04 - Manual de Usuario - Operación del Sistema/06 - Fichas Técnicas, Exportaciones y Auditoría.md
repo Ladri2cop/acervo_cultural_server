@@ -59,8 +59,9 @@ El sistema permite descargar la información consultada en pantalla para informe
 
 ### 2.2. Exportar a PDF (`.pdf`)
 - **Cómo hacerlo**: Haz clic en el botón rojo **"Exportar a PDF"**.
-- **Características**:
-  - Genera un catálogo tabulado con tipografía corporativa, logotipos vectoriales de la administración, pie de página con paginación (`Página X de Y`) y fecha y hora de emisión del reporte.
+- **Características y Rendimiento (Versión 1.9.0)**:
+  - **Motor de Alto Rendimiento**: Procesa el inventario en bloques (chunking) de 500 registros con consultas optimizadas a bajo nivel, eliminando bloqueos de pantalla o caídas por tiempo de espera (`timeout`) incluso en padrones masivos.
+  - **Formato Oficial**: Genera un catálogo tabulado con tipografía corporativa, logotipos vectoriales de la administración, pie de página con paginación (`Página X de Y`) y fecha y hora de emisión del reporte.
 
 ---
 

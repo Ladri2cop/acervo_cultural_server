@@ -10,13 +10,22 @@ tags:
   - manual-usuario
 ---
 
-# 👤 Inicio de Sesión y Perfiles de Usuario
+# 👤 Inicio de Sesión, Identidad Visual y Perfiles de Usuario
 
-Bienvenido al **Manual de Operación de Usuario** del Sistema de Gestión de Acervo Cultural. Esta sección explica el proceso de autenticación en la plataforma y el comportamiento de la interfaz según el perfil asignado.
+Bienvenido al **Manual de Operación de Usuario** del Sistema de Información de Patrimonio y Acervo Cultural (**SIPAC**). Esta sección explica la identidad gráfica de la plataforma, el proceso de autenticación y el comportamiento de la interfaz según el perfil asignado.
 
 ---
 
-## 1. Acceso a la Plataforma
+## 1. Identidad Institucional SIPAC
+
+A partir de la versión 1.9.0, la plataforma adopta la identidad visual oficial del Gobierno del Estado de México:
+- **Título en Navegador**: Todas las pestañas del navegador despliegan la nomenclatura estandarizada: `<title>[Sección] - SIPAC</title>` (reemplazando cualquier denominación genérica anterior).
+- **Logotipo y Favicon**: Suite multirresolución institucional (`assets/favicon/favicon.ico`, `favicon-16x16.png`, `favicon-32x32.png` y `apple-touch-icon.png`) visible en pestañas, accesos directos y marcadores.
+- **Avatar Institucional del Sistema**: Representa el Colibrí oficial en la paleta cromática gubernamental Granate (`#8A2035`) y Oro (`#B99056`). Se asigna automáticamente como identidad predeterminada a todos los funcionarios públicos en el Topbar, tablas de administración de usuarios y cédulas de perfil.
+
+---
+
+## 2. Acceso a la Plataforma
 
 Para ingresar al sistema:
 1. Abre tu navegador web de preferencia (Google Chrome, Mozilla Firefox, Microsoft Edge o Safari).
@@ -57,10 +66,11 @@ Tu experiencia en la plataforma dependerá del rol asignado a tu cuenta:
 ### 2.2. 👔 Administrador (Curador / Coordinador de Acervo)
 - **Para quién es**: Directores de museos, conservadores en jefe y coordinadores de colecciones.
 - **Capacidades**:
-  - **Bandeja de Revisión Curatorial**: Aprobar, solicitar cambios o rechazar piezas capturadas por el personal operativo.
+  - **Bandeja de Revisión Curatorial**: Aprobar, solicitar cambios o rechazar piezas capturadas por el personal operativo de su museo o por usuarios dados de alta por su cuenta (`created_by`).
+  - **Creación de Usuarios Dependientes**: Puede dar de alta personal operativo (Capturistas) o de consulta (Lectores Generales); el sistema asigna y bloquea automáticamente su mismo museo de adscripción (`id_museo`) al nuevo usuario.
   - **Préstamos y Traslados**: Autorizar y registrar salidas temporales o definitivas de obra, así como fiscalizar el retorno de las piezas.
-  - Edición y eliminación de registros de cualquier colección.
-  - Exportación de inventarios consolidados a Excel y reportes PDF con sellos oficiales.
+  - Edición y eliminación de registros de cualquier colección bajo su jurisdicción.
+  - Exportación de inventarios consolidados a Excel y reportes PDF de alta velocidad con sellos oficiales.
 
 ### 2.3. ✍️ Capturista (Personal Operativo y Registradores)
 - **Para quién es**: Investigadores, restauradores y catalogadores de campo asignados a los recintos.

@@ -25,3 +25,18 @@
 
 - [x] **7. Habilitar el campo de dimensiones según el tipo de acervo numismático (bidimensionales o tridimensionales).**
   * *Implementación:* Agregadas columnas `cm` y `medidas` en `acervo_numismatica`. Integrado toggle dinámico en el formulario de numismática y modales de edición, con selección automática según tipo de obra (Monedas vs Billetes/Documentos).
+
+- [x] **8. Asignación y herencia automática de museo en usuarios creados por Administradores.**
+  * *Implementación:* En `app/controllers/adminController.php` (`post_usuarios`, `post_editar_usuario`) y `usuariosView.php`. Cuando un Administrador crea un usuario (`created_by`), el sistema hereda automáticamente su `id_museo` y bloquea el selector visual para evitar asignaciones erróneas. El Super Administrador conserva la asignación global irrestricta.
+
+- [x] **9. Validación curatorial en semáforo de revisión para piezas creadas por usuarios dependientes del Administrador.**
+  * *Implementación:* En `adminController.php` (`check_museo_tenancy()`, `get_revision_data()`, `get_mis_registros()`). Los administradores pueden inspeccionar y dictaminar (aprobar, rechazar, solicitar cambios) piezas capturadas por sus usuarios a cargo o asignadas a su recinto, previniendo vulnerabilidades IDOR entre museos.
+
+- [x] **10. Supervisión y visibilidad omnímoda para el rol Super Administrador.**
+  * *Implementación:* El Super Administrador (`id_role = 1` / `slug = super-administrador`) cuenta con bypass territorial en `check_museo_tenancy()` y `get_revision_data()`, permitiéndole auditar y dictaminar cualquier pieza de los 31 recintos culturales.
+
+- [x] **11. Optimización del tiempo de exportación masiva de acervos a PDF.**
+  * *Implementación:* Refactorización en `exportar_acervo_pdf` con consultas SQL directas indexadas y procesamiento en bloques (chunking) de 500 registros, logrando exportación inmediata sin consumo excesivo de memoria ni tiempos de espera.
+
+- [x] **12. Actualización de identidad visual institucional SIPAC.**
+  * *Implementación:* Cambio de denominación en encabezados y título de pestaña del navegador a **SIPAC** (`SITE_NAME = 'SIPAC'`), creación de suite de favicons multirresolución (`assets/favicon/`) e integración de avatar institucional del Colibrí en tonos Granate (`#8A2035`) y Oro (`#B99056`) mediante el helper `get_user_avatar()`.

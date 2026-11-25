@@ -83,6 +83,14 @@ Las respuestas de la API utilizan el tipo MIME `application/json; charset=UTF-8`
 - **Encabezado**: `multipart/form-data`
 - **Payload**: Campos actualizados de la pieza + archivo de fotografía (opcional).
 
+### 2.4. Exportación Masiva de Acervo a PDF (Optimizado)
+- **Ruta**: `POST /admin/exportar_acervo_pdf`
+- **Payload**: `tipo_acervo=general|arqueologico|numismatica&filtro_ubicacion=...&csrf=...`
+- **Arquitectura de Rendimiento (Versión 1.9.0)**:
+  - Generación de PDF optimizada mediante consultas SQL directas indexadas (sin instanciación redundante de modelos pesados).
+  - Procesamiento en bloques (chunking) de 500 registros para evitar el agotamiento de memoria RAM (`memory_limit`) y mitigar tiempos de espera en servidores web.
+  - Streaming directo al buffer de salida con cabeceras `Content-Type: application/pdf; filename=inventario_acervo_*.pdf`.
+
 ---
 
 ## 3. Endpoints del Módulo de Revisión y Semáforo
@@ -103,25 +111,59 @@ sequenceDiagram
     JS-->>Admin: Alerta SweetAlert2 y recarga tabla
 ```
 
-### 3.1. Listado de Revisión
+### 3.1. Listado de Revisión Curatorial
 - **Ruta**: `GET /admin/get_revision_data`
-- **Respuesta**: Lista de piezas con estatus `pendiente`, `cambios_solicitados`, `aprobado` y `rechazado`, enriquecida con badges visuales de semáforo.
+- **Parámetros Query**:
+  - `tipo` *(string, opcional)*: `todos`, `general`, `arqueologico`, `numismatica`.
+  - `semaforo` *(string, opcional)*: `todos`, `pendiente`, `cambios_solicitados`, `aprobado`, `rechazado`.
+  - `search` *(string, opcional)*: Búsqueda textual en código interno, título o autor.
+  - `page` *(int, por defecto 1)*: Paginación.
+  - `per_page` *(int, por defecto 10)*: Registros por página.
+- **Optimización de Rendimiento (Versión 1.9.0)**:
+  - Implementa **Subquery Pushdown** en MariaDB/MySQL unificando los tres tipos de acervo mediante `UNION ALL` con pre-filtrado de límites, reduciendo el tiempo de respuesta de **26 segundos a menos de 100 milisegundos**.
+  - **Alcance Tenancy**: El Super Administrador visualiza todo el inventario estatal. Los Administradores visualizan piezas registradas por ellos mismos, por sus usuarios dependientes (`created_by`), o asignadas a su mismo museo.
+- **Respuesta (200 OK)**:
+```json
+{
+  "status": 200,
+  "data": [
+    {
+      "id": 12,
+      "codigo_interno": "SCYT-AG-0012",
+      "nombre_titulo_pieza": "Retrato de Sor Juana Inés de la Cruz",
+      "tipo_acervo": "general",
+      "estatus_revision": "pendiente",
+      "creador": "Lic. Ana Gómez",
+      "museo": "Museo Virreinal de Zinacantepec",
+      "fecha_registro": "2026-11-20 14:30:00"
+    }
+  ],
+  "pagination": { "page": 1, "per_page": 10, "total_records": 45, "total_pages": 5 }
+}
+```
 
-### 3.2. Autorizar Pieza
+### 3.2. Listado de "Mis Registros en Revisión"
+- **Ruta**: `GET /admin/get_mis_registros`
+- **Función**: Permite a capturistas dar seguimiento al estatus de sus piezas enviadas, y a administradores consultar de forma directa tanto sus propias piezas como las enviadas por sus capturistas dependientes (`created_by = session_user_id`).
+- **Respuesta**: Estructura paginada idéntica a `get_revision_data` filtrada por autoría directa o supervisión jerárquica.
+
+### 3.3. Autorizar Pieza
 - **Ruta**: `POST /admin/autorizar_pieza`
 - **Payload**: `id=12&tipo_acervo=general&csrf=...`
+- **Seguridad**: Valida `check_museo_tenancy()` para evitar IDOR; ejecuta transacción atómica con `Db::query()` y registra auditoría.
 
-### 3.3. Solicitar Cambios (Devolución a Capturista)
+### 3.4. Solicitar Cambios (Devolución a Capturista)
 - **Ruta**: `POST /admin/solicitar_cambios_pieza`
 - **Payload**:
   - `id`: `12`
   - `tipo_acervo`: `general`
   - `observaciones`: `"Corregir las medidas de profundidad y verificar la técnica."`
-- **Efecto**: Guarda snapshot en `datos_anteriores_edicion` y pasa el estatus a `cambios_solicitados`.
+- **Efecto**: Guarda snapshot en `datos_anteriores_edicion`, pasa el estatus a `cambios_solicitados` y valida permisos territoriales con `check_museo_tenancy()`.
 
-### 3.4. Rechazar Pieza
+### 3.5. Rechazar Pieza
 - **Ruta**: `POST /admin/rechazar_pieza`
 - **Payload**: `id=12&tipo_acervo=general&observaciones="Pieza apócrifa o duplicada en inventario"`
+- **Seguridad**: Dictamina descarte definitivo previa comprobación de tenencia territorial y registro forense en auditoría.
 
 ---
 

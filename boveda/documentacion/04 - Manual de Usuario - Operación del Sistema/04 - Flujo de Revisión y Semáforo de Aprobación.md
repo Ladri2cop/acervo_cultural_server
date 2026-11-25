@@ -48,9 +48,12 @@ stateDiagram-v2
 Si tienes el rol de **Administrador** o **Super Administrador**, para evaluar piezas:
 
 1. Ingresa a **"Revisión de Acervo"** en la barra lateral.
-2. Utiliza las pestañas superiores para filtrar por *Pendientes*, *En Revisión* o *Todas las Colecciones*.
-3. En la fila de la pieza a evaluar, despliega el menú **"Acciones"** y pulsa en **"Evaluar Pieza"** (`bx-check-shield`).
-4. Se abrirá la ventana modal de dictamen curatorial con:
+2. Utiliza las pestañas superiores para filtrar por *Pendientes*, *En Revisión*, *Mis Registros* o *Todas las Colecciones*.
+3. **Alcance y Jurisdicción (Versión 1.9.0)**:
+   - **Super Administrador**: Dispone de visibilidad global y puede evaluar piezas de cualquiera de los 31 museos del Estado.
+   - **Administrador**: Puede evaluar tanto las piezas registradas por él mismo como las capturadas por el personal dependiente a su cargo (`created_by`) o pertenecientes a su mismo museo de adscripción.
+4. En la fila de la pieza a evaluar, despliega el menú **"Acciones"** y pulsa en **"Evaluar Pieza"** (`bx-check-shield`).
+5. Se abrirá la ventana modal de dictamen curatorial con:
    - Fotografía de alta resolución de la pieza.
    - Resumen completo de ficha técnica (Título, Autor, Época, Material, Medidas, Procedencia).
    - Datos del usuario capturista y fecha de captura.

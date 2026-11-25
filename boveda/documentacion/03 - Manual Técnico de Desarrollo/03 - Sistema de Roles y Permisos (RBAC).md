@@ -41,6 +41,8 @@ erDiagram
         varchar password
         varchar email
         int id_role FK
+        int id_museo FK
+        int created_by FK
         tinyint status
     }
 
@@ -138,8 +140,41 @@ En `templates/includes/sidebar.php` y vistas de catálogo:
 
 ---
 
-## 5. Referencias Cruzadas
+## 5. Tenencia Territorial por Museo y Jerarquía de Creador (Multi-Tenancy)
+
+A partir de la versión 1.9.0, el sistema cuenta con un esquema de aislamiento y supervisión territorial por museo (`id_museo`) y jerarquía de creación de usuarios (`created_by`), complementando el modelo RBAC tradicional.
+
+### 5.1. Herencia de Museo en Usuarios Creados
+Cuando un usuario con rol de **Administrador** da de alta a un nuevo usuario (típicamente un **Capturista** o **Lector General**):
+1. El backend asigna automáticamente el campo `created_by = $admin_id`.
+2. El nuevo usuario hereda obligatoriamente el `id_museo` del administrador creador.
+3. En la interfaz gráfica (`usuariosView.php`), el selector de museo se bloquea y preselecciona dicho museo de adscripción, impidiendo asignaciones accidentales o no autorizadas a otros recintos.
+4. El rol **Super Administrador** (`id_role = 1`) mantiene el selector editable para asignar o reasignar usuarios libremente a cualquiera de los 31 museos del catálogo.
+
+### 5.2. Reglas de Validación Curatorial y Alcance del Semáforo (`check_museo_tenancy`)
+La función interna `check_museo_tenancy($tipo_acervo, $id_pieza)` en `adminController.php` gobierna qué piezas puede dictaminar cada usuario en los endpoints `/admin/autorizar_pieza`, `/admin/solicitar_cambios_pieza` y `/admin/rechazar_pieza`:
+
+```mermaid
+flowchart TD
+    Inicio["Petición de Dictamen (ID Pieza)"] --> SuperAdmin{"¿Es Super Administrador?"}
+    SuperAdmin -- Sí --> Autorizado["Acceso Permitido (Global)"]
+    SuperAdmin -- No --> EsCreador{"¿Es el creador directo de la pieza?"}
+    EsCreador -- Sí --> Autorizado
+    EsCreador -- No --> EsCreadorDelCapturista{"¿El creador de la pieza fue dado de alta por este admin? (created_by)"}
+    EsCreadorDelCapturista -- Sí --> Autorizado
+    EsCreadorDelCapturista -- No --> MismoMuseo{"¿La pieza pertenece al mismo museo del admin? (id_museo o coincidencia de texto)"}
+    MismoMuseo -- Sí --> Autorizado
+    MismoMuseo -- No --> Denegado["403 Forbidden: Sin privilegios sobre este recinto o pieza"]
+```
+
+### 5.3. Prevención de IDOR (Insecure Direct Object Reference)
+Este mecanismo neutraliza cualquier intento de manipulación cruzada: incluso si un administrador malicioso conoce el identificador numérico de una pieza resguardada en otro museo o registrada por un capturista ajeno a su jurisdicción, el sistema aborta la transacción con una excepción HTTP 403 y registra la alerta de seguridad en la bitácora de auditoría.
+
+---
+
+## 6. Referencias Cruzadas
 - Consulta el flujo de autenticación en: [[01 - Inicio de Sesión y Perfiles de Usuario]]
 - Revisa el controlador central en: [[01 - Controladores y Flujo de Peticiones]]
 - Modelo de datos: [[01 - Diagrama Entidad-Relación (ERD)]]
+- Flujo curatorial de semáforo: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
 

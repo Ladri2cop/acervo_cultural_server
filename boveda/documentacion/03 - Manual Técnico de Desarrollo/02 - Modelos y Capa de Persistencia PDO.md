@@ -106,12 +106,22 @@ classDiagram
 
 ## 3. Manejo de Transacciones y Consistencia de Datos
 
-En operaciones compuestas que involucran más de una tabla (por ejemplo, registrar una transferencia y actualizar la ubicación física de la pieza en su tabla correspondiente), se emplean transacciones explícitas:
+En operaciones compuestas que involucran más de una tabla (por ejemplo, registrar una transferencia y actualizar la ubicación física de la pieza en su tabla correspondiente), se emplean transacciones explícitas gestionadas con precisión atómica.
+
+### 3.1. Arquitectura de Transacciones en `Db.php` (Versión 1.9.0)
+Para solventar conflictos de tipo `PDOException: There is already an active transaction` derivados de consultas de lectura anidadas, la clase `Db` implementa las siguientes reglas arquitectónicas:
+
+1. **Bypass en Consultas de Lectura (`SELECT`)**: `Db::query()` evalúa si la sentencia SQL comienza con palabras reservadas de lectura (`SELECT`, `SHOW`, `DESCRIBE`). De ser así, se ejecutan de manera directa sin iniciar transacciones implícitas en el motor PDO.
+2. **Control de Transacción Local (`$weStartedTransaction`)**: La clase rastrea si la transacción actual fue iniciada en ese mismo bloque o por una capa superior, impidiendo que métodos anidados (como `registrar_auditoria()`) ejecuten un `commit()` o `rollBack()` prematuro sobre la transacción envolvente del negocio.
+3. **Comprobación Defensiva `inTransaction()`**: Los controladores verifican el estado activo de la conexión antes de iniciar o confirmar:
 
 ```php
 $db = Db::connect();
 try {
-  $db->beginTransaction();
+  // Iniciar solo si no hay transacción previa abierta
+  if (!$db->inTransaction()) {
+    $db->beginTransaction();
+  }
 
   // 1. Insertar el movimiento en prestamos_transferencias
   $sqlMov = "INSERT INTO prestamos_transferencias (folio_movimiento, tipo_movimiento, ...) VALUES (...)";
@@ -125,16 +135,18 @@ try {
     $stmtPieza->execute(['nuevo_destino' => $lugarDestino, 'id' => $idPieza]);
   }
 
-  // 3. Registrar auditoría forense
-  $sqlAud = "INSERT INTO auditoria (id_usuario, tipo_accion, ...) VALUES (...)";
-  $stmtAud = $db->prepare($sqlAud);
-  $stmtAud->execute($paramsAud);
+  // 3. Registrar auditoría forense (no interfiere con la transacción principal)
+  $this->registrar_auditoria('prestamos_transferencias', 'alta', $idMovimiento, null, $datosNuevos);
 
-  // Confirmar la transacción
-  $db->commit();
+  // Confirmar la transacción si sigue activa
+  if ($db->inTransaction()) {
+    $db->commit();
+  }
 } catch (Exception $e) {
   // Revertir ante cualquier inconsistencia
-  $db->rollBack();
+  if ($db->inTransaction()) {
+    $db->rollBack();
+  }
   throw $e;
 }
 ```

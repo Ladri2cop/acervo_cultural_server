@@ -15,6 +15,38 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 
 ---
 
+## [Versión 1.9.0] - 2026-11-25
+### 🛡️ Identidad Institucional SIPAC, Herencia Territorial RBAC, Dictamen de Piezas y Transaccionalidad
+- **Identidad Oficial SIPAC y Presencia Institucional**:
+  - **Renombramiento oficial**: Cambio del nombre del sitio a **SIPAC** (*Sistema de Información del Patrimonio Cultural*) en `app/core/settings.php`. Los títulos de las pestañas en el navegador ahora se despliegan formalmente como `<title>[Sección] - SIPAC</title>`.
+  - **Avatares Institucionales de Usuario**:
+    - Creación y despliegue del avatar oficial institucional en alta resolución (`512x512` px) con los colores de identidad del Gobierno del Estado de México: fondo circular en **Granate Institucional** (`#8A2035`), marco metálico en **Dorado** (`#B99056`) y el emblema oficial del **Colibrí** en blanco nítido.
+    - Sustitución definitiva del avatar genérico previo (`bee.png`) por la función helper `get_user_avatar()`.
+    - Integración del avatar en la barra superior (`topbar.php`), en el catálogo de usuarios (`usuariosView.php`) y en la tarjeta de presentación de perfil de usuario (`perfilView.php`).
+  - **Paquete de Favicons Multirresolución Versionados**:
+    - Generación de `favicon.ico` multirresolución (16x16, 32x32, 48x48, 64x64, 128x128, 256x256), `favicon-16x16.png`, `favicon-32x32.png`, `apple-touch-icon.png` (180x180) y `favicon.png` (192x192).
+    - Inyección optimizada en encabezados HTML mediante `get_favicon()` con etiqueta de versión `?v=2.1` para forzar la actualización instantánea en la memoria caché del navegador.
+- **Herencia Territorial Automática en Usuarios Dependientes**:
+  - Actualización retroactiva en base de datos: Todo usuario dependiente creado por un administrador con museo asignado adquiere automáticamente el `id_museo` de su administrador creador (ej. usuario `capturista` `id=6` asignado al Museo de Numismática `id=20`).
+  - Lógica en backend: En `post_usuarios()` y `post_editar_usuario()` de `adminController.php`, si el usuario que registra o edita es un administrador de museo (no Super Admin), el sistema hereda de manera forzosa su `id_museo`, impidiendo la creación o existencia de capturistas huérfanos sin recinto asignado.
+  - Interfaz de administración de usuarios (`usuariosView.php`): Para administradores de museo, el selector manual se bloquea y se sustituye por una insignia informativa que muestra el recinto institucional adscrito, transmitiendo el valor mediante un campo oculto seguro.
+- **Validación y Dictamen Curatorial por Administradores de Museo**:
+  - Ampliación del modelo de tenencia en `check_museo_tenancy()`: Un administrador ahora puede consultar, inspeccionar, autorizar (`autorizar_pieza`), solicitar correcciones (`solicitar_cambios_pieza`) y rechazar (`rechazar_pieza`) piezas creadas por él mismo, piezas capturadas o editadas por usuarios creados bajo su tutela (`created_by`), o pertenecientes a usuarios de su mismo recinto (`id_museo`).
+  - Protección estricta contra ataques de referencia indirecta a objetos (IDOR): Se bloquea con código HTTP `403 Forbidden` cualquier intento de validación o dictamen cruzado entre administradores de recintos diferentes.
+  - Alcance Global de Super Administrador: El rol de Super Administrador (`id_role = 1` o slug `super-administrador`) goza de facultades irrestrictas sobre todos los recintos, usuarios y piezas de Acervo General, Arqueológico y Numismático a nivel estatal.
+  - Integración en "Mis Registros en Revisión": Los administradores pueden consultar de forma unificada en la pestaña correspondiente tanto sus piezas como las capturadas por su equipo de capturistas.
+- **Optimización Extrema de la Estación de Revisión (`/admin/revision`)**:
+  - Reducción drástica del tiempo de carga de la bandeja y cálculo de KPIs de **más de 26 segundos a menos de 100 milisegundos**.
+  - Puesta en marcha de *WHERE pushdown* en las subconsultas de la unión SQL (`acervo_general`, `acervo_arqueologico`, `acervo_numismatica`), evitando escaneos completos no indexados de más de 39,540 registros patrimoniales.
+- **Robustez y Atomización de Transacciones PDO (`app/classes/Db.php`)**:
+  - **Eliminación de transacciones colgantes**: Corrección del comportamiento de `Db::query()` que abría transacciones automáticas en consultas de tipo `SELECT` y las dejaba sin confirmar, provocando la excepción `PDOException: There is already an active transaction` en solicitudes posteriores.
+  - **Soporte de transacciones anidadas seguras**: Introducción de la bandera `$weStartedTransaction` para asegurar que consultas internas (como el registro de auditoría `registrar_auditoria`) no confirmen ni reviertan de forma prematura transacciones abiertas en controladores (`autorizar_pieza`, `PrestamosModel`).
+  - Verificación defensiva `if (!$db->inTransaction())` e `if ($db->inTransaction())` en métodos de dictamen y persistencia.
+- **Optimización de Exportación a PDF de Acervos**:
+  - Aceleración radical del tiempo de respuesta en la exportación de catálogos mediante streaming directo con SQL puro y procesamiento en lotes de 500 registros, preservando íntegramente el diseño, tipografía, cabeceras institucionales y formato oficial del documento.
+
+---
+
 ## [Versión 1.8.0] - 2026-11-24
 ### 🔒 Seguridad de Sesión y Combo Box Dinámico de Colecciones en Préstamos
 - **Política Estricta de Expiración por Inactividad (30 Minutos)**:
