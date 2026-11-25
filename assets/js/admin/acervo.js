@@ -87,9 +87,18 @@ $(document).ready(function () {
       return;
     }
 
-    // Para exportación PDF, verificar si requiere fragmentar en partes de 1,500
+    // Para exportación PDF, verificar si requiere fragmentar en partes optimizadas (500 registros)
+    const $btnPdf = $('#btn-exportar-pdf');
+    const originalBtnHtml = $btnPdf.html();
+    $btnPdf.prop('disabled', true).html('<i class="fas fa-spinner fa-spin fa-sm me-1"></i> Consultando...');
+
+    const restoreBtnPdf = function() {
+      $btnPdf.prop('disabled', false).html(originalBtnHtml);
+    };
+
     const checkUrl = baseUrl + '&count_only=1';
     $.getJSON(checkUrl, function (res) {
+      restoreBtnPdf();
       if (res && res.total > res.limit) {
         let optionsHtml = '';
         for (let i = 1; i <= res.total_partes; i++) {
@@ -124,6 +133,7 @@ $(document).ready(function () {
         window.open(baseUrl, '_blank');
       }
     }).fail(function () {
+      restoreBtnPdf();
       window.open(baseUrl, '_blank');
     });
   });
