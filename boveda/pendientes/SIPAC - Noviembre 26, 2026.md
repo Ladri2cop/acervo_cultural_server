@@ -37,10 +37,21 @@
 
 9. **Catálogo de Tipos Numismáticos y Dimensiones:**
    - **Completado:** Se integraron los 10 tipos oficiales de numismática (Monedas, Billetes, Medallística, etc.) y se habilitó la alternancia de dimensiones bidimensionales (`cm`) y tridimensionales (`medidas`) con guardado persistente en base de datos (Acuerdos 14 y 15).
+   - **Mejora adicional:** Se resolvió la visualización correcta de dimensiones en el modal "Ver Pieza" para numismática y se evitó el desbordamiento visual de texto con auto-expansión vertical.
+
+10. **Módulo de Importación Masiva de Acervo (Excel / CSV):**
+    - **Completado:** Implementación del módulo de carga por lotes con plantillas dinámicas `.xlsx` y `.csv` para Acervo General, Acervo Arqueológico y Acervo Numismático, detección y resolución de duplicados, transacciones atómicas seguras y registro de auditoría (`IMPORT_BATCH`).
+
+11. **Listas Desplegables en Celdas y Catálogos Automatizados:**
+    - **Completado:** Integración en las plantillas Excel (`.xlsx`) de menús desplegables nativos (`DataValidation`) en filas 4 a 500 y hoja complementaria `Catalogos` con los museos, épocas, tipos, técnicas y materiales oficiales.
+
+12. **Blindaje de Esquema y Detección de Discrepancia:**
+    - **Completado:** Validación preventiva que alerta si se sube una plantilla perteneciente a otro acervo, y blindaje de esquema físico (`DESCRIBE {tabla}`) que previene cualquier error de SQL por columnas inexistentes.
 
 ---
 
 ## 🔗 Enlaces a Registros de Trabajo
-* [[pendientes los puntos de DTI]] - Todos los puntos completados.
+* [[pendientes los puntos de DTI]] - Todos los puntos completados (18/18).
 * [[pendientes los puntos de Dirección de Patrimonio y Subdirección de Acervo Cultural]] - Información entregada e integrada.
+* [[08 - Importador Masivo de Acervo por Excel y CSV]] - Manual operativo del módulo de importación masiva.
 * [[Préstamos y Transferencias]] - Módulo documentado.

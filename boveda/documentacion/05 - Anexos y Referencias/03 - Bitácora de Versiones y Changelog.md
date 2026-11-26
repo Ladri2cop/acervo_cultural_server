@@ -36,7 +36,7 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
     - `Omitir duplicados` (*skip*): ignora registros preexistentes sin interrumpir la carga y los reporta como advertencia.
     - `Actualizar existentes` (*update*): actualiza columnas no vacías de la pieza existente preservando su identificador primario.
     - `Rechazar fila` (*error*): clasifica la coincidencia como inconsistencia en la tabla de resultados.
-- **Integración con el Flujo de Calidad De revisión**:
+- **Integración con el Flujo de Calidad y Mesa de Revisión**:
   - Por defecto, toda pieza importada nace con `estatus_revision = 'pendiente'` y `status = 0`, canalizándose a la Mesa de Revisión para dictamen de revisión previo a su visibilidad pública.
   - Opción de aprobación directa e inmediata (`estatus_revision = 'aprobado'`, `status = 1`) disponible para Super Administradores y dictaminadores.
 - **Corrección en Modal de Visualización ("Ver Pieza Numismática")**:
