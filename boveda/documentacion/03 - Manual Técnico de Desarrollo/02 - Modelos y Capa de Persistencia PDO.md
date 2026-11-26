@@ -95,12 +95,42 @@ classDiagram
         +get_permisos(id_usuario)
     }
 
+    class catalogosModel {
+        +getCatalogosDisponibles()
+        +getCatalogoConfig(slug)
+        +getItems(slug, filtroStatus, busqueda, categoria)
+        +getItemById(slug, id)
+        +guardar(slug, data, id)
+        +eliminar(slug, id)
+        +restaurar(slug, id)
+        +getEstadisticas()
+        +getCategorias(slug)
+    }
+
     Model <|-- acervoGeneralModel
     Model <|-- acervoArqueologicoModel
     Model <|-- acervoNumismaticaModel
     Model <|-- prestamosModel
     Model <|-- userModel
+    Model <|-- catalogosModel
 ```
+
+### 2.6. Modelo de Catálogos Maestros (`catalogosModel.php`)
+Centraliza el acceso y mantenimiento de los 8 catálogos oficiales del patrimonio cultural (`museos`, `materiales`, `tecnicas`, `epocas_periodos`, `tipo_obras`, `estado_conservacion`, `colecciones`, `autor_cultura`):
+* **Configuración Unificada**: Método estático `getCatalogosDisponibles()` que mapea cada tabla, llave primaria, campo de nombre descriptivo, títulos, iconos y campos dinámicos (como `categoria`, `ubicacion`, `responsable_museo`, `telefono`, `siglo`).
+* **Borrado Lógico Puro (`eliminar`)**:
+  ```php
+  // Nada se destruye físicamente de la base de datos
+  $stmt = $db->prepare("UPDATE `{$table}` SET `status` = 0, `updated_at` = NOW() WHERE `{$pk}` = :id");
+  $stmt->execute([':id' => $id]);
+  ```
+* **Restauración Instantánea (`restaurar`)**:
+  ```php
+  // Reactiva el elemento y lo vuelve visible para nuevas capturas
+  $stmt = $db->prepare("UPDATE `{$table}` SET `status` = 1, `updated_at` = NOW() WHERE `{$pk}` = :id");
+  $stmt->execute([':id' => $id]);
+  ```
+* **Integración con Auditoría**: Registra automáticamente los eventos `CREAR_CATALOGO`, `ACTUALIZAR_CATALOGO`, `ELIMINAR_CATALOGO` y `RESTAURAR_CATALOGO` con snapshots JSON completos.
 
 ---
 

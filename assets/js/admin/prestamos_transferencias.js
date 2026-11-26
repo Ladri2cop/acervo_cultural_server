@@ -35,12 +35,14 @@ $(document).ready(function () {
     $('#filter-tipo-movimiento').on('change', function () {
       estado.tipoMovimiento = $(this).val();
       estado.page = 1;
+      sincronizarBotonesRapidos(estado.tipoMovimiento, estado.estatus);
       cargarMovimientos();
     });
 
     $('#filter-estatus').on('change', function () {
       estado.estatus = $(this).val();
       estado.page = 1;
+      sincronizarBotonesRapidos(estado.tipoMovimiento, estado.estatus);
       cargarMovimientos();
     });
 
@@ -76,6 +78,33 @@ $(document).ready(function () {
       cargarMovimientos();
     });
 
+    // Click en botón del banner de alerta de vencimientos
+    $('#btn-filtrar-vencidos-banner').on('click', function () {
+      $('#filter-tipo-movimiento').val('prestamo');
+      $('#filter-estatus').val('en_riesgo');
+      estado.tipoMovimiento = 'prestamo';
+      estado.estatus = 'en_riesgo';
+      estado.page = 1;
+      sincronizarBotonesRapidos('prestamo', 'en_riesgo');
+      cargarMovimientos();
+    });
+
+    // Click en botones de filtro rápido (píldoras)
+    $('.btn-filtro-rapido').on('click', function () {
+      const tipo = $(this).data('tipo') || 'todos';
+      const estatus = $(this).data('estatus') || 'todos';
+
+      $('.btn-filtro-rapido').removeClass('active');
+      $(this).addClass('active');
+
+      $('#filter-tipo-movimiento').val(tipo);
+      $('#filter-estatus').val(estatus);
+      estado.tipoMovimiento = tipo;
+      estado.estatus = estatus;
+      estado.page = 1;
+      cargarMovimientos();
+    });
+
     // Click en tarjetas KPI para filtrar rápido
     $('.kpi-card').on('click', function () {
       const tipo = $(this).data('filter-tipo');
@@ -90,6 +119,7 @@ $(document).ready(function () {
         estado.estatus = estatus;
       }
 
+      sincronizarBotonesRapidos(estado.tipoMovimiento, estado.estatus);
       estado.page = 1;
       cargarMovimientos();
     });
@@ -210,6 +240,24 @@ $(document).ready(function () {
     $('#btn-imprimir-expediente').on('click', function () {
       imprimirExpediente();
     });
+
+    // Abrir modal visor de oficio sin descarga automática
+    $(document).on('click', '.btn-ver-oficio-modal', function (e) {
+      e.preventDefault();
+      const url = $(this).data('url');
+      const archivo = $(this).data('archivo');
+      const folio = $(this).data('folio');
+      abrirVisorOficio(url, archivo, folio);
+    });
+
+    // Limpiar visor de oficio al cerrar modal y preservar scroll en modal de detalle si estaba abierto
+    $('#modalVisorOficio').on('hidden.bs.modal', function () {
+      $('#visor-iframe-pdf').attr('src', '');
+      $('#visor-img-preview').attr('src', '');
+      if ($('#modalDetalleMovimiento').hasClass('show')) {
+        $('body').addClass('modal-open');
+      }
+    });
   }
 
   // =========================================================================
@@ -268,12 +316,42 @@ $(document).ready(function () {
   // ACTUALIZACIÓN DE INDICADORES (KPIS)
   // =========================================================================
   function actualizarKPIs(kpis) {
-    $('#kpi-total').text(kpis.total || 0);
-    $('#kpi-pendientes').text(kpis.pendientes_aprobacion || 0);
-    $('#kpi-activos').text(kpis.prestamos_activos || 0);
-    $('#kpi-vencidos').text(kpis.prestamos_vencidos || 0);
-    $('#kpi-devueltos').text(kpis.prestamos_devueltos || 0);
-    $('#kpi-transferencias').text(kpis.transferencias || 0);
+    const total = kpis.total || 0;
+    const pendientes = kpis.pendientes_aprobacion || 0;
+    const activos = kpis.prestamos_activos || 0;
+    const porVencer = kpis.prestamos_por_vencer || 0;
+    const vencidos = kpis.prestamos_vencidos || 0;
+    const devueltos = kpis.prestamos_devueltos || 0;
+    const transferencias = kpis.transferencias || 0;
+
+    $('#kpi-total').text(total);
+    $('#kpi-pendientes').text(pendientes);
+    $('#kpi-activos').text(activos);
+    $('#kpi-por-vencer').text(porVencer);
+    $('#kpi-vencidos').text(vencidos);
+    $('#kpi-devueltos').text(devueltos);
+    $('#kpi-transferencias').text(transferencias);
+
+    // Banner de alerta de préstamos en riesgo
+    const $banner = $('#banner-alerta-vencimientos');
+    const totalEnRiesgo = vencidos + porVencer;
+
+    if (totalEnRiesgo > 0) {
+      $('#banner-conteo-vencidos').text(vencidos);
+      $('#banner-conteo-por-vencer').text(porVencer);
+
+      if (vencidos > 0 && porVencer > 0) {
+        $('#banner-titulo-alerta').html("<i class='bx bx-alarm-exclamation me-1'></i> ¡Atención urgente! Se detectaron préstamos vencidos y por vencer");
+      } else if (vencidos > 0) {
+        $('#banner-titulo-alerta').html("<i class='bx bx-alarm-exclamation me-1'></i> ¡Atención urgente! Se detectaron préstamos con plazo de devolución vencido");
+      } else {
+        $('#banner-titulo-alerta').html("<i class='bx bx-time me-1'></i> Recordatorio preventivo: Préstamos próximos a vencer en los siguientes 7 días");
+      }
+
+      $banner.removeClass('d-none').addClass('d-flex');
+    } else {
+      $banner.addClass('d-none').removeClass('d-flex');
+    }
   }
 
   // =========================================================================
@@ -312,15 +390,20 @@ $(document).ready(function () {
         badgeCat = `<span class="badge bg-success" style="font-size: 0.7rem;">Numismático</span>`;
       }
 
-      // Estatus Badge
+      // Estatus Badge con semáforo institucional
       let badgeEstatus = '';
       if (m.estatus === 'pendiente_aprobacion') {
         badgeEstatus = `<span class="badge bg-warning text-dark"><i class='bx bx-time me-1'></i>Pendiente</span>`;
       } else if (m.estatus === 'activo') {
         if (m.es_vencido) {
-          badgeEstatus = `<span class="badge bg-danger text-white"><i class='bx bx-alarm-exclamation me-1'></i>Vencido</span>`;
+          const txtVenc = (m.dias_vencido > 0) ? `+${m.dias_vencido}d` : 'Hoy';
+          badgeEstatus = `<span class="badge bg-danger text-white pulse-danger d-inline-flex align-items-center gap-1 shadow-sm px-2 py-1" title="Plazo agotado hace ${m.dias_vencido} día(s)"><i class='bx bx-alarm-exclamation'></i>Vencido (${txtVenc})</span>`;
+        } else if (m.es_por_vencer) {
+          const txtPv = (m.dias_restantes === 0) ? 'Vence hoy' : (m.dias_restantes === 1 ? 'Vence mañana' : `Vence en ${m.dias_restantes}d`);
+          badgeEstatus = `<span class="badge text-dark pulse-warning d-inline-flex align-items-center gap-1 shadow-sm px-2 py-1" style="background-color: #ffc107;" title="Préstamo próximo a vencer"><i class='bx bx-time'></i>${txtPv}</span>`;
         } else {
-          badgeEstatus = `<span class="badge bg-info text-white"><i class='bx bx-time me-1'></i>Activo</span>`;
+          const txtEnTiempo = (m.dias_restantes !== null && m.dias_restantes !== undefined) ? ` (${m.dias_restantes}d)` : '';
+          badgeEstatus = `<span class="badge bg-info text-white d-inline-flex align-items-center gap-1 px-2 py-1"><i class='bx bx-check-circle'></i>Activo${txtEnTiempo}</span>`;
         }
       } else if (m.estatus === 'devuelto') {
         badgeEstatus = `<span class="badge bg-success"><i class='bx bx-check-double me-1'></i>Devuelto</span>`;
@@ -340,8 +423,13 @@ $(document).ready(function () {
           htmlFechas += `<div><small class="text-success">Retorno:</small> <span class="text-success font-weight-bold">${formatearFecha(m.fecha_devolucion_real)}</span></div>`;
         } else if (m.fecha_devolucion_estimada) {
           const fEst = formatearFecha(m.fecha_devolucion_estimada);
-          const colorClass = m.es_vencido ? 'text-danger font-weight-bold' : 'text-muted';
-          htmlFechas += `<div><small class="${colorClass}">Plazo:</small> <span class="${colorClass}">${fEst}</span></div>`;
+          if (m.es_vencido) {
+            htmlFechas += `<div><span class="badge bg-danger-subtle text-danger border border-danger px-1 py-0" style="font-size: 0.73rem;"><i class='bx bx-alarm-exclamation me-1'></i>Venció: ${fEst}</span></div>`;
+          } else if (m.es_por_vencer) {
+            htmlFechas += `<div><span class="badge bg-warning-subtle text-dark border border-warning px-1 py-0" style="font-size: 0.73rem;"><i class='bx bx-time me-1'></i>Plazo: ${fEst}</span></div>`;
+          } else {
+            htmlFechas += `<div><small class="text-muted">Plazo:</small> <span class="text-muted">${fEst}</span></div>`;
+          }
         }
       }
 
@@ -357,7 +445,7 @@ $(document).ready(function () {
       if (m.archivo_oficio_url) {
         opcionesDropdown += `
           <li>
-            <a class="dropdown-item" href="${escapeHtml(m.archivo_oficio_url)}" target="_blank" rel="noopener noreferrer">
+            <a class="dropdown-item btn-ver-oficio-modal" href="javascript:void(0);" data-url="${escapeHtml(m.archivo_oficio_url)}" data-archivo="${escapeHtml(m.archivo_oficio || 'Oficio')}" data-folio="${escapeHtml(m.folio)}">
               <i class='bx text-info bx__iconmenu bx-file'></i> Ver Oficio Adjunto
             </a>
           </li>
@@ -559,7 +647,16 @@ $(document).ready(function () {
     estado.tipoAcervo = 'todos';
     estado.search = '';
     estado.page = 1;
+    sincronizarBotonesRapidos('todos', 'todos');
     cargarMovimientos();
+  }
+
+  function sincronizarBotonesRapidos(tipo, estatus) {
+    $('.btn-filtro-rapido').removeClass('active');
+    const $target = $(`.btn-filtro-rapido[data-tipo="${tipo}"][data-estatus="${estatus}"]`);
+    if ($target.length) {
+      $target.addClass('active');
+    }
   }
 
   // =========================================================================
@@ -1164,8 +1261,11 @@ $(document).ready(function () {
             estatusTexto = 'Cancelado';
             estatusClass = 'badge bg-secondary text-white';
           } else if (m.es_vencido) {
-            estatusTexto = 'Plazo Vencido';
-            estatusClass = 'badge bg-danger text-white';
+            estatusTexto = 'Plazo Vencido (' + (m.dias_vencido > 0 ? '+' + m.dias_vencido + ' días' : 'Hoy') + ')';
+            estatusClass = 'badge bg-danger text-white pulse-danger';
+          } else if (m.es_por_vencer) {
+            estatusTexto = 'Por Vencer (' + (m.dias_restantes === 0 ? 'Vence hoy' : (m.dias_restantes === 1 ? 'Vence mañana' : m.dias_restantes + ' días restantes')) + ')';
+            estatusClass = 'badge text-dark pulse-warning';
           }
           $('#det-estatus-badge').text(estatusTexto).attr('class', estatusClass);
 
@@ -1209,9 +1309,14 @@ $(document).ready(function () {
 
           if (m.archivo_oficio_url) {
             $('#det-oficio-container').html(`
-              <a href="${escapeHtml(m.archivo_oficio_url)}" target="_blank" rel="noopener noreferrer" class="btn btn-outline-primary btn-sm">
-                <i class='bx bx-file me-1'></i> Descargar / Ver Oficio Adjunto (${escapeHtml(m.archivo_oficio || 'Oficio')})
-              </a>
+              <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                <button type="button" class="btn btn-primary btn-sm btn-ver-oficio-modal shadow-sm" data-url="${escapeHtml(m.archivo_oficio_url)}" data-archivo="${escapeHtml(m.archivo_oficio || 'Oficio')}" data-folio="${escapeHtml(m.folio)}">
+                  <i class='bx bx-show me-1'></i> Ver Oficio en Pantalla
+                </button>
+                <a href="${escapeHtml(m.archivo_oficio_url)}" download="${escapeHtml(m.archivo_oficio || 'Oficio')}" class="btn btn-outline-secondary btn-sm">
+                  <i class='bx bx-download me-1'></i> Descargar Archivo (${escapeHtml(m.archivo_oficio || 'Oficio')})
+                </a>
+              </div>
             `);
           } else {
             $('#det-oficio-container').html('<span class="text-muted small">Sin documento digital adjunto</span>');
@@ -1481,6 +1586,60 @@ $(document).ready(function () {
       ventanaImpresion.print();
       ventanaImpresion.close();
     }, 400);
+  }
+
+  // =========================================================================
+  // VISOR MODAL DE OFICIO ADJUNTO
+  // =========================================================================
+  function abrirVisorOficio(url, nombreArchivo, folio) {
+    if (!url) {
+      toastr.warning('No se localizó la ruta del archivo de oficio digital.');
+      return;
+    }
+
+    const cleanUrl = url.trim();
+    const filename = (nombreArchivo || cleanUrl.split('/').pop() || 'Oficio').trim();
+    const ext = filename.split('.').pop().toLowerCase();
+
+    const folioBadge = folio ? ` &bull; Folio: <span class="font-monospace text-warning">${escapeHtml(folio)}</span>` : '';
+    $('#visor-oficio-titulo').html(`Oficio Adjunto${folioBadge} &bull; <small class="text-white-50">${escapeHtml(filename)}</small>`);
+    $('#btn-descargar-oficio-visor').attr('href', cleanUrl).attr('download', filename);
+    $('#btn-descargar-oficio-alt').attr('href', cleanUrl).attr('download', filename);
+    $('#btn-abrir-nueva-pestana').attr('href', cleanUrl);
+
+    // Ocultar contenidos previos y mostrar loader
+    $('#visor-oficio-loading').removeClass('d-none');
+    $('#visor-container-pdf').addClass('d-none');
+    $('#visor-container-img').addClass('d-none');
+    $('#visor-container-no-preview').addClass('d-none');
+    $('#visor-iframe-pdf').attr('src', '');
+    $('#visor-img-preview').attr('src', '');
+
+    const modalEl = document.getElementById('modalVisorOficio');
+    if (modalEl) {
+      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+      modal.show();
+    }
+
+    if (ext === 'pdf') {
+      $('#visor-container-pdf').removeClass('d-none');
+      $('#visor-oficio-loading').addClass('d-none');
+      $('#visor-iframe-pdf').attr('src', cleanUrl);
+    } else if (['jpg', 'jpeg', 'png', 'webp', 'gif', 'bmp', 'svg'].includes(ext)) {
+      $('#visor-img-preview').off('load error').on('load', function () {
+        $('#visor-oficio-loading').addClass('d-none');
+        $('#visor-container-img').removeClass('d-none');
+      }).on('error', function () {
+        $('#visor-oficio-loading').addClass('d-none');
+        $('#visor-container-no-preview').removeClass('d-none');
+        $('#visor-no-preview-filename').text(filename);
+      });
+      $('#visor-img-preview').attr('src', cleanUrl);
+    } else {
+      $('#visor-oficio-loading').addClass('d-none');
+      $('#visor-container-no-preview').removeClass('d-none');
+      $('#visor-no-preview-filename').text(filename);
+    }
   }
 
   // =========================================================================

@@ -301,8 +301,7 @@ function user_can_dictate_movement($movimiento): bool
     return true;
   }
 
-  $userRole = get_user('id_role') ?: (isset($_SESSION['user_session']['user']['id_role']) ? $_SESSION['user_session']['user']['id_role'] : (isset($_SESSION['user']['id_role']) ? $_SESSION['user']['id_role'] : null));
-  if ((int)$userRole !== 2) {
+  if (!user_can('dictaminar_prestamo_transferencia')) {
     return false;
   }
 
@@ -334,11 +333,23 @@ function user_can_dictate_movement($movimiento): bool
  */
 function user_has_only_view_permissions(): bool
 {
-  if (is_admin_user()) {
+  if (is_super_admin()) {
     return false;
   }
 
-  $userRole = get_user('id_role');
+  $userRole = get_user('id_role') ?: (isset($_SESSION['user_session']['user']['id_role']) ? $_SESSION['user_session']['user']['id_role'] : (isset($_SESSION['user']['id_role']) ? $_SESSION['user']['id_role'] : null));
+  if (!$userRole) {
+    $userId = get_user_id();
+    if ($userId) {
+      try {
+        $db = Db::connect();
+        $stmt = $db->prepare("SELECT id_role FROM bee_users WHERE id = :id LIMIT 1");
+        $stmt->execute(['id' => $userId]);
+        $val = $stmt->fetchColumn();
+        if ($val) $userRole = $val;
+      } catch (Throwable $t) {}
+    }
+  }
   if (!$userRole) return true;
 
   $roleRow = userModel::query("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1", ['id' => $userRole]);
@@ -372,11 +383,23 @@ function user_has_only_view_permissions(): bool
  */
 function user_can(string $permissionSlug): bool
 {
-  if (is_admin_user()) {
+  if (is_super_admin()) {
     return true;
   }
 
-  $userRole = get_user('id_role');
+  $userRole = get_user('id_role') ?: (isset($_SESSION['user_session']['user']['id_role']) ? $_SESSION['user_session']['user']['id_role'] : (isset($_SESSION['user']['id_role']) ? $_SESSION['user']['id_role'] : null));
+  if (!$userRole) {
+    $userId = get_user_id();
+    if ($userId) {
+      try {
+        $db = Db::connect();
+        $stmt = $db->prepare("SELECT id_role FROM bee_users WHERE id = :id LIMIT 1");
+        $stmt->execute(['id' => $userId]);
+        $val = $stmt->fetchColumn();
+        if ($val) $userRole = $val;
+      } catch (Throwable $t) {}
+    }
+  }
   if (!$userRole) return false;
 
   $roleRow = userModel::query("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1", ['id' => $userRole]);
@@ -398,10 +421,6 @@ function user_can(string $permissionSlug): bool
  */
 function user_can_register(): bool
 {
-  if (is_admin_user()) {
-    return true;
-  }
-
   if (user_has_only_view_permissions()) {
     return false;
   }
@@ -418,10 +437,6 @@ function user_can_register(): bool
  */
 function user_can_view_acervo(): bool
 {
-  if (is_admin_user()) {
-    return true;
-  }
-
   return user_can('ver_acervo_general')
     || user_can('ver_acervo_arqueologico')
     || user_can('ver_acervo_numismatica');
@@ -435,10 +450,6 @@ function user_can_view_acervo(): bool
  */
 function user_can_edit_acervo(?string $tipo = null): bool
 {
-  if (is_admin_user()) {
-    return true;
-  }
-
   if ($tipo !== null) {
     return user_can('editar_acervo_' . $tipo);
   }
@@ -456,10 +467,6 @@ function user_can_edit_acervo(?string $tipo = null): bool
  */
 function user_can_delete_acervo(?string $tipo = null): bool
 {
-  if (is_admin_user()) {
-    return true;
-  }
-
   if ($tipo !== null) {
     return user_can('eliminar_acervo_' . $tipo);
   }
@@ -467,6 +474,130 @@ function user_can_delete_acervo(?string $tipo = null): bool
   return user_can('eliminar_acervo_general')
     || user_can('eliminar_acervo_arqueologico')
     || user_can('eliminar_acervo_numismatica');
+}
+
+/**
+ * Determina si el usuario en sesión puede acceder al módulo de Revisión de Acervo
+ *
+ * @return bool
+ */
+function user_can_access_revision(): bool
+{
+  return user_can('ver_revision_acervo') || user_can('dictaminar_acervo');
+}
+
+/**
+ * Determina si el usuario en sesión puede dictaminar (aprobar/rechazar/solicitar cambios) piezas de acervo
+ *
+ * @return bool
+ */
+function user_can_dictate_acervo(): bool
+{
+  return user_can('dictaminar_acervo');
+}
+
+/**
+ * Determina si el usuario en sesión puede ver la lista de sus propios registros
+ *
+ * @return bool
+ */
+function user_can_view_mis_registros(): bool
+{
+  return user_can('ver_mis_registros');
+}
+
+/**
+ * Determina si el usuario en sesión puede acceder al módulo de Préstamos y Transferencias
+ *
+ * @return bool
+ */
+function user_can_access_prestamos(): bool
+{
+  return user_can('ver_prestamos_transferencias')
+    || user_can('registrar_prestamo_transferencia')
+    || user_can('dictaminar_prestamo_transferencia')
+    || user_can('devolver_prestamo')
+    || user_can('cancelar_prestamo_transferencia');
+}
+
+/**
+ * Determina si el usuario en sesión puede registrar nuevos movimientos (préstamos o transferencias)
+ *
+ * @return bool
+ */
+function user_can_register_prestamos(): bool
+{
+  return user_can('registrar_prestamo_transferencia');
+}
+
+/**
+ * Determina si el usuario en sesión tiene permisos para dictaminar préstamos o transferencias
+ *
+ * @return bool
+ */
+function user_can_dictate_prestamos(): bool
+{
+  return user_can('dictaminar_prestamo_transferencia');
+}
+
+/**
+ * Determina si el usuario en sesión puede registrar la devolución de préstamos de acervo
+ *
+ * @return bool
+ */
+function user_can_return_prestamos(): bool
+{
+  return user_can('devolver_prestamo');
+}
+
+/**
+ * Determina si el usuario en sesión puede cancelar movimientos de obra
+ *
+ * @return bool
+ */
+function user_can_cancel_prestamos(): bool
+{
+  return user_can('cancelar_prestamo_transferencia');
+}
+
+/**
+ * Determina si el usuario en sesión puede acceder y gestionar el módulo de Usuarios
+ *
+ * @return bool
+ */
+function user_can_manage_users(): bool
+{
+  return user_can('gestion_usuarios');
+}
+
+/**
+ * Determina si el usuario en sesión puede acceder y gestionar el módulo de Roles y Permisos
+ *
+ * @return bool
+ */
+function user_can_manage_roles(): bool
+{
+  return user_can('gestion_roles');
+}
+
+/**
+ * Determina si el usuario en sesión puede visualizar la bitácora de Auditoría forense
+ *
+ * @return bool
+ */
+function user_can_view_auditoria(): bool
+{
+  return user_can('ver_auditoria');
+}
+
+/**
+ * Determina si el usuario en sesión puede administrar los Catálogos Maestros del sistema
+ *
+ * @return bool
+ */
+function user_can_manage_catalogos(): bool
+{
+  return user_can('gestion_catalogos');
 }
 
 /**

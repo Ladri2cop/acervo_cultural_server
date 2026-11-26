@@ -137,7 +137,7 @@
                     </div>
                     <input type="email" name="email" id="email" class="form-control" value="<?php echo htmlspecialchars($perfil->email ?? get_user('email')); ?>" required>
                   </div>
-                  <small class="form-text text-muted">A este correo se envían alertas de semáforo curatorial y avisos de préstamo.</small>
+                  <small class="form-text text-muted">A este correo se envían alertas del semáforo y avisos de préstamo.</small>
                 </div>
               </div>
 
@@ -231,7 +231,7 @@
       </div>
 
       <div class="card-footer bg-light py-3 d-flex justify-content-between align-items-center">
-        <span class="small text-muted">Plataforma SIPAC - Sistema de Información de Patrimonio y Acervo Cultural</span>
+        <span class="small text-muted">Plataforma SIPAC - Sistema de Inventario Para el Acervo Cultural</span>
         <a href="#" class="btn btn-outline-danger btn-sm" data-toggle="modal" data-target="#logoutModal">
           <i class="fas fa-sign-out-alt mr-1"></i> Cerrar sesión
         </a>

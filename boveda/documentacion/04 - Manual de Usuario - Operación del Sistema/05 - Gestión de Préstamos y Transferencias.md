@@ -80,7 +80,7 @@ Cuando el museo receptor recibe la notificación de un movimiento pendiente:
      - La obra no se traslada y permanece en su recinto original.
 
 ### 3.2. Desde el Modal "Ver Expediente"
-1. Al abrir el expediente del movimiento, encontrarás el botón para **"Descargar / Ver Oficio Adjunto"**.
+1. Al abrir el expediente del movimiento, encontrarás el botón para **"Ver Oficio en Pantalla"** (que despliega el visor integrado sin descarga automática) y el botón directo de **"Descargar Archivo"**.
 2. En el pie del modal se disponen los botones directos **"Aceptar Movimiento"** y **"Declinar Movimiento"** para evaluar el expediente tras revisar el documento oficial.
 
 ---
@@ -100,6 +100,52 @@ Para préstamos temporales activos que regresan a su sede original:
 Pulsando **"Ver Expediente"** (`bx-eye-alt`):
 - Ficha técnica completa de la pieza y fotografía.
 - Diagrama del trayecto (Origen ➔ Destino).
-- Enlace directo al **Oficio Digital Adjunto**.
+- Botón para **visualizar el Oficio Adjunto en visor modal** o descargarlo.
 - Ficha de dictamen institucional con nombre del funcionario evaluador, fecha y motivo en caso de haber sido declinado.
 - Botón **"Imprimir"** para generar la carátula oficial de entrega-recepción con líneas de firma y sellos institucionales.
+
+---
+
+## 6. Visor Modal de Oficios Adjuntos (Sin Descarga Forzada)
+
+Al pulsar **"Ver Oficio Adjunto"** desde el menú de acciones de cualquier fila o desde el expediente:
+- **No se descarga automáticamente el archivo**: Se abre de inmediato el **Visor Modal Institucional** (`modalVisorOficio`).
+- **Previsualización de Documentos PDF**: Se renderiza en un contenedor interactivo de alta definición dentro de la plataforma, permitiendo lectura, zoom y navegación de páginas.
+- **Previsualización de Imágenes**: Archivos `.jpg`, `.png`, `.jpeg` o `.webp` se despliegan ajustados a escala con opción de pantalla completa.
+- **Archivos Ofimáticos (.doc, .docx)**: Muestra tarjeta descriptiva del archivo con botón para descarga voluntaria.
+- **Acciones Disponibles en el Visor**:
+  - Botón **"Descargar Oficio"** (`btn-descargar-oficio-visor`): Descarga explícita del documento original.
+  - Botón **"Abrir en Pestaña Nueva"**: Permite consultar el archivo en un visor externo del navegador.
+  - Botón **"Cerrar"**: Retorna al módulo o al expediente sin recargar la página.
+
+---
+
+## 7. Semáforo de Plazos y Alertas de Préstamos en Riesgo
+
+Para garantizar la integridad y oportuna restitución del patrimonio cultural en préstamos temporales, SIPAC incorpora un **sistema de semáforo preventivo y reactivo en tiempo real**:
+
+### 6.1. Estados del Semáforo Institucional
+
+| Estado | Criterio Temporal | Indicador Visual | Acción Administrativa Sugerida |
+| :--- | :--- | :--- | :--- |
+| 🔴 **Vencido** | `fecha_estimada < hoy` | Badge rojo pulsante (`pulse-danger`) con días de demora (`Vencido +Xd`) | Notificación urgente a la sede prestataria y requerimiento de restitución inmediata o prórroga con nuevo oficio. |
+| 🟡 **Por Vencer** | `fecha_estimada <= hoy + 7 días` | Badge ámbar pulsante (`pulse-warning`) con cuenta regresiva (`Vence en Xd`, `Vence mañana` o `Vence hoy`) | Notificación preventiva al museo prestatario para coordinar el embalaje y transporte de regreso. |
+| 🟢 **En Tiempo** | `fecha_estimada > hoy + 7 días` | Badge azul/verde (`Activo (Xd)`) | Seguimiento normal de custodia temporal. |
+| 🔵 **Devuelto** | Préstamo concluido | Badge verde (`Devuelto`) con fecha real | Bien cultural reincorporado a sala o bodega de custodia. |
+
+### 6.2. Banner Dinámico de Alerta y Filtro Rápido en 1 Clic
+
+- Cuando el sistema detecta préstamos vencidos o por vencer dentro de la jurisdicción del usuario (sede o global para Super Administrador), se despliega un **banner destacado de alerta** en la parte superior del módulo.
+- El banner cuenta con el botón **"Filtrar en Riesgo"**, el cual aísla de inmediato todos los préstamos que requieren intervención preventiva o correctiva.
+
+### 6.3. Filtros Rápidos (Píldoras)
+
+Encima de la tabla histórica se encuentran las píldoras de acceso rápido sincronizadas con los selectores y tarjetas KPI:
+- `Todos`
+- `Pendientes`
+- `Activos`
+- `Por Vencer (≤7d)`
+- `Vencidos`
+- `En Riesgo (Ambos)`
+- `Devueltos`
+- `Transferencias`

@@ -15,6 +15,136 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 
 ---
 
+## [Versión 1.9.6] - 2026-11-25
+### 🛡️ Borrado Lógico Puro y Restauración en Catálogos Maestros (Zero Physical Delete)
+- **Eliminación del campo y botón "Desactivar"**:
+  - Se eliminó el interruptor switch de estatus del modal de alta/edición de registros.
+  - Se removió el botón individual de "desactivar/activar" de la botonera de acciones de la tabla.
+  - Al dar de alta un registro, este nace automáticamente con estatus `status = 1` (Activo).
+- **Mecanismo de Borrado Lógico (Soft Delete)**:
+  - La acción de eliminar (`.btn-delete-item` / `admin/post_eliminar_catalogo`) fue reconfigurada como **baja lógica pura**: conmuta de forma segura `status` de 1 a 0 en la base de datos (`UPDATE ... SET status = 0, updated_at = NOW()`).
+  - **Cero borrado físico (`DELETE FROM`)**: ningún dato o registro patrimonial se elimina físicamente de la base de datos, garantizando al 100% la preservación de la memoria histórica y la consistencia relacional con el acervo (`acervo_general`, `acervo_arqueologico`, `acervo_numismatica`, `prestamos_transferencias`, `bee_users`).
+  - Los registros con `status = 0` se ocultan de manera automática e inmediata de los formularios de captura de nuevas piezas en el sistema (mediante filtro nativo `WHERE status = 1`), pero se preservan en todas las piezas registradas previamente.
+- **Acción y Endpoint de Restauración Inmediata**:
+  - Para registros en estatus `status = 0` (etiquetados como *Eliminado*), la tabla ofrece un botón de restauración (`.btn-restore-item` con icono `bx bx-undo` y estilo verde).
+  - Nuevo endpoint seguro `adminController::post_restaurar_catalogo()` y método de modelo `catalogosModel::restaurar($slug, $id)` que conmuta `status = 1`, reactivando la disponibilidad del elemento.
+- **Interfaz y Filtros Reconfigurados**:
+  - Insignia de estatus: `Activo` (`badge-status-active`, verde) y `Eliminado` (`badge-status-deleted`, rojo pastel).
+  - Píldoras de filtrado y KPI en cabecera actualizados: *Todos*, *Activos* y *Eliminados* (reemplazando "Inactivos").
+  - Diálogos de confirmación SweetAlert2 didácticos que explican que el registro pasa a baja lógica y puede ser restaurado.
+- **Auditoría Forense Completa**:
+  - Registro forense con eventos `ELIMINAR_CATALOGO` (baja lógica `status 0`) y `RESTAURAR_CATALOGO` (reactivación `status 1`), almacenando snapshots `datos_antes` y `datos_despues` en la tabla `auditoria`.
+
+---
+
+## [Versión 1.9.5] - 2026-11-25
+### 📚 Gestión Administrativa de Catálogos Maestros (CRUD Centralizado)
+- **Módulo Centralizado de Catálogos Maestros (`admin/catalogos`)**:
+  - Arquitectura unificada para la gestión integral de los 8 catálogos oficiales del patrimonio cultural:
+    1. 🏛️ **Museos y Recintos Culturales** (`museos`): 31 recintos oficiales de la Secretaría de Cultura y Turismo.
+    2. 🎨 **Materiales** (`materiales`): 112 materias primas catalogadas.
+    3. 🖌️ **Técnicas de Manufactura y Arte** (`tecnicas`): 167 técnicas artísticas y arqueológicas.
+    4. ⏳ **Épocas y Periodos Históricos** (`epocas_periodos`): 14 periodos históricos y siglos asociados.
+    5. 🖼️ **Tipos de Obra** (`tipo_obras`): 20 tipologías para conmutación de dimensiones bidimensional/tridimensional.
+    6. 🛡️ **Estados de Conservación** (`estado_conservacion`): Bueno, Regular y Malo.
+    7. 📦 **Colecciones** (`colecciones`): Fondos patrimoniales y agrupaciones temáticas.
+    8. 👤 **Autores y Culturas** (`autor_cultura`): Creadores, artistas y civilizaciones prehispánicas.
+- **Representación y Clasificación Temática en Catálogos (Categorías y Disciplinas)**:
+  - Adición y persistencia de la columna `categoria` en las tablas `materiales`, `tecnicas` y `tipo_obras`.
+  - Mapeo institucional conforme a la taxonomía oficial de la Secretaría de Cultura:
+    - **Materiales**: *Materiales Pictóricos (65), Materiales para Culturas Populares (12), Materiales para Ciencias Naturales (6), Arqueológico (22), Numismática (7)*.
+    - **Tipos de Obra**: *Bidimensional (Pintura, Dibujo, Grabado, Fotografía, Acuarela, Textil), Tridimensional (Escultura, Mobiliario, Cerámica, Objeto, Otro), Numismática (Monedas, Billetes, Medallística, etc.)*.
+    - **Técnicas**: *Técnicas Pictóricas, Técnicas de Culturas Populares, Técnicas para Ciencias Naturales, Manufactura Arqueológica, Técnicas Decorativas Arqueológicas*.
+  - Barra superior interactiva de píldoras de filtrado rápido por categoría (`btn-cat-pill`) con conteo de registros por disciplina en tiempo real.
+  - Insignias temáticas con códigos de color diferenciados en la tabla y selector obligatorio de categoría en los modales de alta y edición.
+  - Agrupación automática mediante `<optgroup>` en los selectores de captura del sistema.
+- **Protección de Integridad Relacional y Prevención de Daño a Inventarios**:
+  - Algoritmo defensivo `catalogosModel::contarUsoRelacional()` que inspecciona el uso de cada elemento en piezas (`acervo_general`, `acervo_arqueologico`, `acervo_numismatica`), usuarios (`bee_users`) y préstamos (`prestamos_transferencias`) antes de permitir cualquier borrado.
+  - Bloqueo preventivo de eliminación si el registro se encuentra vinculado a piezas o usuarios existentes, recomendando el apagado lógico (estatus inactivo) para preservar la trazabilidad histórica sin romper registros previos.
+- **Operaciones CRUD en Tiempo Real**:
+  - Alta y edición modal con validación estricta de duplicados y campos obligatorios.
+  - Conmutador rápido de estatus (Activo / Inactivo) con badges visuales (`badge-status-active` / `badge-status-inactive`).
+  - Filtrado en vivo instantáneo por palabra clave y selector de estatus (*Todos, Activos, Inactivos*).
+- **Trazabilidad y Auditoría Forense**:
+  - Registro inmutable en la tabla `auditoria` con acciones `CREAR_CATALOGO`, `ACTUALIZAR_CATALOGO`, `CAMBIO_ESTATUS_CATALOGO` y `ELIMINAR_CATALOGO`, capturando snapshots completos de `datos_antes` y `datos_despues`.
+- **Integración RBAC y Navegación**:
+  - Nuevo permiso oficial `gestion_catalogos` (ID 35) en `bee_permisos` y asignado a Super Administrador y Administrador.
+  - Helper de autorización `user_can_manage_catalogos()` en `bee_custom_functions.php`.
+  - Acceso directo en el menú lateral institucional (`sidebar.php`) bajo la sección de **Gestión**.
+- **Alimentación Dinámica de Selectores en Formularios (`acervo_catalogos.php`)**:
+  - Actualización de los helpers `obtenerOpcionesEpocas()`, `obtenerOpcionesEstadoConservacion()` y `obtenerOpcionesTiposGeneral()` para consultar directamente los registros activos (`status = 1`) de la base de datos, con tolerancia a fallos mediante respaldo estático.
+
+---
+
+## [Versión 1.9.4] - 2026-11-25
+### 🛡️ Ampliación Integral del Esquema RBAC (26 Permisos) y Nueva Interfaz de Roles y Permisos
+- **Ampliación de la Matriz Oficial de Permisos (`bee_permisos`)**:
+  - Incorporación a base de datos de los 11 permisos faltantes para completar la cobertura total de operaciones del sistema (26 permisos en total):
+    - **Revisión y Dictamen**: `ver_revision_acervo`, `dictaminar_acervo`, `ver_mis_registros`.
+    - **Préstamos y Transferencias**: `ver_prestamos_transferencias`, `registrar_prestamo_transferencia`, `dictaminar_prestamo_transferencia`, `devolver_prestamo`, `cancelar_prestamo_transferencia`.
+    - **Gestión Institucional y Auditoría**: `gestion_usuarios`, `gestion_roles`, `ver_auditoria`.
+  - Mapeo institucional en `bee_roles_permisos`: **Super Administrador** asignado con los 26 permisos; **Administrador** asignado con 24 permisos (protección de facultades raíz `admin-access` y `gestion_roles`).
+  - Aplicación de restricción de unicidad `uq_role_permiso (id_role, id_permiso)` para garantizar consistencia referencial y prevenir duplicidades.
+  - **Eliminación del Bypass Heredado de `is_admin_user()` en RBAC**:
+    - Se identificó y resolvió que `is_admin_user()` (que abarca tanto a Super Admin como a Administrador) estaba colocado como bypass previo en `user_can()` y en los helpers de autorización (`user_can_view_auditoria()`, `user_can_access_prestamos()`, etc.).
+    - Se refactorizó la lógica para que **únicamente `is_super_admin()` (Rol ID 1)** mantenga bypass global; para todos los demás roles (incluyendo **Administrador ID 2**), la verificación se ejecuta de manera 100% dinámica contra `bee_roles_permisos`.
+    - Al revocar permisos (p. ej. `ver_auditoria` o `ver_prestamos_transferencias`) a un rol desde la interfaz de Roles y Permisos, los módulos correspondientes desaparecen de inmediato del menú lateral y bloquean las rutas con acceso denegado.
+- **Rediseño Estructurado de la Vista de Roles (`rolesView.php`)**:
+  - Eliminación de la columna técnica de ID en la tabla de roles registrados, optimizando el espacio y focalizando la visualización en el nombre del rol, conteo de permisos asignados y fecha de creación.
+  - Categorización visual y lógica de los permisos en 7 grupos temáticos (*Acervo General, Acervo Arqueológico, Acervo Numismático, Revisión y Dictamen, Préstamos y Transferencias, Reportes y Exportación, Gestión y Auditoría*).
+  - Encabezados con iconos, badges de conteo y botones de selección rápida por categoría (`btn-toggle-cat`).
+  - Botones globales de acción masiva **"Todos"** y **"Ninguno"** tanto en el formulario de alta de nuevo rol como en el modal de edición.
+- **Protección y Restricción del Rol Administrador General (`#13` / `administrador-general`)**:
+  - El rol de Administrador General queda reservado exclusivamente para visualización y asignación por parte del **Super Administrador** al dar de alta o editar usuarios en `admin/usuarios`.
+  - Para administradores regulares o funcionarios de museos, el selector de roles excluye automáticamente tanto al Super Administrador como al Administrador General, con validación de rechazo estricta en el controlador backend (`post_usuarios` y `post_editar_usuario`).
+- **Funciones Helper RBAC y Protección Perimetral**:
+  - Nuevas funciones de verificación granular en `app/functions/bee_custom_functions.php`: `user_can_access_revision()`, `user_can_dictate_acervo()`, `user_can_access_prestamos()`, `user_can_register_prestamos()`, `user_can_dictate_prestamos()`, `user_can_return_prestamos()`, `user_can_cancel_prestamos()`, `user_can_manage_users()`, `user_can_manage_roles()`, `user_can_view_auditoria()`.
+  - Protección de acceso a nivel de controlador (`adminController.php`) en `roles()`, `post_roles()`, `post_editar_rol()`, `borrar_rol()`, `usuarios()`, `post_usuarios()`, `post_editar_usuario()`, `borrar_usuario()`, `auditoria()`, `revision()`, `get_revision_data()`, `autorizar_pieza()`, `solicitar_cambios_pieza()`, `rechazar_pieza()`, `prestamos_transferencias()`, `post_crear_movimiento()`, `post_aceptar_movimiento()`, `post_declinar_movimiento()`, `post_devolver_prestamo()`, `post_cancelar_movimiento()`.
+  - Filtrado condicional en `templates/includes/admin/sidebar.php` según los permisos específicos del rol en sesión.
+
+---
+
+## [Versión 1.9.3] - 2026-11-25
+### ⏱️ Semáforo Institucional de Plazos y Alertas de Préstamos en Riesgo
+- **Lógica Centralizada de Semáforo Temporal (`PrestamosModel::enriquecerSemaforo`)**:
+  - Evaluación cronológica automática de préstamos temporales activos contra la fecha actual (`CURDATE()`):
+    - 🔴 **Vencido**: `fecha_devolucion_estimada < hoy`. Calcula días de retraso (`dias_vencido`) y activa animación `pulse-danger`.
+    - 🟡 **Por Vencer**: `fecha_devolucion_estimada <= hoy + 7 días`. Calcula cuenta regresiva de días restantes (`dias_restantes`) y activa animación `pulse-warning`.
+    - 🟢 **En Tiempo**: `fecha_devolucion_estimada > hoy + 7 días`. Despliega días de vigencia con estatus activo regular.
+    - 🔵 **Devuelto**: Conserva trazabilidad de fecha real de restitución de la obra.
+- **Nuevos Indicadores Clave (KPIs) y Filtrado Avanzado**:
+  - Indicador numérico dedicado para **Próximos a Vencer (≤7d)** (`#kpi-por-vencer`).
+  - Soporte de filtros específicos en backend y frontend para `por_vencer`, `vencido`, `en_riesgo` (vencidos o por vencer combinados) y `en_tiempo`.
+- **Banner Dinámico de Alerta Preventiva**:
+  - Componente de alerta inteligente (`#banner-alerta-vencimientos`) que se activa automáticamente al existir obras con retraso o próximas a vencer en la jurisdicción del usuario (sede asignada o red global para Super Administrador).
+  - Botón de acción inmediata **"Filtrar en Riesgo"** para aislar en 1 clic los préstamos que requieren gestión o requerimiento formal.
+- **Píldoras de Acceso Rápido y Sincronización Bidireccional**:
+  - Barra de botones rápidos (`.btn-filtro-rapido`) para alternar instantáneamente entre *Todos, Pendientes, Activos, Por Vencer, Vencidos, En Riesgo, Devueltos y Transferencias*.
+  - Sincronización automática entre clics en tarjetas KPI, botones de píldoras y selectores desplegables.
+- **Detalle y Expediente del Movimiento**:
+  - Reflejo del estado del semáforo con los días exactos de vencimiento o tiempo restante en el modal de expediente (`mostrarDetalleMovimiento`).
+- **Visor Modal Integrado de Oficios Adjuntos (`modalVisorOficio`)**:
+  - Eliminación de la descarga forzada o automática al hacer clic en *"Ver Oficio Adjunto"*.
+  - Despliegue en modal interactivo con visualización nativa de archivos PDF e imágenes en alta resolución, y opción de descarga controlada mediante el botón *"Descargar Oficio"*.
+
+---
+
+## [Versión 1.9.2] - 2026-11-25
+### 📊 Panel de Control (Dashboard) en Tiempo Real con Indicadores Patrimoniales y Gráficas Dinámicas
+- **Conexión Directa a la Base de Datos (`adminController::index`)**:
+  - Sustitución de datos ficticios y estáticos de la plantilla SB Admin 2 por consultas SQL optimizadas de alta velocidad (<270 ms para más de 39,540 piezas patrimoniales).
+  - Cálculo en tiempo real de piezas totales, inventario oficial aprobado (semáforo verde), piezas en dictamen (pendientes y cambios solicitados) y movimientos activos de préstamos/transferencias.
+- **Gráficas Analíticas con Chart.js**:
+  - **Tendencia de Registro Mensual**: Gráfica de área dinámica con el volumen mensual real de piezas catalogadas e incorporadas al padrón durante los últimos meses.
+  - **Distribución Patrimonial**: Gráfica de dona con proporciones y conteos exactos por colección (*Acervo General*, *Arqueológico* y *Numismático*) utilizando la paleta institucional (Granate `#8A2035`, Oro `#B99056` y Azul `#2e59d9`).
+- **Eliminación de Contenido Simulado y Nuevos Componentes Operativos**:
+  - Eliminación definitiva de bloques de plantilla heredados (*"Lorem ipsum"*, ilustraciones de prueba y enlaces ciegos).
+  - **Actividad Patrimonial Reciente**: Tabla interactiva con las últimas piezas registradas o dictaminadas, mostrando miniatura, código interno, título, colección, museo asignado y badge de semáforo.
+  - **Top 5 Museos con Mayor Acervo**: Ranking con barras de progreso dinámicas que reflejan las sedes y recintos con mayor concentración de bienes culturales.
+  - **Semáforo Global del Inventario**: Desglose porcentual y numérico del estado del inventario (*Aprobado, Pendiente, Cambios Solicitados, Rechazado*) con acceso directo a la estación de revisión.
+
+---
+
 ## [Versión 1.9.1] - 2026-11-25
 ### 🔑 Módulo de Autoservicio de Perfil, Cambio de Contraseña y Saneamiento del Topbar
 - **Gestión Autónoma de Seguridad y Contraseña (`/admin/perfil`)**:
@@ -35,7 +165,7 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 ## [Versión 1.9.0] - 2026-11-25
 ### 🛡️ Identidad Institucional SIPAC, Herencia Territorial RBAC, Dictamen de Piezas y Transaccionalidad
 - **Identidad Oficial SIPAC y Presencia Institucional**:
-  - **Renombramiento oficial**: Cambio del nombre del sitio a **SIPAC** (*Sistema de Información del Patrimonio Cultural*) en `app/core/settings.php`. Los títulos de las pestañas en el navegador ahora se despliegan formalmente como `<title>[Sección] - SIPAC</title>`.
+  - **Renombramiento oficial**: Cambio del nombre del sitio a **SIPAC** (*Sistema de Inventario Para el Acervo Cultural*) en `app/core/settings.php`. Los títulos de las pestañas en el navegador ahora se despliegan formalmente como `<title>[Sección] - SIPAC</title>`.
   - **Avatares Institucionales de Usuario**:
     - Creación y despliegue del avatar oficial institucional en alta resolución (`512x512` px) con los colores de identidad del Gobierno del Estado de México: fondo circular en **Granate Institucional** (`#8A2035`), marco metálico en **Dorado** (`#B99056`) y el emblema oficial del **Colibrí** en blanco nítido.
     - Sustitución definitiva del avatar genérico previo (`bee.png`) por la función helper `get_user_avatar()`.

@@ -58,9 +58,6 @@ if (empty($listaColecciones) && class_exists('PrestamosModel')) {
   <!-- Encabezado Institucional -->
   <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
-      <h1 class="h3 mb-1 text-gray-800 font-weight-bold">
-        <i class='bx bx-swap-horizontal text-primary'></i> Préstamos y Transferencias
-      </h1>
       <p class="text-muted small mb-0">
         Control y seguimiento institucional de movimientos de bienes culturales entre museos, unidades administrativas, áreas de la Secretaría de Cultura y Turismo y dependencias de gobierno.
       </p>
@@ -135,10 +132,66 @@ if (empty($listaColecciones) && class_exists('PrestamosModel')) {
     </div>
   <?php endif; ?>
 
-  <!-- Indicadores Clave (KPIs) -->
-  <div class="row g-3 mb-4">
+  <style>
+    @keyframes pulseDanger {
+      0% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0.6); }
+      70% { box-shadow: 0 0 0 8px rgba(220, 53, 69, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(220, 53, 69, 0); }
+    }
+    .pulse-danger {
+      animation: pulseDanger 2s infinite;
+    }
+    @keyframes pulseWarning {
+      0% { box-shadow: 0 0 0 0 rgba(253, 126, 20, 0.6); }
+      70% { box-shadow: 0 0 0 8px rgba(253, 126, 20, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(253, 126, 20, 0); }
+    }
+    .pulse-warning {
+      animation: pulseWarning 2s infinite;
+    }
+    .btn-xs {
+      padding: 0.2rem 0.55rem;
+      font-size: 0.75rem;
+      line-height: 1.25;
+      border-radius: 0.25rem;
+    }
+    .border-left-orange {
+      border-left: 0.25rem solid #fd7e14 !important;
+    }
+    #modalVisorOficio {
+      z-index: 1065 !important;
+    }
+    .modal-backdrop + .modal-backdrop {
+      z-index: 1060 !important;
+    }
+  </style>
+
+  <!-- Banner Dinámico de Alerta de Vencimientos y Préstamos en Riesgo -->
+  <div id="banner-alerta-vencimientos" class="alert alert-danger py-2 px-3 mb-3 d-none align-items-center justify-content-between shadow-sm border-start border-4 border-danger">
+    <div class="d-flex align-items-center">
+      <div class="pulse-danger me-3 d-flex align-items-center justify-content-center rounded-circle bg-danger text-white flex-shrink-0" style="width: 38px; height: 38px;">
+        <i class='bx bx-alarm-exclamation fs-4'></i>
+      </div>
+      <div>
+        <div class="font-weight-bold text-danger fs-6 mb-0" id="banner-titulo-alerta">
+          ¡Atención! Préstamos en riesgo detectados
+        </div>
+        <div class="text-gray-800 small" id="banner-texto-vencidos">
+          Hay <span class="badge bg-danger text-white font-weight-bold" id="banner-conteo-vencidos">0</span> préstamo(s) con fecha límite vencida y <span class="badge bg-warning text-dark font-weight-bold" id="banner-conteo-por-vencer">0</span> por vencer en los próximos 7 días.
+        </div>
+      </div>
+    </div>
+    <div class="d-flex gap-2 ms-auto mt-2 mt-md-0">
+      <button type="button" class="btn btn-sm btn-danger shadow-sm font-weight-bold" id="btn-filtrar-vencidos-banner">
+        <i class='bx bx-filter-alt me-1'></i> Filtrar en Riesgo
+      </button>
+    </div>
+  </div>
+
+  <!-- Indicadores Clave (KPIs) con Semáforo Institucional -->
+  <div class="row g-2 mb-4">
     <!-- KPI 1: Total Movimientos -->
-    <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="col-xl col-md-4 col-sm-6">
       <div class="card border-left-secondary shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="todos" data-filter-estatus="todos" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="card-body py-2 px-3">
           <div class="text-xs font-weight-bold text-secondary text-uppercase mb-1">Total Movimientos</div>
@@ -149,7 +202,7 @@ if (empty($listaColecciones) && class_exists('PrestamosModel')) {
     </div>
 
     <!-- KPI 2: Pendientes de Aprobación -->
-    <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="col-xl col-md-4 col-sm-6">
       <div class="card border-left-warning shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="todos" data-filter-estatus="pendiente_aprobacion" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="card-body py-2 px-3">
           <div class="d-flex align-items-center justify-content-between">
@@ -158,46 +211,62 @@ if (empty($listaColecciones) && class_exists('PrestamosModel')) {
               <div class="h4 mb-0 font-weight-bold text-warning" id="kpi-pendientes">0</div>
               <small class="text-muted">Por dictaminar</small>
             </div>
-            <i class='bx bx-time text-warning' style="font-size: 2.2rem; opacity: 0.8;"></i>
+            <i class='bx bx-time text-warning' style="font-size: 2rem; opacity: 0.7;"></i>
           </div>
         </div>
       </div>
     </div>
 
     <!-- KPI 3: Préstamos Activos -->
-    <div class="col-xl-2 col-md-4 col-sm-6">
+    <div class="col-xl col-md-4 col-sm-6">
       <div class="card border-left-info shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="prestamo" data-filter-estatus="activo" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="card-body py-2 px-3">
           <div class="d-flex align-items-center justify-content-between">
             <div>
-              <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Préstamos Activos</div>
+              <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Activos</div>
               <div class="h4 mb-0 font-weight-bold text-info" id="kpi-activos">0</div>
               <small class="text-muted">En préstamo</small>
             </div>
-            <i class='bx bx-time-five text-info' style="font-size: 2.2rem; opacity: 0.8;"></i>
+            <i class='bx bx-time-five text-info' style="font-size: 2rem; opacity: 0.7;"></i>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- KPI 4: Préstamos Vencidos -->
-    <div class="col-xl-2 col-md-4 col-sm-6">
+    <!-- KPI 4: Próximos a Vencer (<= 7 días) -->
+    <div class="col-xl col-md-4 col-sm-6">
+      <div class="card border-left-orange shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="prestamo" data-filter-estatus="por_vencer" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+        <div class="card-body py-2 px-3">
+          <div class="d-flex align-items-center justify-content-between">
+            <div>
+              <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #fd7e14;">Por Vencer (≤7d)</div>
+              <div class="h4 mb-0 font-weight-bold" style="color: #fd7e14;" id="kpi-por-vencer">0</div>
+              <small class="text-muted">Próxima entrega</small>
+            </div>
+            <i class='bx bx-alarm text-warning' style="font-size: 2rem; opacity: 0.8; color: #fd7e14 !important;"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI 5: Préstamos Vencidos -->
+    <div class="col-xl col-md-4 col-sm-6">
       <div class="card border-left-danger shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="prestamo" data-filter-estatus="vencido" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="card-body py-2 px-3">
           <div class="d-flex align-items-center justify-content-between">
             <div>
-              <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Préstamos Vencidos</div>
+              <div class="text-xs font-weight-bold text-danger text-uppercase mb-1">Vencidos</div>
               <div class="h4 mb-0 font-weight-bold text-danger" id="kpi-vencidos">0</div>
               <small class="text-muted">Plazo superado</small>
             </div>
-            <i class='bx bx-alarm-exclamation text-danger' style="font-size: 2.2rem; opacity: 0.8;"></i>
+            <i class='bx bx-alarm-exclamation text-danger' style="font-size: 2rem; opacity: 0.8;"></i>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- KPI 5: Préstamos Devueltos -->
-    <div class="col-xl-2 col-md-6 col-sm-6">
+    <!-- KPI 6: Préstamos Devueltos -->
+    <div class="col-xl col-md-4 col-sm-6">
       <div class="card border-left-success shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="prestamo" data-filter-estatus="devuelto" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="card-body py-2 px-3">
           <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Devueltos</div>
@@ -207,8 +276,8 @@ if (empty($listaColecciones) && class_exists('PrestamosModel')) {
       </div>
     </div>
 
-    <!-- KPI 6: Transferencias -->
-    <div class="col-xl-2 col-md-6 col-sm-6">
+    <!-- KPI 7: Transferencias -->
+    <div class="col-xl col-md-4 col-sm-6">
       <div class="card border-left-primary shadow h-100 py-2 kpi-card cursor-pointer" data-filter-tipo="transferencia" data-filter-estatus="completada" style="cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
         <div class="card-body py-2 px-3">
           <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Transferencias</div>
@@ -240,7 +309,10 @@ if (empty($listaColecciones) && class_exists('PrestamosModel')) {
             <option value="todos">Todos los estatus</option>
             <option value="pendiente_aprobacion">Pendientes de aprobación</option>
             <option value="activo">Activos (en curso)</option>
+            <option value="por_vencer">Por vencer (≤7 días)</option>
             <option value="vencido">Vencidos (plazo agotado)</option>
+            <option value="en_riesgo">En riesgo (vencidos o por vencer)</option>
+            <option value="en_tiempo">En tiempo (sin riesgo inmediato)</option>
             <option value="devuelto">Devueltos</option>
             <option value="completada">Completadas (transferencias)</option>
             <option value="declinado">Declinados (rechazados)</option>
@@ -278,6 +350,37 @@ if (empty($listaColecciones) && class_exists('PrestamosModel')) {
           <label class="form-label small d-none d-lg-block mb-1">&nbsp;</label>
           <button type="button" id="btn-reset-filtros" class="btn btn-outline-secondary btn-sm w-100">
             <i class='bx bx-reset'></i> Limpiar Filtros
+          </button>
+        </div>
+      </div>
+
+      <!-- Accesos Rápidos / Píldoras de Filtro -->
+      <div class="row mt-2 pt-2 border-top">
+        <div class="col-12 d-flex flex-wrap align-items-center gap-1">
+          <span class="text-xs text-muted font-weight-bold me-2 text-uppercase"><i class='bx bx-filter me-1'></i>Filtros rápidos:</span>
+          <button type="button" class="btn btn-xs btn-outline-secondary btn-filtro-rapido active" data-tipo="todos" data-estatus="todos">
+            Todos
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-warning btn-filtro-rapido" data-tipo="todos" data-estatus="pendiente_aprobacion">
+            Pendientes
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-info btn-filtro-rapido" data-tipo="prestamo" data-estatus="activo">
+            Activos
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-warning btn-filtro-rapido" data-tipo="prestamo" data-estatus="por_vencer" style="border-color: #fd7e14; color: #fd7e14;">
+            <i class='bx bx-time me-1'></i>Por Vencer (≤7d)
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-danger btn-filtro-rapido" data-tipo="prestamo" data-estatus="vencido">
+            <i class='bx bx-alarm-exclamation me-1'></i>Vencidos
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-danger btn-filtro-rapido" data-tipo="prestamo" data-estatus="en_riesgo">
+            <i class='bx bx-error me-1'></i>En Riesgo (Ambos)
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-success btn-filtro-rapido" data-tipo="prestamo" data-estatus="devuelto">
+            Devueltos
+          </button>
+          <button type="button" class="btn btn-xs btn-outline-primary btn-filtro-rapido" data-tipo="transferencia" data-estatus="completada">
+            Transferencias
           </button>
         </div>
       </div>
@@ -1007,6 +1110,67 @@ if (empty($listaColecciones) && class_exists('PrestamosModel')) {
           </button>
         </div>
         <button type="button" class="btn btn-secondary btn-sm ms-auto" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: Visor de Oficio Adjunto -->
+<div class="modal fade" id="modalVisorOficio" tabindex="-1" aria-labelledby="modalVisorOficioLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable" style="max-width: 92%;">
+    <div class="modal-content shadow-lg border-0">
+      <div class="modal-header bg-primary text-white py-2 px-3 d-flex align-items-center justify-content-between">
+        <h6 class="modal-title font-weight-bold d-flex align-items-center gap-2 mb-0" id="modalVisorOficioLabel">
+          <i class='bx bx-file-blank fs-5'></i>
+          <span id="visor-oficio-titulo">Visor de Oficio Oficial Adjunto</span>
+        </h6>
+        <div class="d-flex align-items-center gap-2">
+          <a href="#" id="btn-descargar-oficio-visor" class="btn btn-light btn-sm font-weight-bold shadow-sm" download>
+            <i class='bx bx-download me-1 text-primary'></i> Descargar Oficio
+          </a>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+      </div>
+      <div class="modal-body p-0 position-relative" style="min-height: 550px; max-height: 82vh; overflow-y: auto; background-color: #f8f9fa;">
+        <!-- Indicador de Carga -->
+        <div id="visor-oficio-loading" class="d-flex flex-column align-items-center justify-content-center text-dark py-5" style="min-height: 400px;">
+          <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+          <span class="fs-6 font-weight-bold text-gray-800">Cargando documento...</span>
+          <small class="text-muted">Preparando vista previa en el visor</small>
+        </div>
+
+        <!-- Contenedor PDF -->
+        <div id="visor-container-pdf" class="d-none w-100 h-100" style="min-height: 550px;">
+          <iframe id="visor-iframe-pdf" src="" class="w-100 border-0 bg-white" style="height: 78vh; min-height: 550px;" allowfullscreen></iframe>
+        </div>
+
+        <!-- Contenedor Imagen -->
+        <div id="visor-container-img" class="d-none w-100 text-center p-3">
+          <img id="visor-img-preview" src="" alt="Oficio Adjunto" class="img-fluid rounded shadow-sm border bg-white" style="max-height: 78vh; object-fit: contain;">
+        </div>
+
+        <!-- Contenedor Otros Formatos (Word, Excel, etc.) -->
+        <div id="visor-container-no-preview" class="d-none text-center text-dark py-5 px-3">
+          <i class='bx bxs-file-doc text-warning' style="font-size: 5rem;"></i>
+          <h5 class="mt-3 font-weight-bold text-gray-800" id="visor-no-preview-filename">documento.docx</h5>
+          <p class="text-muted small mx-auto" style="max-width: 500px;">
+            Este formato de archivo no cuenta con visualizador nativo en el navegador web. Puedes descargarlo de manera segura en tu equipo para abrirlo con la aplicación correspondiente.
+          </p>
+          <a href="#" id="btn-descargar-oficio-alt" class="btn btn-warning btn-sm font-weight-bold mt-2 shadow" download>
+            <i class='bx bx-download me-1'></i> Descargar Documento
+          </a>
+        </div>
+      </div>
+      <div class="modal-footer bg-light py-2 px-3 d-flex justify-content-between align-items-center">
+        <div class="small text-muted" id="visor-oficio-meta">
+          <i class='bx bx-check-shield text-success me-1'></i> Documento oficial resguardado en el repositorio institucional
+        </div>
+        <div class="d-flex gap-2">
+          <a href="#" id="btn-abrir-nueva-pestana" target="_blank" rel="noopener noreferrer" class="btn btn-outline-secondary btn-sm">
+            <i class='bx bx-link-external me-1'></i> Abrir en Pestaña Nueva
+          </a>
+          <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Cerrar</button>
+        </div>
       </div>
     </div>
   </div>

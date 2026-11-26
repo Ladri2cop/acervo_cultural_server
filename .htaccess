@@ -16,8 +16,8 @@
 </IfModule>
 
 <FilesMatch "\.(?i:pdf)$">
-  ForceType application/octet-stream
-  Header set Content-Disposition attachment
+  ForceType application/pdf
+  Header set Content-Disposition inline
 </FilesMatch>
 <FilesMatch "(?i).jpe?g$">
   ForceType application/octet-stream

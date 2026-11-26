@@ -228,16 +228,113 @@ Catálogo de recintos museográficos oficiales del estado.
 | `id_museo` | `int` | NO | *Auto Inc* | **PRI** | Identificador del museo. |
 | `nombre_museo` | `varchar(255)` | SÍ | `NULL` | | Nombre oficial del recinto museográfico. |
 | `ubicacion` | `text` | SÍ | `NULL` | | Domicilio físico, municipio y código postal. |
-| `telefono` | `varchar(10)` | SÍ | `NULL` | | Teléfono de contacto institucional. |
+| `telefono` | `varchar(15)` | SÍ | `NULL` | | Teléfono de contacto institucional. |
 | `responsable_museo` | `varchar(255)` | SÍ | `NULL` | | Nombre del director o custodio general. |
-| `status` | `tinyint(1)` | NO | `1` | | `1` Activo para selección, `0` Inactivo. |
+| `status` | `tinyint(1)` | NO | `1` | | `1` Activo para selección, `0` Baja lógica. |
 | `created_at` | `timestamp` | NO | `CURRENT_TIMESTAMP` | | Fecha de alta en el sistema. |
 | `updated_at` | `timestamp` | SÍ | `NULL` | | Fecha de última edición. |
 
 ---
 
-## 8. Referencias Cruzadas
+## 8. Tabla `materiales`
+Catálogo oficial de materias primas con clasificación por disciplinas.
+
+| Nombre de Campo | Tipo de Dato | Nulo | Default | Clave | Descripción |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `id_material` | `int` | NO | *Auto Inc* | **PRI** | Identificador de la materia prima. |
+| `nombre_material` | `varchar(255)` | SÍ | `NULL` | | Nombre estandarizado del material. |
+| `categoria` | `varchar(100)` | SÍ | `NULL` | | Disciplina: *Pictóricos, Culturas Populares, Ciencias Naturales, Arqueológico, Numismática*. |
+| `status` | `tinyint(1)` | SÍ | `1` | | `1` Activo para captura, `0` Baja lógica. |
+| `created_at` | `timestamp` | NO | `CURRENT_TIMESTAMP` | | Fecha de registro. |
+| `updated_at` | `timestamp` | SÍ | `NULL` | | Fecha de modificación. |
+
+---
+
+## 9. Tabla `tecnicas`
+Catálogo de técnicas de manufactura, artísticas y arqueológicas.
+
+| Nombre de Campo | Tipo de Dato | Nulo | Default | Clave | Descripción |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `id_tecnica` | `int` | NO | *Auto Inc* | **PRI** | Identificador de la técnica. |
+| `nombre_tecnica` | `varchar(50)` | NO | `NULL` | | Denominación curatorial de la técnica. |
+| `categoria` | `varchar(100)` | SÍ | `NULL` | | Disciplina: *Técnicas Pictóricas, Culturas Populares, Ciencias Naturales, Manufactura Arqueológica, Decorativas Arqueológicas*. |
+| `status` | `tinyint(1)` | NO | `1` | | `1` Activo para captura, `0` Baja lógica. |
+| `created_at` | `timestamp` | NO | `CURRENT_TIMESTAMP` | | Fecha de creación. |
+| `updated_at` | `timestamp` | SÍ | `NULL` | | Fecha de modificación. |
+
+---
+
+## 10. Tabla `tipo_obras`
+Catálogo de tipologías que determina el tipo de dimensión (bidimensional vs tridimensional).
+
+| Nombre de Campo | Tipo de Dato | Nulo | Default | Clave | Descripción |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `id_tipo_obra` | `int` | NO | *Auto Inc* | **PRI** | Identificador del tipo de obra. |
+| `nombre_tipo_obra` | `varchar(255)` | SÍ | `NULL` | | Nombre de la tipología (ej. Pintura, Escultura, Moneda). |
+| `categoria` | `varchar(100)` | SÍ | `NULL` | | Formato de dimensión: *Bidimensional*, *Tridimensional*, *Numismática*. |
+| `status` | `tinyint(1)` | SÍ | `1` | | `1` Activo para captura, `0` Baja lógica. |
+| `created_at` | `timestamp` | NO | `CURRENT_TIMESTAMP` | | Fecha de registro. |
+| `updated_at` | `timestamp` | SÍ | `NULL` | | Fecha de modificación. |
+
+---
+
+## 11. Tabla `epocas_periodos`
+Catálogo de periodizaciones históricas del Estado de México y Mesoamérica.
+
+| Nombre de Campo | Tipo de Dato | Nulo | Default | Clave | Descripción |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `id_epoca_periodo` | `int` | NO | *Auto Inc* | **PRI** | Identificador de la época o periodo. |
+| `nombre_epoca_periodo` | `varchar(255)` | SÍ | `NULL` | | Denominación histórica (ej. Posclásico Tardío, Porfiriato). |
+| `siglo` | `varchar(30)` | SÍ | `NULL` | | Siglo o cronología asociada (opcional). |
+| `status` | `tinyint(1)` | SÍ | `1` | | `1` Activo para captura, `0` Baja lógica. |
+| `created_at` | `timestamp` | NO | `CURRENT_TIMESTAMP` | | Fecha de registro. |
+| `updated_at` | `timestamp` | SÍ | `NULL` | | Fecha de modificación. |
+
+---
+
+## 12. Tabla `estado_conservacion`
+Catálogo oficial de los 3 estados de integridad física de los bienes patrimoniales.
+
+| Nombre de Campo | Tipo de Dato | Nulo | Default | Clave | Descripción |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `id_estado_conservacion` | `int` | NO | *Auto Inc* | **PRI** | Identificador del estado. |
+| `nombre_estado_conservacion` | `varchar(255)` | NO | `NULL` | | Estado oficial: *Bueno*, *Regular*, *Malo*. |
+| `status` | `tinyint(1)` | SÍ | `1` | | `1` Activo, `0` Baja lógica. |
+| `created_at` | `timestamp` | NO | `CURRENT_TIMESTAMP` | | Fecha de alta. |
+| `updated_at` | `timestamp` | SÍ | `NULL` | | Fecha de actualización. |
+
+---
+
+## 13. Tabla `colecciones`
+Fondos y colecciones temáticas patrimoniales asociadas a movimientos y exposiciones.
+
+| Nombre de Campo | Tipo de Dato | Nulo | Default | Clave | Descripción |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `id_coleccion` | `int` | NO | *Auto Inc* | **PRI** | Identificador de la colección. |
+| `nombre_coleccion` | `varchar(255)` | SÍ | `NULL` | | Nombre del fondo o colección temático. |
+| `status` | `tinyint(1)` | SÍ | `1` | | `1` Activo, `0` Baja lógica. |
+| `created_at` | `timestamp` | NO | `CURRENT_TIMESTAMP` | | Fecha de alta. |
+| `updated_at` | `timestamp` | SÍ | `NULL` | | Fecha de actualización. |
+
+---
+
+## 14. Tabla `autor_cultura`
+Catálogo de artistas, creadores plásticos y pueblos o culturas originarias.
+
+| Nombre de Campo | Tipo de Dato | Nulo | Default | Clave | Descripción |
+| :--- | :--- | :---: | :---: | :---: | :--- |
+| `id_autor_cultura` | `int` | NO | *Auto Inc* | **PRI** | Identificador del creador o pueblo. |
+| `nombre_autor_cultura` | `varchar(255)` | SÍ | `NULL` | | Nombre del artista o cultura mesoamericana. |
+| `status` | `tinyint(1)` | SÍ | `1` | | `1` Activo, `0` Baja lógica. |
+| `created_at` | `timestamp` | NO | `CURRENT_TIMESTAMP` | | Fecha de alta. |
+| `updated_at` | `timestamp` | SÍ | `NULL` | | Fecha de actualización. |
+
+---
+
+## 15. Referencias Cruzadas
 - Consulta el diagrama visual en: [[01 - Diagrama Entidad-Relación (ERD)]]
 - Tablas de acervo: [[02 - Tablas de Acervo (General, Arqueológico, Numismático)]]
 - Trazabilidad y movimientos: [[03 - Módulo de Préstamos y Transferencias]]
+- Documentación detallada de catálogos: [[05 - Catálogos y Tablas Auxiliares]]
+- Manual de usuario: [[07 - Gestión de Catálogos Maestros]]
 

@@ -134,11 +134,32 @@ graph TD
 - **`post_cancelar_movimiento()`**:
   - Permite al administrador anular un préstamo o transferencia no concretada con registro de causa.
 
+### 3.5. Gestión Centralizada de Catálogos Maestros (`catalogos`, `post_guardar_catalogo`, etc.)
+Protegido por el permiso RBAC `gestion_catalogos` (ID 35) mediante `$this->check_user_permission('gestion_catalogos')`:
+- **`catalogos(?string $slug = null)`**:
+  - Despacha la vista principal `/admin/catalogos`. Si no se pasa `$slug`, toma por defecto `museos`.
+  - Carga la configuración del catálogo, estadísticas de conteo en tiempo real (`getEstadisticas()`), categorías si existen (`getCategorias()`) y registros ordenados por estatus activo y orden alfabético.
+- **`get_catalogo_item()`** (GET AJAX):
+  - Retorna en formato JSON los datos del registro por su ID y catálogo para poblar el modal de edición.
+- **`post_guardar_catalogo()`** (POST AJAX):
+  - Valida token CSRF y campos obligatorios.
+  - Para nuevos registros: inserta con `status = 1` y registra auditoría `CREAR_CATALOGO`.
+  - Para edición: actualiza campos y registra auditoría `ACTUALIZAR_CATALOGO` con snapshots antes/después.
+- **`post_eliminar_catalogo()`** (POST AJAX):
+  - **Baja Lógica Pura**: Invoca `catalogosModel::eliminar($slug, $id)` que ejecuta `UPDATE {tabla} SET status = 0, updated_at = NOW()`.
+  - No ejecuta `DELETE FROM`, preservando la integridad histórica de piezas y movimientos.
+  - Registra auditoría `ELIMINAR_CATALOGO`.
+- **`post_restaurar_catalogo()`** (POST AJAX):
+  - Conmuta el estatus de `0` a `1` (`UPDATE {tabla} SET status = 1, updated_at = NOW()`).
+  - Reactiva la disponibilidad del elemento en los selectores del sistema.
+  - Registra auditoría `RESTAURAR_CATALOGO`.
+
 ---
 
 ## 4. Referencias Cruzadas
 - Especificación de payloads: [[04 - Endpoints AJAX y API Interna]]
 - Modelos subyacentes: [[02 - Modelos y Capa de Persistencia PDO]]
+- Manual de Catálogos: [[07 - Gestión de Catálogos Maestros]]
 - Interfaz gráfica y scripts JS: [[05 - Componentes Frontend, Estilos CSS y JavaScript]]
 - Matriz de permisos: [[03 - Sistema de Roles y Permisos (RBAC)]]
 

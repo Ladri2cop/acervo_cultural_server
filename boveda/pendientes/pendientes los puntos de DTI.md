@@ -40,3 +40,9 @@
 
 - [x] **12. Actualización de identidad visual institucional SIPAC.**
   * *Implementación:* Cambio de denominación en encabezados y título de pestaña del navegador a **SIPAC** (`SITE_NAME = 'SIPAC'`), creación de suite de favicons multirresolución (`assets/favicon/`) e integración de avatar institucional del Colibrí en tonos Granate (`#8A2035`) y Oro (`#B99056`) mediante el helper `get_user_avatar()`.
+
+- [x] **13. Dashboard y analítica patrimonial en tiempo real.**
+  * *Implementación:* En `adminController.php` (`index()`) y `indexView.php`. Sustitución de valores demo por KPIs reales de la base de datos (conteo de acervo total, semáforo curatorial, préstamos activos y top 5 de museos), gráficas dinámicas en Chart.js y tabla de piezas recientemente registradas con acceso directo a revisión.
+
+- [x] **14. Sistema de semáforo preventivo y alertas de préstamos vencidos / próximos a vencer en Préstamos y Transferencias.**
+  * *Implementación:* En `app/models/prestamosModel.php`, `templates/views/admin/prestamos/prestamosView.php` y `assets/js/admin/prestamos_transferencias.js` / `prestamos.js`. Alertas automáticas para préstamos vencidos (`< hoy`) y por vencer (`<= 7 días`), banner de alerta reactiva con botón para filtrar en riesgo en 1 clic, KPI específico para obras por vencer, badges animados con efecto de pulso (`pulse-danger` y `pulse-warning`) y barra de píldoras de filtrado rápido.

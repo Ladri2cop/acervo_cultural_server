@@ -21,3 +21,16 @@ AddType text/plain .html .htm .shtml .xhtml
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
 </IfModule>
+
+<FilesMatch "\.(?i:pdf)$">
+    ForceType application/pdf
+    <IfModule mod_headers.c>
+        Header set Content-Disposition inline
+    </IfModule>
+</FilesMatch>
+
+<FilesMatch "\.(?i:jpe?g|png|webp|gif)$">
+    <IfModule mod_headers.c>
+        Header set Content-Disposition inline
+    </IfModule>
+</FilesMatch>

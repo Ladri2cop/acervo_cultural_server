@@ -12,7 +12,7 @@ tags:
 
 # 👤 Inicio de Sesión, Identidad Visual y Perfiles de Usuario
 
-Bienvenido al **Manual de Operación de Usuario** del Sistema de Información de Patrimonio y Acervo Cultural (**SIPAC**). Esta sección explica la identidad gráfica de la plataforma, el proceso de autenticación y el comportamiento de la interfaz según el perfil asignado.
+Bienvenido al **Manual de Operación de Usuario** del Sistema de Inventario Para el Acervo Cultural (**SIPAC**). Esta sección explica la identidad gráfica de la plataforma, el proceso de autenticación y el comportamiento de la interfaz según el perfil asignado.
 
 ---
 

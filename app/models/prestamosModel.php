@@ -34,10 +34,7 @@ class PrestamosModel extends Model
         $mov['fotografia_url'] = ($pieza && !empty($pieza['fotografia'])) ? 'assets/uploads/' . $pieza['fotografia'] : '';
         $mov['archivo_oficio_url'] = !empty($mov['archivo_oficio']) ? 'assets/uploads/oficios_movimientos/' . $mov['archivo_oficio'] : '';
         $mov['puede_dictaminar'] = function_exists('user_can_dictate_movement') ? user_can_dictate_movement($mov) : false;
-        $mov['es_vencido'] = ($mov['tipo_movimiento'] === 'prestamo' && 
-                              $mov['estatus'] === 'activo' && 
-                              !empty($mov['fecha_devolucion_estimada']) && 
-                              strtotime($mov['fecha_devolucion_estimada']) < strtotime(date('Y-m-d')));
+        self::enriquecerSemaforo($mov);
         return $mov;
     }
 
@@ -69,11 +66,57 @@ class PrestamosModel extends Model
         $mov['fotografia_url'] = ($pieza && !empty($pieza['fotografia'])) ? 'assets/uploads/' . $pieza['fotografia'] : '';
         $mov['archivo_oficio_url'] = !empty($mov['archivo_oficio']) ? 'assets/uploads/oficios_movimientos/' . $mov['archivo_oficio'] : '';
         $mov['puede_dictaminar'] = function_exists('user_can_dictate_movement') ? user_can_dictate_movement($mov) : false;
-        $mov['es_vencido'] = ($mov['tipo_movimiento'] === 'prestamo' && 
-                              $mov['estatus'] === 'activo' && 
-                              !empty($mov['fecha_devolucion_estimada']) && 
-                              strtotime($mov['fecha_devolucion_estimada']) < strtotime(date('Y-m-d')));
+        self::enriquecerSemaforo($mov);
         return $mov;
+    }
+
+    /**
+     * Enriquece un registro de movimiento con el estado del semáforo institucional
+     * Calcula días restantes, vencidos y alerta de tiempo
+     */
+    public static function enriquecerSemaforo(&$mov, $today = null)
+    {
+        if ($today === null) {
+            $today = date('Y-m-d');
+        }
+        $esPrestamo = ($mov['tipo_movimiento'] === 'prestamo');
+        $esActivo = ($mov['estatus'] === 'activo');
+        $fechaEstimada = !empty($mov['fecha_devolucion_estimada']) ? $mov['fecha_devolucion_estimada'] : null;
+
+        $esVencido = false;
+        $esPorVencer = false;
+        $diasVencido = 0;
+        $diasRestantes = null;
+        $alertaTiempo = 'normal'; // 'vencido', 'por_vencer', 'en_tiempo', 'devuelto', 'completada', 'pendiente', etc.
+
+        if ($esPrestamo && $esActivo && $fechaEstimada) {
+            $diffDays = (int)round((strtotime($fechaEstimada) - strtotime($today)) / 86400);
+            if ($diffDays < 0) {
+                $esVencido = true;
+                $diasVencido = abs($diffDays);
+                $diasRestantes = 0;
+                $alertaTiempo = 'vencido';
+            } elseif ($diffDays <= 7) {
+                $esPorVencer = true;
+                $diasRestantes = $diffDays;
+                $alertaTiempo = 'por_vencer';
+            } else {
+                $diasRestantes = $diffDays;
+                $alertaTiempo = 'en_tiempo';
+            }
+        } elseif ($mov['estatus'] === 'devuelto') {
+            $alertaTiempo = 'devuelto';
+        } elseif ($mov['tipo_movimiento'] === 'transferencia' && $mov['estatus'] === 'completada') {
+            $alertaTiempo = 'completada';
+        } else {
+            $alertaTiempo = $mov['estatus'];
+        }
+
+        $mov['es_vencido'] = $esVencido;
+        $mov['es_por_vencer'] = $esPorVencer;
+        $mov['dias_vencido'] = $diasVencido;
+        $mov['dias_restantes'] = $diasRestantes;
+        $mov['alerta_tiempo'] = $alertaTiempo;
     }
 
     /**
@@ -115,7 +158,11 @@ class PrestamosModel extends Model
         $db = Db::connect();
         $today = date('Y-m-d');
         $where = [];
-        $params = ['today' => $today];
+        $params = [
+            'today'     => $today,
+            'today_pv1' => $today,
+            'today_pv2' => $today
+        ];
 
         $numArgs = func_num_args();
         if ($esSuperAdmin === null && $numArgs < 3) {
@@ -159,6 +206,7 @@ class PrestamosModel extends Model
                     'pendientes_aprobacion' => 0,
                     'prestamos_activos'     => 0,
                     'prestamos_vencidos'    => 0,
+                    'prestamos_por_vencer'  => 0,
                     'prestamos_devueltos'   => 0,
                     'transferencias'        => 0,
                     'declinados'            => 0
@@ -174,6 +222,7 @@ class PrestamosModel extends Model
                 SUM(CASE WHEN estatus = 'pendiente_aprobacion' THEN 1 ELSE 0 END) AS pendientes_aprobacion,
                 SUM(CASE WHEN tipo_movimiento = 'prestamo' AND estatus = 'activo' THEN 1 ELSE 0 END) AS prestamos_activos,
                 SUM(CASE WHEN tipo_movimiento = 'prestamo' AND estatus = 'activo' AND fecha_devolucion_estimada IS NOT NULL AND fecha_devolucion_estimada < :today THEN 1 ELSE 0 END) AS prestamos_vencidos,
+                SUM(CASE WHEN tipo_movimiento = 'prestamo' AND estatus = 'activo' AND fecha_devolucion_estimada IS NOT NULL AND fecha_devolucion_estimada >= :today_pv1 AND fecha_devolucion_estimada <= DATE_ADD(:today_pv2, INTERVAL 7 DAY) THEN 1 ELSE 0 END) AS prestamos_por_vencer,
                 SUM(CASE WHEN tipo_movimiento = 'prestamo' AND estatus = 'devuelto' THEN 1 ELSE 0 END) AS prestamos_devueltos,
                 SUM(CASE WHEN tipo_movimiento = 'transferencia' AND estatus = 'completada' THEN 1 ELSE 0 END) AS transferencias,
                 SUM(CASE WHEN estatus = 'declinado' THEN 1 ELSE 0 END) AS declinados
@@ -189,6 +238,7 @@ class PrestamosModel extends Model
             'pendientes_aprobacion' => (int)($res['pendientes_aprobacion'] ?? 0),
             'prestamos_activos'     => (int)($res['prestamos_activos'] ?? 0),
             'prestamos_vencidos'    => (int)($res['prestamos_vencidos'] ?? 0),
+            'prestamos_por_vencer'  => (int)($res['prestamos_por_vencer'] ?? 0),
             'prestamos_devueltos'   => (int)($res['prestamos_devueltos'] ?? 0),
             'transferencias'        => (int)($res['transferencias'] ?? 0),
             'declinados'            => (int)($res['declinados'] ?? 0)
@@ -252,6 +302,16 @@ class PrestamosModel extends Model
             if ($filters['estatus'] === 'vencido') {
                 $where[] = "pt.tipo_movimiento = 'prestamo' AND pt.estatus = 'activo' AND pt.fecha_devolucion_estimada IS NOT NULL AND pt.fecha_devolucion_estimada < :today_venc";
                 $params['today_venc'] = date('Y-m-d');
+            } elseif ($filters['estatus'] === 'por_vencer') {
+                $where[] = "pt.tipo_movimiento = 'prestamo' AND pt.estatus = 'activo' AND pt.fecha_devolucion_estimada IS NOT NULL AND pt.fecha_devolucion_estimada >= :today_pv1 AND pt.fecha_devolucion_estimada <= DATE_ADD(:today_pv2, INTERVAL 7 DAY)";
+                $params['today_pv1'] = date('Y-m-d');
+                $params['today_pv2'] = date('Y-m-d');
+            } elseif ($filters['estatus'] === 'en_riesgo') {
+                $where[] = "pt.tipo_movimiento = 'prestamo' AND pt.estatus = 'activo' AND pt.fecha_devolucion_estimada IS NOT NULL AND pt.fecha_devolucion_estimada <= DATE_ADD(:today_riesgo, INTERVAL 7 DAY)";
+                $params['today_riesgo'] = date('Y-m-d');
+            } elseif ($filters['estatus'] === 'en_tiempo') {
+                $where[] = "pt.tipo_movimiento = 'prestamo' AND pt.estatus = 'activo' AND (pt.fecha_devolucion_estimada IS NULL OR pt.fecha_devolucion_estimada > DATE_ADD(:today_entiempo, INTERVAL 7 DAY))";
+                $params['today_entiempo'] = date('Y-m-d');
             } elseif (in_array($filters['estatus'], ['pendiente_aprobacion', 'activo', 'devuelto', 'completada', 'declinado', 'cancelado'])) {
                 $where[] = "pt.estatus = :estatus";
                 $params['estatus'] = $filters['estatus'];
@@ -315,10 +375,7 @@ class PrestamosModel extends Model
 
         $today = date('Y-m-d');
         foreach ($rows as &$r) {
-            $r['es_vencido'] = ($r['tipo_movimiento'] === 'prestamo' && 
-                                $r['estatus'] === 'activo' && 
-                                !empty($r['fecha_devolucion_estimada']) && 
-                                strtotime($r['fecha_devolucion_estimada']) < strtotime($today));
+            self::enriquecerSemaforo($r, $today);
             
             // Obtener foto rápida de la pieza
             $pieza = self::obtenerDetallePieza($r['tipo_acervo'], $r['id_pieza']);

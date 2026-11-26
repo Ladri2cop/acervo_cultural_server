@@ -146,48 +146,123 @@ class adminController extends Controller implements ControllerInterface
       exit;
     }
 
-    register_scripts([JS . 'admin/demo.js'], 'Chartjs gráficas para administración');
+    $db = Db::connect();
 
     require_once APP . 'models/acervoGeneralModel.php';
     require_once APP . 'models/acervoArqueologicoModel.php';
     require_once APP . 'models/acervoNumismaticaModel.php';
 
+    // 1. Totales de piezas aprobadas por colección
     $totalGeneral = AcervoGeneralModel::getTotal();
     $totalArq     = AcervoArqueologicoModel::getTotal();
     $totalNum     = AcervoNumismaticaModel::getTotal();
+    $totalAprobados = $totalGeneral + $totalArq + $totalNum;
 
-    $totalRegistrados = $totalGeneral + $totalArq + $totalNum;
+    // 2. Semáforo de dictamen en tiempo real
+    $sqlSemaforo = "SELECT estatus_revision, COUNT(*) as cnt FROM (
+        SELECT estatus_revision FROM acervo_general
+        UNION ALL
+        SELECT estatus_revision FROM acervo_arqueologico
+        UNION ALL
+        SELECT estatus_revision FROM acervo_numismatica
+    ) t GROUP BY estatus_revision";
+    $semaforoRows = $db->query($sqlSemaforo)->fetchAll(PDO::FETCH_KEY_PAIR);
+    $totalPendientes = (int)($semaforoRows['pendiente'] ?? 0);
+    $totalCambios    = (int)($semaforoRows['cambios_solicitados'] ?? 0);
+    $totalRechazados = (int)($semaforoRows['rechazado'] ?? 0);
+    $totalEnRevision = $totalPendientes + $totalCambios;
+    $totalRegistrados = $totalAprobados + $totalEnRevision + $totalRechazados;
 
-    $this->setTitle('Administración');
+    // 3. Métricas de Préstamos y Traslados
+    $stmtPrestamos = $db->query("SELECT 
+        COUNT(*) as total_movimientos,
+        SUM(CASE WHEN estatus = 'activo' THEN 1 ELSE 0 END) as activos,
+        SUM(CASE WHEN estatus = 'activo' AND fecha_devolucion_estimada IS NOT NULL AND fecha_devolucion_estimada < CURDATE() THEN 1 ELSE 0 END) as vencidos
+        FROM prestamos_transferencias");
+    $prestamosStats = $stmtPrestamos->fetch(PDO::FETCH_ASSOC);
+    $prestamosActivos = (int)($prestamosStats['activos'] ?? 0);
+    $prestamosVencidos = (int)($prestamosStats['vencidos'] ?? 0);
+    $prestamosTotal = (int)($prestamosStats['total_movimientos'] ?? 0);
+
+    // 4. Total de Museos Activos
+    $totalMuseos = (int) $db->query("SELECT COUNT(*) FROM museos WHERE status = 1")->fetchColumn();
+
+    // 5. Top 5 Museos con Mayor Acervo Registrado
+    $sqlTopMuseos = "SELECT COALESCE(NULLIF(TRIM(ubicacion_fisica), ''), 'Sin Asignar') as museo, COUNT(*) as total 
+        FROM (
+            SELECT ubicacion_fisica FROM acervo_general WHERE status = 1
+            UNION ALL
+            SELECT ubicacion_fisica FROM acervo_arqueologico WHERE status = 1
+            UNION ALL
+            SELECT ubicacion_fisica FROM acervo_numismatica WHERE status = 1
+        ) u 
+        GROUP BY museo 
+        ORDER BY total DESC 
+        LIMIT 5";
+    $topMuseos = $db->query($sqlTopMuseos)->fetchAll(PDO::FETCH_ASSOC);
+
+    // 6. Tendencia de Registro Mensual (Últimos 6 meses)
+    $sqlMeses = "SELECT DATE_FORMAT(created_at, '%Y-%m') as periodo, COUNT(*) as total 
+        FROM (
+            SELECT created_at FROM acervo_general
+            UNION ALL
+            SELECT created_at FROM acervo_arqueologico
+            UNION ALL
+            SELECT created_at FROM acervo_numismatica
+        ) t 
+        WHERE created_at IS NOT NULL AND created_at >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH) 
+        GROUP BY periodo 
+        ORDER BY periodo ASC";
+    $mesesRaw = $db->query($sqlMeses)->fetchAll(PDO::FETCH_ASSOC);
+    $mesesNombres = [
+      '01' => 'Ene', '02' => 'Feb', '03' => 'Mar', '04' => 'Abr',
+      '05' => 'May', '06' => 'Jun', '07' => 'Jul', '08' => 'Ago',
+      '09' => 'Sep', '10' => 'Oct', '11' => 'Nov', '12' => 'Dic'
+    ];
+    $chartMesesLabels = [];
+    $chartMesesValues = [];
+    foreach ($mesesRaw as $m) {
+      $partes = explode('-', $m['periodo']);
+      $mesNum = $partes[1] ?? '';
+      $nomMes = ($mesesNombres[$mesNum] ?? $mesNum) . ' ' . ($partes[0] ?? '');
+      $chartMesesLabels[] = $nomMes;
+      $chartMesesValues[] = (int)$m['total'];
+    }
+
+    // 7. Actividad Patrimonial Reciente (Últimas 6 piezas)
+    $sqlRecientes = "(SELECT id_acervo_general as id, 'general' as tipo, codigo_interno, nombre_titulo_pieza as titulo, fotografia, ubicacion_fisica, estatus_revision, created_at FROM acervo_general ORDER BY id_acervo_general DESC LIMIT 6)
+    UNION ALL
+    (SELECT id_acervo_arq as id, 'arqueologico' as tipo, codigo_interno, nombre_titulo_pieza as titulo, fotografia, ubicacion_fisica, estatus_revision, created_at FROM acervo_arqueologico ORDER BY id_acervo_arq DESC LIMIT 6)
+    UNION ALL
+    (SELECT id_acervo_numismatica as id, 'numismatica' as tipo, codigo_interno, denominacion as titulo, fotografia, ubicacion_fisica, estatus_revision, created_at FROM acervo_numismatica ORDER BY id_acervo_numismatica DESC LIMIT 6)
+    ORDER BY created_at DESC, id DESC LIMIT 6";
+    $piezasRecientes = $db->query($sqlRecientes)->fetchAll(PDO::FETCH_ASSOC);
+
+    $this->setTitle('Dashboard');
     $this->addToData('totalRegistrados', $totalRegistrados);
+    $this->addToData('totalAprobados', $totalAprobados);
     $this->addToData('totalGeneral', $totalGeneral);
     $this->addToData('totalArq', $totalArq);
     $this->addToData('totalNum', $totalNum);
+    $this->addToData('totalPendientes', $totalPendientes);
+    $this->addToData('totalCambios', $totalCambios);
+    $this->addToData('totalRechazados', $totalRechazados);
+    $this->addToData('totalEnRevision', $totalEnRevision);
+    $this->addToData('prestamosActivos', $prestamosActivos);
+    $this->addToData('prestamosVencidos', $prestamosVencidos);
+    $this->addToData('prestamosTotal', $prestamosTotal);
+    $this->addToData('totalMuseos', $totalMuseos);
+    $this->addToData('topMuseos', $topMuseos);
+    $this->addToData('chartMesesLabels', $chartMesesLabels);
+    $this->addToData('chartMesesValues', $chartMesesValues);
+    $this->addToData('piezasRecientes', $piezasRecientes);
 
-    $buttons =
-      [
-        [
-          'url'   => 'admin',
-          'class' => 'btn-danger text-white',
-          'id'    => '',
-          'icon'  => 'fas fa-download',
-          'text'  => 'Descargar'
-        ],
-        [
-          'url'   => 'admin',
-          'class' => 'btn-success text-white',
-          'id'    => '',
-          'icon'  => 'fas fa-file-pdf',
-          'text'  => 'Exportar'
-        ]
-      ];
-    $this->addToData('buttons', $buttons);
     $this->render();
   }
 
   function perfil()
   {
-    $this->setTitle('Perfil de Usuario - SIPAC');
+    $this->setTitle('Perfil de Usuario');
     $this->setView('perfil');
 
     try {
@@ -357,11 +432,17 @@ class adminController extends Controller implements ControllerInterface
   ////////////////////////////////////////////////////
   function roles()
   {
+    if (!user_can_manage_roles()) {
+      Flasher::error('Acceso denegado. No cuentas con permisos para gestionar roles.');
+      Redirect::to(user_can_view_acervo() ? 'admin/acervo' : 'admin');
+      exit;
+    }
+
     $this->setTitle('Roles y permisos');
     $currentRole = get_user('id_role');
     
-    // Obtener roles con cantidad única de permisos asignados (si no es super-admin id=1, omitir rol Super Administrador id=1)
-    $whereRoles = ($currentRole == 1) ? "" : "WHERE r.id != 1";
+    // Obtener roles con cantidad única de permisos asignados (si no es super-admin id=1, omitir rol Super Administrador y Administrador General)
+    $whereRoles = ($currentRole == 1) ? "" : "WHERE r.id NOT IN (1, 13) AND r.slug NOT IN ('super-admin', 'super-administrador', 'administrador-general')";
     $sqlRoles = sprintf("SELECT r.*, COUNT(DISTINCT rp.id_permiso) as total_permisos FROM bee_roles r LEFT JOIN bee_roles_permisos rp ON r.id = rp.id_role %s GROUP BY r.id ORDER BY r.id ASC", $whereRoles);
     $roles = userModel::query($sqlRoles);
     
@@ -397,6 +478,10 @@ class adminController extends Controller implements ControllerInterface
   function post_roles()
   {
     try {
+      if (!user_can_manage_roles()) {
+        throw new Exception('Acceso denegado. No cuentas con permisos para registrar nuevos roles.');
+      }
+
       if (!check_posted_data(['nombre'], $_POST)) {
         throw new Exception('Por favor ingresa el nombre del rol.');
       }
@@ -459,6 +544,10 @@ class adminController extends Controller implements ControllerInterface
   function post_editar_rol()
   {
     try {
+      if (!user_can_manage_roles()) {
+        throw new Exception('Acceso denegado. No cuentas con permisos para editar roles.');
+      }
+
       if (!check_posted_data(['id_role', 'nombre'], $_POST)) {
         throw new Exception('Faltan datos obligatorios para editar el rol.');
       }
@@ -477,8 +566,8 @@ class adminController extends Controller implements ControllerInterface
         throw new Exception('ID de rol no válido.');
       }
 
-      if ($id_role === 1 && $currentRole != 1) {
-        throw new Exception('No tienes permisos para modificar el rol de Super Administrador.');
+      if (($id_role === 1 || $id_role === 13) && $currentRole != 1) {
+        throw new Exception('No tienes permisos para modificar este rol protegido.');
       }
 
       // Verificar existencia
@@ -528,6 +617,10 @@ class adminController extends Controller implements ControllerInterface
   function borrar_rol($id_role = null)
   {
     try {
+      if (!user_can_manage_roles()) {
+        throw new Exception('Acceso denegado. No cuentas con permisos para eliminar roles.');
+      }
+
       if (!Csrf::validate($_GET['_t'])) {
         throw new Exception(get_bee_message(0));
       }
@@ -538,8 +631,8 @@ class adminController extends Controller implements ControllerInterface
 
       $id_role = (int)$id_role;
 
-      if ($id_role === 1) {
-        throw new Exception('No puedes eliminar el rol de Super Administrador.');
+      if ($id_role === 1 || ($id_role === 13 && $currentRole != 1)) {
+        throw new Exception('No puedes eliminar este rol protegido del sistema.');
       }
 
       // Verificar si hay usuarios asociados a este rol
@@ -563,6 +656,12 @@ class adminController extends Controller implements ControllerInterface
 
   function usuarios()
   {
+    if (!user_can_manage_users()) {
+      Flasher::error('Acceso denegado. No cuentas con permisos para gestionar usuarios.');
+      Redirect::to(user_can_view_acervo() ? 'admin/acervo' : 'admin');
+      exit;
+    }
+
     $this->setTitle('Usuarios');
     $currentRole = get_user('id_role');
     $currentUserId = get_user('id');
@@ -586,7 +685,7 @@ class adminController extends Controller implements ControllerInterface
                            ORDER BY u.id DESC", (int)$currentUserId, (int)$currentUserId);
       $users = PaginationHandler::paginate($sqlUsers);
 
-      $sqlRoles = "SELECT * FROM bee_roles WHERE id != 1 ORDER BY id ASC";
+      $sqlRoles = "SELECT * FROM bee_roles WHERE id NOT IN (1, 13) AND slug NOT IN ('super-admin', 'super-administrador', 'administrador-general') ORDER BY id ASC";
       $roles = userModel::query($sqlRoles) ?: [];
     }
 
@@ -603,6 +702,12 @@ class adminController extends Controller implements ControllerInterface
 
   function auditoria()
   {
+    if (!user_can_view_auditoria()) {
+      Flasher::error('Acceso denegado. No cuentas con permisos para consultar la bitácora de auditoría.');
+      Redirect::to(user_can_view_acervo() ? 'admin/acervo' : 'admin');
+      exit;
+    }
+
     $this->setTitle('Registro de Auditoría');
     $sql = "SELECT * FROM db_framework.auditoria ORDER BY id_auditoria DESC";
     $auditoria = PaginationHandler::paginate($sql);
@@ -616,6 +721,10 @@ class adminController extends Controller implements ControllerInterface
   function post_usuarios()
   {
     try {
+      if (!user_can_manage_users()) {
+        throw new Exception('Acceso denegado. No cuentas con permisos para registrar usuarios.');
+      }
+
       if (!check_posted_data(['username', 'email', 'password', 'id_role'], $_POST)) {
         throw new Exception('Por favor completa el formulario.');
       }
@@ -636,8 +745,10 @@ class adminController extends Controller implements ControllerInterface
       $errorMessage = '';
       $errors       = 0;
 
-      if ($id_role === 1 && $currentRole != 1) {
-        throw new Exception('No tienes permisos para asignar el rol de Super Administrador.');
+      $roleRowCheck = userModel::query("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1", ['id' => $id_role]);
+      $slugCheck = ($roleRowCheck && isset($roleRowCheck[0]['slug'])) ? $roleRowCheck[0]['slug'] : '';
+      if (($id_role === 1 || $id_role === 13 || in_array($slugCheck, ['super-admin', 'super-administrador', 'administrador-general'])) && $currentRole != 1) {
+        throw new Exception('No tienes permisos para asignar el rol de Super Administrador o Administrador General.');
       }
 
       // Herencia de museo: Si el usuario creador tiene un museo asignado (ej. Administrador de museo),
@@ -720,6 +831,10 @@ class adminController extends Controller implements ControllerInterface
   function post_editar_usuario()
   {
     try {
+      if (!user_can_manage_users()) {
+        throw new Exception('Acceso denegado. No cuentas con permisos para editar usuarios.');
+      }
+
       if (!check_posted_data(['id_usuario', 'username', 'email', 'id_role'], $_POST)) {
         throw new Exception('Por favor completa los datos obligatorios.');
       }
@@ -738,6 +853,12 @@ class adminController extends Controller implements ControllerInterface
       $currentRole  = get_user('id_role');
       $errorMessage = '';
       $errors       = 0;
+
+      $roleRowCheck = userModel::query("SELECT slug FROM bee_roles WHERE id = :id LIMIT 1", ['id' => $id_role]);
+      $slugCheck = ($roleRowCheck && isset($roleRowCheck[0]['slug'])) ? $roleRowCheck[0]['slug'] : '';
+      if (($id_role === 1 || $id_role === 13 || in_array($slugCheck, ['super-admin', 'super-administrador', 'administrador-general'])) && $currentRole != 1) {
+        throw new Exception('No tienes permisos para asignar el rol de Super Administrador o Administrador General.');
+      }
 
       // Herencia de museo: Si quien edita es un administrador de museo (no Super Admin),
       // los usuarios asignados a su ámbito conservan o heredan su museo
@@ -823,6 +944,10 @@ class adminController extends Controller implements ControllerInterface
   function borrar_usuario($id = null)
   {
     try {
+      if (!user_can_manage_users()) {
+        throw new Exception('Acceso denegado. No cuentas con permisos para eliminar usuarios.');
+      }
+
       if (!Csrf::validate($_GET['_t'])) {
         throw new Exception(get_bee_message(0));
       }
@@ -1035,119 +1160,241 @@ class adminController extends Controller implements ControllerInterface
   ////////////////////////////////////////////////////
   ////////////////////////////////////////////////////
   ////////////////////////////////////////////////////
-  function catalogos()
+  //////// GESTIÓN DE CATÁLOGOS MAESTROS (CRUD)
+  ////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////
+  function catalogos($catalogoActivo = 'museos')
   {
-    $this->setTitle('Catálogos');
-    $this->addToData('catalogos', acervoModel::all_paginated());
+    $this->check_user_permission('gestion_catalogos');
+    $this->setTitle('Gestión de Catálogos Maestros - ' . get_bee_name());
+
+    $catalogos = catalogosModel::getCatalogosDisponibles();
+    if (!isset($catalogos[$catalogoActivo])) {
+      $catalogoActivo = 'museos';
+    }
+
+    $estadisticas = catalogosModel::getEstadisticas();
+    $categorias = catalogosModel::getCategorias($catalogoActivo);
+    $items = catalogosModel::getItems($catalogoActivo);
+
+    $this->addToData('catalogos', $catalogos);
+    $this->addToData('catalogo_activo', $catalogoActivo);
+    $this->addToData('config_activa', $catalogos[$catalogoActivo]);
+    $this->addToData('estadisticas', $estadisticas);
+    $this->addToData('categorias', $categorias);
+    $this->addToData('items', $items);
     $this->addToData('slug', 'catalogos');
     $this->setView('catalogos/catalogos');
     $this->render();
   }
 
-  function post_catalogos()
+  /**
+   * Endpoint AJAX: Retorna los elementos de un catálogo con estadísticas
+   */
+  public function get_catalogo_items()
   {
+    header('Content-Type: application/json; charset=utf-8');
     try {
-      if (!check_posted_data(['nombre', 'sku', 'descripcion', 'precio', 'precio_comparacion', 'stock'], $_POST)) {
-        throw new Exception('Por favor completa el formulario.');
+      $this->check_user_permission('gestion_catalogos');
+      $slug = trim($_GET['catalogo'] ?? 'museos');
+      $status = isset($_GET['status']) && $_GET['status'] !== '' ? (int)$_GET['status'] : null;
+      $search = trim($_GET['search'] ?? '');
+      $categoria = trim($_GET['categoria'] ?? '');
+
+      $cfg = catalogosModel::getCatalogoConfig($slug);
+      if (!$cfg) {
+        throw new Exception('Catálogo no válido.');
       }
 
-      if (!Csrf::validate($_POST['csrf'])) {
+      $items = catalogosModel::getItems($slug, $status, $search, $categoria);
+      $categorias = catalogosModel::getCategorias($slug);
+      $stats = catalogosModel::getEstadisticas();
+
+      echo json_encode([
+        'status'       => true,
+        'catalogo'     => $slug,
+        'config'       => $cfg,
+        'items'        => $items,
+        'categorias'   => $categorias,
+        'estadisticas' => $stats
+      ]);
+      exit;
+    } catch (Throwable $e) {
+      echo json_encode([
+        'status'  => false,
+        'message' => $e->getMessage()
+      ]);
+      exit;
+    }
+  }
+
+  /**
+   * Endpoint AJAX: Obtiene un elemento por ID para poblar modal de edición
+   */
+  public function get_catalogo_item()
+  {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+      $this->check_user_permission('gestion_catalogos');
+      $slug = trim($_GET['catalogo'] ?? '');
+      $id   = (int)($_GET['id'] ?? 0);
+
+      if (empty($slug) || $id <= 0) {
+        throw new Exception('Parámetros de consulta incompletos.');
+      }
+
+      $cfg = catalogosModel::getCatalogoConfig($slug);
+      if (!$cfg) {
+        throw new Exception('Catálogo no válido.');
+      }
+
+      $item = catalogosModel::getItemById($slug, $id);
+      if (!$item) {
+        throw new Exception('El registro solicitado no fue encontrado.');
+      }
+
+      echo json_encode([
+        'status' => true,
+        'config' => $cfg,
+        'item'   => $item
+      ]);
+      exit;
+    } catch (Throwable $e) {
+      echo json_encode([
+        'status'  => false,
+        'message' => $e->getMessage()
+      ]);
+      exit;
+    }
+  }
+
+  /**
+   * Endpoint AJAX / POST: Guarda (crea o actualiza) un elemento de catálogo
+   */
+  public function post_guardar_catalogo()
+  {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+      $this->check_user_permission('gestion_catalogos');
+
+      if (!isset($_POST['csrf']) || !Csrf::validate($_POST['csrf'])) {
         throw new Exception(get_bee_message(0));
       }
 
-      // Definición de variables
-      array_map('sanitize_input', $_POST);
-      $nombre             = $_POST['nombre'];
-      $sku                = $_POST["sku"];
-      $descripcion        = $_POST["descripcion"];
-      $precio             = (float) $_POST["precio"];
-      $precio_comparacion = (float) $_POST["precio_comparacion"];
-      $rastrear_stock     = isset($_POST["rastrear_stock"]) ? 1 : 0;
-      $stock              = (int) $_POST["stock"];
-      $imagen             = $_FILES["imagen"];
-      $errorMessage       = '';
-      $errors             = 0;
+      $slug = trim($_POST['catalogo'] ?? '');
+      $id   = isset($_POST['id']) && (int)$_POST['id'] > 0 ? (int)$_POST['id'] : null;
 
-      // Crear slug con base al nombre del producto
-      $slugify = new Slugify();
-      $slug    = $slugify->slugify($nombre);
-
-      // Verificar que no exista ya un producto con el sku si es que no está vacío
-      $sql = 'SELECT * FROM productos WHERE sku = :sku OR nombre = :nombre OR slug = :slug';
-      if (acervoModel::query($sql, ['sku' => $sku, 'nombre' => $nombre, 'slug' => $slug])) {
-        throw new Exception('Ya existe un producto registrado con el mismo SKU o nombre.');
+      $cfg = catalogosModel::getCatalogoConfig($slug);
+      if (!$cfg) {
+        throw new Exception('Catálogo no especificado o inválido.');
       }
 
-      // Validar longitud del nombre, no mayor a 150 caracteres
-      if (strlen($nombre) > 150) {
-        $errorMessage .= '- El nombre del producto debe ser menor a 150 caracteres.' . PHP_EOL;
-        $errors++;
+      $res = catalogosModel::guardar($slug, $_POST, $id);
+      echo json_encode($res);
+      exit;
+    } catch (Throwable $e) {
+      echo json_encode([
+        'status'  => false,
+        'message' => $e->getMessage()
+      ]);
+      exit;
+    }
+  }
+
+  /**
+   * Endpoint AJAX / POST: Conmuta el estatus (Activo/Inactivo)
+   */
+  public function post_toggle_status_catalogo()
+  {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+      $this->check_user_permission('gestion_catalogos');
+
+      if (!isset($_POST['csrf']) || !Csrf::validate($_POST['csrf'])) {
+        throw new Exception(get_bee_message(0));
       }
 
-      // Validar el precio regular del producto
-      if ($precio == 0) {
-        $errorMessage .= '- Ingresa un precio mayor a 0.' . PHP_EOL;
-        $errors++;
+      $slug = trim($_POST['catalogo'] ?? '');
+      $id   = (int)($_POST['id'] ?? 0);
+
+      if (empty($slug) || $id <= 0) {
+        throw new Exception('Parámetros requeridos no proporcionados.');
       }
 
-      // Validar el precio de comparación si no es igual a 0
-      if ($precio_comparacion != 0 && $precio_comparacion < $precio) {
-        $errorMessage .= '- El precio de comparación debe ser mayor al precio principal del producto.' . PHP_EOL;
-        $errors++;
+      $res = catalogosModel::toggleStatus($slug, $id);
+      echo json_encode($res);
+      exit;
+    } catch (Throwable $e) {
+      echo json_encode([
+        'status'  => false,
+        'message' => $e->getMessage()
+      ]);
+      exit;
+    }
+  }
+
+  /**
+   * Endpoint AJAX / POST: Elimina un registro previa verificación de dependencias
+   */
+  public function post_eliminar_catalogo()
+  {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+      $this->check_user_permission('gestion_catalogos');
+
+      if (!isset($_POST['csrf']) || !Csrf::validate($_POST['csrf'])) {
+        throw new Exception(get_bee_message(0));
       }
 
-      // Validación de la imagen
-      if ($imagen['error'] !== 0) {
-        $errorMessage .= '- Selecciona una imagen de producto válida por favor.' . PHP_EOL;
-        $errors++;
+      $slug = trim($_POST['catalogo'] ?? '');
+      $id   = (int)($_POST['id'] ?? 0);
+
+      if (empty($slug) || $id <= 0) {
+        throw new Exception('Identificador de registro no proporcionado.');
       }
 
-      // Processar imagen
-      $tmp_name = $imagen['tmp_name'];
-      $filename = $imagen['name'];
-      $type     = $imagen['type'];
-      $ext      = pathinfo($filename, PATHINFO_EXTENSION);
-      $new_name = generate_filename() . '.' . $ext;
+      $res = catalogosModel::eliminar($slug, $id);
+      echo json_encode($res);
+      exit;
+    } catch (Throwable $e) {
+      echo json_encode([
+        'status'  => false,
+        'message' => $e->getMessage()
+      ]);
+      exit;
+    }
+  }
 
-      if (!move_uploaded_file($tmp_name, UPLOADS . $new_name)) {
-        $errorMessage .= '- Hubo un problema al subir el archivo de imagen.' . PHP_EOL;
-        $errors++;
+  /**
+   * Endpoint AJAX / POST: Restaura lógicamente un elemento del catálogo (status 0 -> 1)
+   */
+  public function post_restaurar_catalogo()
+  {
+    header('Content-Type: application/json; charset=utf-8');
+    try {
+      $this->check_user_permission('gestion_catalogos');
+
+      if (!isset($_POST['csrf']) || !Csrf::validate($_POST['csrf'])) {
+        throw new Exception(get_bee_message(0));
       }
 
-      if ($errors > 0) {
-        if (is_file(UPLOADS . $new_name)) {
-          unlink(UPLOADS . $new_name);
-        }
-        throw new Exception($errorMessage);
+      $slug = trim($_POST['catalogo'] ?? '');
+      $id   = (int)($_POST['id'] ?? 0);
+
+      if (empty($slug) || $id <= 0) {
+        throw new Exception('Identificador de registro no proporcionado.');
       }
 
-      // Array de información del producto
-      $data =
-        [
-          'nombre'             => $nombre,
-          'slug'               => $slug,
-          'sku'                => empty($sku) ? random_password(8, 'numeric') : $sku,
-          'descripcion'        => $descripcion,
-          'precio'             => $precio,
-          'precio_comparacion' => $precio_comparacion,
-          'rastrear_stock'     => $rastrear_stock,
-          'stock'              => empty($stock) ? 0 : $stock,
-          'imagen'             => $new_name,
-          'creado'             => now()
-        ];
-
-      // Agregar producto a la base de datos
-      if (!$id = acervoModel::insertOne($data)) {
-        throw new Exception('Hubo un error, intenta de nuevo.');
-      }
-
-      $producto = acervoModel::by_id($id);
-
-      Flasher::success(sprintf('Nuevo producto <b>%s</b> agregado con éxito.', $producto['nombre']));
-      Redirect::back();
-    } catch (Exception $e) {
-      Flasher::error($e->getMessage());
-      Redirect::back();
+      $res = catalogosModel::restaurar($slug, $id);
+      echo json_encode($res);
+      exit;
+    } catch (Throwable $e) {
+      echo json_encode([
+        'status'  => false,
+        'message' => $e->getMessage()
+      ]);
+      exit;
     }
   }
 
@@ -2386,7 +2633,7 @@ class adminController extends Controller implements ControllerInterface
     }
     $piezaRow = $piezaActual[0];
     $userId = get_user('id');
-    $puedeEditar = is_admin_user() || user_can('editar_acervo_general');
+    $puedeEditar = user_can_edit_acervo('general');
     $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && in_array($piezaRow['estatus_revision'] ?? '', ['cambios_solicitados', 'pendiente']));
 
     if (!$puedeEditar && !$esCreadorEnRevision) {
@@ -2494,7 +2741,7 @@ class adminController extends Controller implements ControllerInterface
     }
     $piezaRow = $piezaActual[0];
     $userId = get_user('id');
-    $puedeEditar = is_admin_user() || user_can('editar_acervo_arqueologico');
+    $puedeEditar = user_can_edit_acervo('arqueologico');
     $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && in_array($piezaRow['estatus_revision'] ?? '', ['cambios_solicitados', 'pendiente']));
 
     if (!$puedeEditar && !$esCreadorEnRevision) {
@@ -2593,7 +2840,7 @@ class adminController extends Controller implements ControllerInterface
     }
     $piezaRow = $piezaActual[0];
     $userId = get_user('id');
-    $puedeEditar = is_admin_user() || user_can('editar_acervo_numismatica');
+    $puedeEditar = user_can_edit_acervo('numismatica');
     $esCreadorEnRevision = ($userId && isset($piezaRow['id_usuario_creador']) && (int)$piezaRow['id_usuario_creador'] === (int)$userId && in_array($piezaRow['estatus_revision'] ?? '', ['cambios_solicitados', 'pendiente']));
 
     if (!$puedeEditar && !$esCreadorEnRevision) {
@@ -3179,8 +3426,8 @@ class adminController extends Controller implements ControllerInterface
 
   public function revision()
   {
-    if (!is_admin_user()) {
-      Flasher::error('Acceso denegado. Solo administradores pueden gestionar la revisión.');
+    if (!user_can_access_revision()) {
+      Flasher::error('Acceso denegado. Solo administradores o personal con permisos de revisión pueden gestionar la revisión.');
       Redirect::to(user_can_view_acervo() ? 'admin/acervo' : 'admin');
       exit;
     }
@@ -3193,7 +3440,7 @@ class adminController extends Controller implements ControllerInterface
 
   public function get_revision_data()
   {
-    if (!is_admin_user()) {
+    if (!user_can_access_revision()) {
       header('Content-Type: application/json');
       echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
       exit;
@@ -3402,6 +3649,12 @@ class adminController extends Controller implements ControllerInterface
 
   public function get_pieza_detalle_revision()
   {
+    if (!user_can_access_revision()) {
+      header('Content-Type: application/json');
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      exit;
+    }
+
     $tipo = $_REQUEST['tipo'] ?? 'general';
     $id = isset($_REQUEST['id']) ? (int)$_REQUEST['id'] : 0;
     if ($id <= 0) {
@@ -3444,9 +3697,9 @@ class adminController extends Controller implements ControllerInterface
 
   public function autorizar_pieza()
   {
-    if (!is_admin_user()) {
+    if (!user_can_dictate_acervo()) {
       header('Content-Type: application/json');
-      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. No cuenta con permisos para dictaminar piezas de acervo.']);
       exit;
     }
 
@@ -3552,9 +3805,9 @@ class adminController extends Controller implements ControllerInterface
 
   public function solicitar_cambios_pieza()
   {
-    if (!is_admin_user()) {
+    if (!user_can_dictate_acervo()) {
       header('Content-Type: application/json');
-      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. No cuenta con permisos para dictaminar piezas de acervo.']);
       exit;
     }
 
@@ -3635,9 +3888,9 @@ class adminController extends Controller implements ControllerInterface
 
   public function rechazar_pieza()
   {
-    if (!is_admin_user()) {
+    if (!user_can_dictate_acervo()) {
       header('Content-Type: application/json');
-      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. No cuenta con permisos para dictaminar piezas de acervo.']);
       exit;
     }
 
@@ -3907,8 +4160,8 @@ class adminController extends Controller implements ControllerInterface
 
   public function prestamos_transferencias()
   {
-    if (!is_admin_user()) {
-      Flasher::error('Acceso denegado. Solo administradores pueden gestionar préstamos y transferencias.');
+    if (!user_can_access_prestamos()) {
+      Flasher::error('Acceso denegado. Solo personal con permisos puede acceder a préstamos y transferencias.');
       Redirect::to(user_can_view_acervo() ? 'admin/acervo' : 'admin');
       exit;
     }
@@ -3935,7 +4188,7 @@ class adminController extends Controller implements ControllerInterface
 
   public function get_prestamos_transferencias_data()
   {
-    if (!is_admin_user()) {
+    if (!user_can_access_prestamos()) {
       header('Content-Type: application/json');
       echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
       exit;
@@ -4007,7 +4260,7 @@ class adminController extends Controller implements ControllerInterface
 
   public function buscar_piezas_para_movimiento()
   {
-    if (!is_admin_user()) {
+    if (!user_can_access_prestamos()) {
       header('Content-Type: application/json');
       echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
       exit;
@@ -4078,9 +4331,9 @@ class adminController extends Controller implements ControllerInterface
 
   public function post_crear_movimiento()
   {
-    if (!is_admin_user()) {
+    if (!user_can_register_prestamos()) {
       header('Content-Type: application/json');
-      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. Solo administradores pueden registrar préstamos y transferencias.']);
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. No cuenta con permisos para registrar préstamos y transferencias.']);
       exit;
     }
 
@@ -4325,9 +4578,9 @@ class adminController extends Controller implements ControllerInterface
 
   public function post_aceptar_movimiento()
   {
-    if (!is_admin_user()) {
+    if (!user_can_dictate_prestamos()) {
       header('Content-Type: application/json');
-      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. No cuenta con permisos para dictaminar movimientos de acervo.']);
       exit;
     }
 
@@ -4427,9 +4680,9 @@ class adminController extends Controller implements ControllerInterface
 
   public function post_declinar_movimiento()
   {
-    if (!is_admin_user()) {
+    if (!user_can_dictate_prestamos()) {
       header('Content-Type: application/json');
-      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. No cuenta con permisos para dictaminar movimientos de acervo.']);
       exit;
     }
 
@@ -4517,9 +4770,9 @@ class adminController extends Controller implements ControllerInterface
 
   public function post_devolver_prestamo()
   {
-    if (!is_admin_user()) {
+    if (!user_can_return_prestamos()) {
       header('Content-Type: application/json');
-      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. Solo administradores pueden gestionar devoluciones.']);
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. No cuenta con permisos para registrar devoluciones de préstamos.']);
       exit;
     }
 
@@ -4617,7 +4870,7 @@ class adminController extends Controller implements ControllerInterface
 
   public function get_detalle_movimiento()
   {
-    if (!is_admin_user()) {
+    if (!user_can_access_prestamos()) {
       header('Content-Type: application/json');
       echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
       exit;
@@ -4682,9 +4935,9 @@ class adminController extends Controller implements ControllerInterface
 
   public function post_cancelar_movimiento()
   {
-    if (!is_admin_user()) {
+    if (!user_can_cancel_prestamos()) {
       header('Content-Type: application/json');
-      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado']);
+      echo json_encode(['status' => 403, 'msg' => 'Acceso denegado. No cuenta con permisos para cancelar movimientos de obra.']);
       exit;
     }
 

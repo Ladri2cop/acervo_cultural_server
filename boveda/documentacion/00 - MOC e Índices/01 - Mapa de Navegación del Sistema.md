@@ -76,7 +76,7 @@ A continuación se detalla la correspondencia entre las URIs del sistema, los m�
 | `/admin/auditoria` | `adminController->auditoria()` | `admin/auditoria/auditoriaView.php` | Monitoreo forense de modificaciones a registros patrimoniales. |
 | `/admin/usuarios` | `adminController->usuarios()` | `admin/usuarios/usuariosView.php` | Catálogo de usuarios, altas, ediciones y asignación de rol. |
 | `/admin/roles` | `adminController->roles()` | `admin/roles/rolesView.php` | Configuración de perfiles y asignación de permisos específicos. |
-| `/admin/catalogos` | `adminController->catalogos()` | `admin/catalogos/catalogosView.php` | Gestión de vocabularios controlados (épocas, materiales, museos). |
+| `/admin/catalogos` | `adminController->catalogos()` | `admin/catalogos/catalogosView.php` | Gestión centralizada de 8 vocabularios controlados, clasificación por disciplinas y borrado lógico. |
 | `/admin/perfil` | `adminController->perfil()` | `admin/perfilView.php` | Actualización de datos de cuenta del usuario conectado. |
 
 ---

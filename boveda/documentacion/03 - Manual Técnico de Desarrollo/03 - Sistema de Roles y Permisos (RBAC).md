@@ -67,74 +67,110 @@ erDiagram
 | ID | Nombre del Rol | Slug del Rol | Alcance y Responsabilidades |
 | :--- | :--- | :--- | :--- |
 | **1** | **Super Administrador** | `super-administrador` | Acceso irrestricto total. Configuración del sistema, auditoría, gestión de roles, usuarios y parámetros de base de datos. |
-| **2** | **Administrador** | `administrador` | Gestión curatorial y de recintos. Aprobación/rechazo en semáforo, autorización de préstamos/transferencias, edición y exportaciones. |
+| **2** | **Administrador** | `administrador` | Gestión de acervo y recintos. Aprobación/rechazo en semáforo, autorización de préstamos/transferencias, edición y exportaciones. |
 | **5** | **Capturista** | `capturista` | Personal operativo y técnico de museos. Registro de piezas, carga de fotografías, corrección de observaciones solicitadas. |
 | **6** | **Lector General** | `lector-general` | Personal de consulta, investigadores o directivos. Búsqueda y visualización de fichas técnicas sin privilegios de edición o alta. |
 
 ---
 
-## 3. Matriz de Permisos (`bee_permisos`)
+## 3. Matriz Oficial de Permisos (`bee_permisos`)
 
-| ID | Permiso (`slug`) | Super Admin | Administrador | Capturista | Lector General |
-| :---: | :--- | :---: | :---: | :---: | :---: |
-| `1` | `admin-access` | ✅ | ✅ | ✅ | ✅ |
-| `10` | `ver_acervo_general` | ✅ | ✅ | ✅ | ✅ |
-| `11` | `registrar_acervo_general` | ✅ | ✅ | ✅ | ❌ |
-| `12` | `editar_acervo_general` | ✅ | ✅ | ⚠️ *(Propias)* | ❌ |
-| `13` | `eliminar_acervo_general` | ✅ | ✅ | ❌ | ❌ |
-| `14` | `ver_acervo_arqueologico` | ✅ | ✅ | ✅ | ✅ |
-| `15` | `registrar_acervo_arqueologico` | ✅ | ✅ | ✅ | ❌ |
-| `16` | `editar_acervo_arqueologico` | ✅ | ✅ | ⚠️ *(Propias)* | ❌ |
-| `17` | `eliminar_acervo_arqueologico` | ✅ | ✅ | ❌ | ❌ |
-| `18` | `ver_acervo_numismatica` | ✅ | ✅ | ✅ | ✅ |
-| `19` | `registrar_acervo_numismatica` | ✅ | ✅ | ✅ | ❌ |
-| `20` | `editar_acervo_numismatica` | ✅ | ✅ | ⚠️ *(Propias)* | ❌ |
-| `21` | `eliminar_acervo_numismatica` | ✅ | ✅ | ❌ | ❌ |
-| `22` | `exportar_excel` | ✅ | ✅ | ❌ | ❌ |
-| `23` | `exportar_pdf` | ✅ | ✅ | ✅ | ✅ |
+El sistema cuenta con un catálogo de **26 permisos granulares**, clasificados temáticamente en 7 áreas funcionales para facilitar su asignación y auditoría:
+
+| Categoría | ID | Permiso (`slug`) | Nombre Oficial | Super Admin | Admin | Capturista | Lector |
+| :--- | :---: | :--- | :--- | :---: | :---: | :---: | :---: |
+| **Acervo General** | `10` | `ver_acervo_general` | Visualizar Acervo General | ✅ | ✅ | ✅ | ✅ |
+| | `11` | `registrar_acervo_general` | Registrar Acervo General | ✅ | ✅ | ✅ | ❌ |
+| | `12` | `editar_acervo_general` | Editar Acervo General | ✅ | ✅ | ⚠️ *(Propias)* | ❌ |
+| | `13` | `eliminar_acervo_general` | Eliminar Acervo General | ✅ | ✅ | ❌ | ❌ |
+| **Acervo Arqueológico** | `14` | `ver_acervo_arqueologico` | Visualizar Acervo Arqueológico | ✅ | ✅ | ✅ | ✅ |
+| | `15` | `registrar_acervo_arqueologico` | Registrar Acervo Arqueológico | ✅ | ✅ | ✅ | ❌ |
+| | `16` | `editar_acervo_arqueologico` | Editar Acervo Arqueológico | ✅ | ✅ | ⚠️ *(Propias)* | ❌ |
+| | `17` | `eliminar_acervo_arqueologico` | Eliminar Acervo Arqueológico | ✅ | ✅ | ❌ | ❌ |
+| **Acervo Numismático** | `18` | `ver_acervo_numismatica` | Visualizar Acervo Numismático | ✅ | ✅ | ✅ | ✅ |
+| | `19` | `registrar_acervo_numismatica` | Registrar Acervo Numismático | ✅ | ✅ | ✅ | ❌ |
+| | `20` | `editar_acervo_numismatica` | Editar Acervo Numismático | ✅ | ✅ | ⚠️ *(Propias)* | ❌ |
+| | `21` | `eliminar_acervo_numismatica` | Eliminar Acervo Numismático | ✅ | ✅ | ❌ | ❌ |
+| **Revisión y Dictamen** | `24` | `ver_revision_acervo` | Visualizar Revisión de Acervo | ✅ | ✅ | ❌ | ❌ |
+| | `25` | `dictaminar_acervo` | Dictaminar Piezas de Acervo | ✅ | ✅ | ❌ | ❌ |
+| | `26` | `ver_mis_registros` | Visualizar Mis Registros | ✅ | ✅ | ✅ | ❌ |
+| **Préstamos y Transferencias** | `27` | `ver_prestamos_transferencias` | Visualizar Préstamos y Transferencias | ✅ | ✅ | ❌ | ❌ |
+| | `28` | `registrar_prestamo_transferencia` | Registrar Préstamos y Transferencias | ✅ | ✅ | ❌ | ❌ |
+| | `29` | `dictaminar_prestamo_transferencia` | Dictaminar Movimientos de Obra | ✅ | ✅ | ❌ | ❌ |
+| | `30` | `devolver_prestamo` | Registrar Devolución de Préstamos | ✅ | ✅ | ❌ | ❌ |
+| | `31` | `cancelar_prestamo_transferencia` | Cancelar Movimientos de Obra | ✅ | ✅ | ❌ | ❌ |
+| **Reportes y Exportación** | `22` | `exportar_excel` | Exportar Excel | ✅ | ✅ | ❌ | ❌ |
+| | `23` | `exportar_pdf` | Exportar PDF | ✅ | ✅ | ✅ | ✅ |
+| **Gestión y Auditoría** | `1` | `admin-access` | Acceso de administrador | ✅ | ❌ | ❌ | ❌ |
+| | `32` | `gestion_usuarios` | Gestión de Usuarios | ✅ | ✅ | ❌ | ❌ |
+| | `33` | `gestion_roles` | Gestión de Roles y Permisos | ✅ | ❌ | ❌ | ❌ |
+| | `35` | `gestion_catalogos` | Gestión de Catálogos Maestros | ✅ | ✅ | ❌ | ❌ |
+| | `34` | `ver_auditoria` | Visualizar Auditoría Forense | ✅ | ✅ | ❌ | ❌ |
 
 > [!NOTE]
-> Los capturistas únicamente pueden editar piezas que ellos mismos registraron (`id_usuario_creador = session_user_id`) y que se encuentren en estado `cambios_solicitados` o `pendiente`. Las piezas aprobadas quedan protegidas contra edición por capturistas.
+> - **Super Administrador (ID 1)**: Posee la totalidad de los 27 permisos y cuenta con bypass irrestricto en `user_can()`. Es el único perfil facultado para asignar roles de nivel de administración general o superior (como `administrador-general` / #13).
+> - **Administrador (ID 2)** y demás roles: Sus facultades se evalúan **estrictamente de forma dinámica** contra la tabla relacional `bee_roles_permisos`. Si el Super Administrador revoca un permiso específico (como `ver_auditoria`), el acceso a dicho módulo y su elemento en el menú lateral (`sidebar.php`) se inhabilitan en tiempo real. Al gestionar usuarios, los selectores de rol ocultan automáticamente perfiles reservados (`super-administrador` y `administrador-general`).
+> - Los permisos de administración raíz (`admin-access` y `gestion_roles`) quedan reservados exclusivamente al Super Administrador.
 
 ---
 
 ## 4. Implementación en Código
 
-### 4.1. Funciones Helper de Verificación
+### 4.1. Funciones Helper de Verificación Granular
 En `app/functions/bee_custom_functions.php`:
 ```php
-function check_user_permission(string $permissionSlug): bool
+// Consulta atómica de permisos por slug
+function user_can(string $permissionSlug): bool;
+
+// Módulo de Acervo
+function user_can_view_acervo(): bool;
+function user_can_register(): bool;
+function user_can_edit_acervo(?string $tipo = null): bool;
+function user_can_delete_acervo(?string $tipo = null): bool;
+
+// Módulo de Revisión y Dictamen
+function user_can_access_revision(): bool;
+function user_can_dictate_acervo(): bool;
+function user_can_view_mis_registros(): bool;
+
+// Módulo de Préstamos y Transferencias
+function user_can_access_prestamos(): bool;
+function user_can_register_prestamos(): bool;
+function user_can_dictate_prestamos(): bool;
+function user_can_dictate_movement($movimiento): bool; // Valida además sede destino
+function user_can_return_prestamos(): bool;
+function user_can_cancel_prestamos(): bool;
+
+// Módulo de Gestión y Auditoría
+function user_can_manage_users(): bool;
+function user_can_manage_roles(): bool;
+function user_can_view_auditoria(): bool;
+```
+
+### 4.2. Protección en Controladores (`adminController.php`)
+Cada endpoint verifica de forma imperativa el permiso correspondiente antes de procesar datos:
+```php
+public function revision()
 {
-  $user = get_user();
-  if (!$user) return false;
-  
-  // Super Administrador tiene bypass de autorización
-  if ($user['id_role'] === 1 || $user['slug_rol'] === 'super-administrador') {
-    return true;
+  if (!user_can_access_revision()) {
+    Flasher::error('Acceso denegado. No cuentas con permisos para acceder a Revisión de Acervo.');
+    Redirect::to(user_can_view_acervo() ? 'admin/acervo' : 'admin');
+    exit;
   }
-  
-  $permisos = $_SESSION['user_permissions'] ?? [];
-  return in_array($permissionSlug, $permisos, true);
+  // ...
 }
 ```
 
-### 4.2. Protección en Controladores
-Antes de ejecutar una acción en `adminController.php`:
+### 4.3. Renderizado Condicional en Vistas (Sidebar y Módulos)
+En `templates/includes/admin/sidebar.php` y en las interfaces de usuario:
 ```php
-public function acervo_general_eliminar()
-{
-  $this->check_user_permission('eliminar_acervo_general');
-  // Proceso de eliminación...
-}
-```
-
-### 4.3. Renderizado Condicional en Vistas (Sidebar / Botones)
-En `templates/includes/sidebar.php` y vistas de catálogo:
-```php
-<?php if (check_user_permission('registrar_acervo_general')): ?>
-  <a class="btn btn-primary" href="<?php echo URL; ?>admin/registrar">
-    <i class="bx bx-plus-circle"></i> Nueva Pieza
-  </a>
+<?php if (user_can_access_revision()): ?>
+  <li class="nav-item" data-page="revision">
+    <a class="nav-link" href="admin/revision">
+      <i class='bx bx-clipboard-check'></i>
+      <span>Revisión de Acervo</span>
+    </a>
+  </li>
 <?php endif; ?>
 ```
 

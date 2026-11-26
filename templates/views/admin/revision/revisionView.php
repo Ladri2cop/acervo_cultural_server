@@ -6,9 +6,6 @@
   <!-- Encabezado de Sección -->
   <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <div>
-      <h1 class="h3 mb-1 text-gray-800 font-weight-bold">
-        <i class='bx bx-clipboard-check text-primary'></i> Revisión y Autorización de Acervo
-      </h1>
       <p class="text-muted small mb-0">
         Supervisión de registros capturados. Evalúe y dictamine mediante el semáforo institucional antes de su publicación en el catálogo oficial.
       </p>

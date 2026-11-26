@@ -16,7 +16,7 @@
           <span class="badge rounded-pill bg-warning text-dark ms-1" id="badge-mis-cambios-pendientes" style="display: none;">0</span>
         </button>
       </li>
-      <?php if (is_admin_user()): ?>
+      <?php if (user_can_access_revision()): ?>
       <li class="nav-item ms-auto" role="presentation">
         <a href="admin/revision" class="btn btn-outline-primary btn-sm my-1 font-weight-bold">
           <i class='bx bx-shield-quarter'></i> Ir a Estación de Revisión Admin
@@ -306,7 +306,7 @@
 <!-- FIN COL-12 -->
 
 <!-- Modal para editar pieza -->
-<?php if (user_can('editar_acervo_general') || user_can('registrar_acervo_general') || is_admin_user()): ?>
+<?php if (user_can_edit_acervo('general') || user_can('registrar_acervo_general')): ?>
 <div class="modal fade" id="modalEditarPieza" tabindex="-1" aria-labelledby="modalEditarPiezaLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -498,7 +498,7 @@
 <?php endif; ?>
 
 <!-- Modal para editar pieza de acervo arqueológico -->
-<?php if (user_can('editar_acervo_arqueologico') || user_can('registrar_acervo_arqueologico') || is_admin_user()): ?>
+<?php if (user_can_edit_acervo('arqueologico') || user_can('registrar_acervo_arqueologico')): ?>
 <div class="modal fade" id="modalEditarPiezaArq" tabindex="-1" aria-labelledby="modalEditarPiezaArqLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">
@@ -688,7 +688,7 @@
 <?php endif; ?>
 
 <!-- Modal para editar pieza de acervo numismático -->
-<?php if (user_can('editar_acervo_numismatica') || user_can('registrar_acervo_numismatica') || is_admin_user()): ?>
+<?php if (user_can_edit_acervo('numismatica') || user_can('registrar_acervo_numismatica')): ?>
 <div class="modal fade" id="modalEditarPiezaNum" tabindex="-1" aria-labelledby="modalEditarPiezaNumLabel" aria-hidden="true">
   <div class="modal-dialog modal-xl">
     <div class="modal-content">

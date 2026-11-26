@@ -31,10 +31,24 @@ function obtenerOpcionesMuseos(): array
 }
 
 /**
- * Catálogo Oficial de Épocas Históricas
+ * Catálogo Oficial de Épocas Históricas (Dinámico desde base de datos con fallback)
  */
 function obtenerOpcionesEpocas(): array
 {
+  $opciones = ['' => 'Seleccione época...'];
+  try {
+    $db = Db::connect();
+    $stmt = $db->query("SELECT nombre_epoca_periodo FROM epocas_periodos WHERE status = 1 ORDER BY id_epoca_periodo ASC");
+    $filas = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+    if (!empty($filas)) {
+      foreach ($filas as $val) {
+        $val = trim($val);
+        if (!empty($val)) $opciones[$val] = $val;
+      }
+      return $opciones;
+    }
+  } catch (Throwable $e) {}
+
   return [
     '' => 'Seleccione época...',
     'Pleistoceno' => 'Pleistoceno',
@@ -55,10 +69,24 @@ function obtenerOpcionesEpocas(): array
 }
 
 /**
- * Catálogo Oficial de Estados de Conservación
+ * Catálogo Oficial de Estados de Conservación (Dinámico desde base de datos con fallback)
  */
 function obtenerOpcionesEstadoConservacion(): array
 {
+  $opciones = ['' => 'Seleccione estado de conservación...'];
+  try {
+    $db = Db::connect();
+    $stmt = $db->query("SELECT nombre_estado_conservacion FROM estado_conservacion WHERE status = 1 ORDER BY id_estado_conservacion ASC");
+    $filas = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+    if (!empty($filas)) {
+      foreach ($filas as $val) {
+        $val = trim($val);
+        if (!empty($val)) $opciones[$val] = $val;
+      }
+      return $opciones;
+    }
+  } catch (Throwable $e) {}
+
   return [
     '' => 'Seleccione estado de conservación...',
     'Bueno' => 'Bueno',
@@ -68,23 +96,53 @@ function obtenerOpcionesEstadoConservacion(): array
 }
 
 /**
- * Catálogo de Tipos de Obra para Acervo General
+ * Catálogo de Tipos de Obra para Acervo General (Agrupado por Obras Bidimensionales y Tridimensionales)
  */
 function obtenerOpcionesTiposGeneral(): array
 {
+  try {
+    $db = Db::connect();
+    $stmt = $db->query("SELECT nombre_tipo_obra, categoria FROM tipo_obras WHERE status = 1 AND categoria IN ('Bidimensional', 'Tridimensional') ORDER BY categoria ASC, id_tipo_obra ASC");
+    $filas = $stmt ? $stmt->fetchAll(PDO::FETCH_ASSOC) : [];
+    if (!empty($filas)) {
+      $bidi = [];
+      $tridi = [];
+      foreach ($filas as $r) {
+        $val = trim($r['nombre_tipo_obra']);
+        if ($r['categoria'] === 'Bidimensional') {
+          $bidi[$val] = $val;
+        } else {
+          $tridi[$val] = $val;
+        }
+      }
+      if (!isset($tridi['Otro'])) {
+        $tridi['Otro'] = 'Otro';
+      }
+      return [
+        '' => 'Seleccione tipo de obra...',
+        'Obras Bidimensionales'  => $bidi,
+        'Obras Tridimensionales' => $tridi
+      ];
+    }
+  } catch (Throwable $e) {}
+
   return [
     '' => 'Seleccione tipo de obra...',
-    'Pintura' => 'Pintura',
-    'Escultura' => 'Escultura',
-    'Fotografía' => 'Fotografía',
-    'Grabado' => 'Grabado',
-    'Dibujo' => 'Dibujo',
-    'Textil' => 'Textil',
-    'Mobiliario' => 'Mobiliario',
-    'Acuarela' => 'Acuarela',
-    'Cerámica' => 'Cerámica',
-    'Objeto' => 'Objeto',
-    'Otro' => 'Otro'
+    'Obras Bidimensionales' => [
+      'Pintura'    => 'Pintura',
+      'Dibujo'     => 'Dibujo',
+      'Grabado'    => 'Grabado',
+      'Fotografía' => 'Fotografía',
+      'Acuarela'   => 'Acuarela',
+      'Textil'     => 'Textil'
+    ],
+    'Obras Tridimensionales' => [
+      'Escultura'  => 'Escultura',
+      'Mobiliario' => 'Mobiliario',
+      'Cerámica'   => 'Cerámica',
+      'Objeto'     => 'Objeto',
+      'Otro'       => 'Otro'
+    ]
   ];
 }
 
