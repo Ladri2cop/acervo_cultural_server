@@ -251,7 +251,55 @@ sequenceDiagram
 
 ---
 
-## 6. Referencias Cruzadas
+## 6. Endpoints de Importación Masiva de Acervo
+
+### 6.1. Descarga Dinámica de Plantillas Oficiales
+- **Ruta**: `GET /admin/descargar_plantilla_importacion`
+- **Permiso**: `importar_acervo` (ID 36).
+- **Parámetros Query**:
+  - `tipo`: `general`, `arqueologico`, `numismatica` (default `general`).
+  - `formato`: `xlsx` (Excel OpenXML) o `csv` (Valores separados por comas con UTF-8 BOM).
+- **Respuesta**: Stream binario del archivo generado al vuelo por `AcervoImportador::generarPlantilla()`, con encabezados estilizados, claves técnicas de ingesta, guías de llenado y 3 filas de ejemplos representativos del patrimonio mexiquense.
+
+### 6.2. Procesamiento de Ingesta Masiva Atómica
+- **Ruta**: `POST /admin/post_importar_acervo`
+- **Permiso**: `importar_acervo` (ID 36).
+- **Content-Type**: `multipart/form-data`.
+- **Payload**:
+  - `archivo_acervo`: Archivo binario `.xlsx`, `.xls` o `.csv` (hasta 20 MB).
+  - `tipo_acervo`: `general`, `arqueologico` o `numismatica`.
+  - `manejo_duplicados`: `skip` (omitir), `update` (sobrescribir) o `error` (rechazar fila).
+  - `auto_aprobar`: `0` (derivación a Mesa de Revisión) o `1` (aprobación directa para Super Admin/Curador).
+  - `csrf`: Token de validación CSRF.
+- **Respuesta 200 JSON**:
+  ```json
+  {
+    "status": true,
+    "tipo_acervo": "general",
+    "nombre_acervo": "Acervo General (Plástica, Utilitaria, Mobiliario)",
+    "resumen": {
+      "total_leidas": 45,
+      "procesadas": 44,
+      "insertadas": 42,
+      "actualizadas": 0,
+      "omitidas": 2,
+      "errores": 1,
+      "advertencias": 2
+    },
+    "detalle_errores": [
+      { "fila": 12, "codigo": "INV-MBART-099", "error": "El campo obligatorio 'Nombre o Título' está vacío." }
+    ],
+    "detalle_advertencias": [
+      { "fila": 18, "codigo": "INV-MBART-044", "msg": "Registro omitido: Ya existe una pieza en el sistema con la misma clave." }
+    ],
+    "msg": "Proceso completado: 42 piezas importadas exitosamente, 2 omitidas por duplicidad y 1 filas con inconsistencias."
+  }
+  ```
+
+---
+
+## 7. Referencias Cruzadas
+- Manual operativo de importación: [[08 - Importador Masivo de Acervo por Excel y CSV]]
 - Conoce los scripts que invocan estos servicios: [[05 - Componentes Frontend, Estilos CSS y JavaScript]]
 - Revisa el controlador backend en: [[01 - Controladores y Flujo de Peticiones]]
 - Modelo de auditoría que registra estas llamadas: [[04 - Sistema de Auditoría y Trazabilidad]]

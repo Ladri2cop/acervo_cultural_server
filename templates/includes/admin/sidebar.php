@@ -44,6 +44,15 @@
   </li>
   <?php endif; ?>
 
+  <?php if (user_can_import_acervo()): ?>
+  <li class="nav-item" data-page="importar">
+    <a class="nav-link" href="admin/importar">
+      <i class='bx  bx-cloud-upload'></i>
+      <span>Importar Acervo</span>
+    </a>
+  </li>
+  <?php endif; ?>
+
   <?php if (user_can_view_acervo()): ?>
   <li class="nav-item" data-page="acervo">
     <a class="nav-link" href="admin/acervo">

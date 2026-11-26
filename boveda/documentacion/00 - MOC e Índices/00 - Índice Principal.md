@@ -56,6 +56,7 @@ graph TD
     USR --> U5["Control de Préstamos y Transferencias"]
     USR --> U6["Fichas Técnicas y Reportes"]
     USR --> U7["Gestión de Catálogos Maestros"]
+    USR --> U8["Importador Masivo Excel/CSV"]
 
     ANX --> A1["Diccionario de Datos"]
     ANX --> A2["Preguntas Frecuentes (FAQ)"]
@@ -99,6 +100,7 @@ Guía práctica e interactiva para operadores, capturistas, curadores y administ
 - [[05 - Gestión de Préstamos y Transferencias]]: Guía de préstamos temporales y traslados definitivos, generación de folios, registro de responsables, retorno de piezas y cancelación de solicitudes.
 - [[06 - Fichas Técnicas, Exportaciones y Auditoría]]: Generación de cédulas museográficas, exportación masiva a Excel y PDF con sellos institucionales, y consulta del historial de auditoría.
 - [[07 - Gestión de Catálogos Maestros]]: Centro unificado de administración de vocabularios oficiales, clasificación por disciplinas, alta, edición, política de borrado lógico y reactivación de términos patrimoniales.
+- [[08 - Importador Masivo de Acervo por Excel y CSV]]: Ingesta masiva de piezas culturales vía plantillas oficiales Excel y CSV, prevención de duplicados, aislamiento multimuseo y derivación a la mesa de revisión curatorial.
 
 ### 5. Anexos y Referencias
 Información complementaria y material de consulta técnica:
@@ -116,6 +118,7 @@ Información complementaria y material de consulta técnica:
 | **Alta de Piezas** | [[01 - Controladores y Flujo de Peticiones#Registro de Piezas]] | [[03 - Registro y Edición de Piezas Culturales]] |
 | **Semáforo Curatorial** | [[04 - Endpoints AJAX y API Interna#Módulo de Revisión]] | [[04 - Flujo de Revisión y Semáforo de Aprobación]] |
 | **Catálogos Maestros** | [[05 - Catálogos y Tablas Auxiliares]] | [[07 - Gestión de Catálogos Maestros]] |
+| **Importador Masivo** | [[04 - Endpoints AJAX y API Interna#Importación Masiva]] | [[08 - Importador Masivo de Acervo por Excel y CSV]] |
 | **Préstamos y Traslados** | [[03 - Módulo de Préstamos y Transferencias]] | [[05 - Gestión de Préstamos y Transferencias]] |
 | **Seguridad y Auditoría** | [[04 - Sistema de Auditoría y Trazabilidad]] | [[06 - Fichas Técnicas, Exportaciones y Auditoría#Consulta de Auditoría]] |
 | **Roles y Permisos** | [[03 - Sistema de Roles y Permisos (RBAC)]] | [[01 - Inicio de Sesión y Perfiles de Usuario]] |

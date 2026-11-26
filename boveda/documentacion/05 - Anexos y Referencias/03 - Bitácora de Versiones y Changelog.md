@@ -15,6 +15,35 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 
 ---
 
+## [Versión 2.0.0] - 2026-11-26
+### 📥 Importador Masivo de Acervo por Excel (.xlsx) y CSV (.csv)
+- **Nuevo Módulo de Importación Masiva (`admin/importar`)**:
+  - Panel unificado para la carga por lotes de piezas patrimoniales pertenecientes a los tres fondos del acervo:
+    1. **🏛️ Acervo General** (`acervo_general` - Módulo 5): 19 columnas de datos que abarcan artes plásticas, utilitarias, mobiliario, pintura, escultura, medidas bidimensionales y tridimensionales.
+    2. **🏺 Acervo Arqueológico** (`acervo_arqueologico` - Módulo 3): 21 columnas con claves de inventario SCyT, registro INAH, sitio de procedencia, formas y técnicas de manufactura.
+    3. **🪙 Acervo Numismático** (`acervo_numismatica` - Módulo 4): 16 columnas con denominación facial, tipo de obra, metales, cecas, ensayadores y descripciones de anverso y reverso.
+- **Motor Especializado `AcervoImportador` (`app/classes/AcervoImportador.php`)**:
+  - Generación de plantillas oficiales con encabezados estilizados institucionales en color guinda (`#6B1D2F`), fila secundaria con claves técnicas de base de datos, fila terciaria con instrucciones y ejemplos reales del patrimonio mexiquense.
+  - Exportación en `.xlsx` y `.csv` con firma UTF-8 BOM (`\xEF\xBB\xBF`) para compatibilidad nativa con Microsoft Excel en Windows sin distorsión de caracteres o acentos.
+  - Normalizador inteligente de columnas capaz de mapear tanto claves técnicas directas como sinónimos amigables en español.
+- **Detección Avanzada de Duplicados e Integridad Relacional**:
+  - Detección de colisiones contra claves de inventario existentes (`no_inventario`, `codigo_interno`, `no_inventario_scyt`, `no_registro_inah`) y verificación intra-archivo.
+  - Tres directivas configurables por el usuario:
+    - `Omitir duplicados` (*skip*): ignora registros preexistentes sin interrumpir la carga y los reporta como advertencia.
+    - `Actualizar existentes` (*update*): actualiza columnas no vacías de la pieza existente preservando su identificador primario.
+    - `Rechazar fila` (*error*): clasifica la coincidencia como inconsistencia en la tabla de resultados.
+- **Integración con el Flujo de Calidad Curatorial**:
+  - Por defecto, toda pieza importada nace con `estatus_revision = 'pendiente'` y `status = 0`, canalizándose a la Mesa de Revisión para dictamen curatorial previo a su visibilidad pública.
+  - Opción de aprobación directa e inmediata (`estatus_revision = 'aprobado'`, `status = 1`) disponible para Super Administradores y dictaminadores.
+- **Seguridad Multimuseo y Transaccionalidad**:
+  - Aislamiento de sede (tenancy): los usuarios administradores sólo pueden importar piezas asignadas a su museo custodio.
+  - Ingesta atómica con transacciones PDO (`beginTransaction` / `commit` / `rollBack`), previniendo estados inconsistentes.
+  - Nuevo permiso RBAC `importar_acervo` (ID 36) asignado a roles Super Administrador y Administrador.
+  - Helper `user_can_import_acervo()` y enlace dinámico en el menú lateral (`sidebar.php`).
+  - Bitácora forense: registro automático de eventos `IMPORT_BATCH` en la tabla `auditoria` con métricas de piezas procesadas.
+
+---
+
 ## [Versión 1.9.6] - 2026-11-25
 ### 🛡️ Borrado Lógico Puro y Restauración en Catálogos Maestros (Zero Physical Delete)
 - **Eliminación del campo y botón "Desactivar"**:

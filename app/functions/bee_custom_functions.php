@@ -601,6 +601,16 @@ function user_can_manage_catalogos(): bool
 }
 
 /**
+ * Determina si el usuario en sesión puede acceder e importar piezas masivamente por Excel/CSV
+ *
+ * @return bool
+ */
+function user_can_import_acervo(): bool
+{
+  return user_can('importar_acervo');
+}
+
+/**
  * Obtiene el ID del usuario en sesión actual
  *
  * @return int|null

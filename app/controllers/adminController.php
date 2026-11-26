@@ -5016,6 +5016,92 @@ class adminController extends Controller implements ControllerInterface
     exit;
   }
 
+  /**
+   * Vista principal del módulo de Importación Masiva de Acervo Cultural
+   */
+  public function importar()
+  {
+    $this->check_user_permission('importar_acervo');
+
+    $this->addToData('es_super_admin', is_super_admin());
+    $this->addToData('user_museum_id', get_user_museum_id());
+    $this->addToData('user_museum_name', get_user_museum_name());
+    $this->addToData('museos_opciones', obtenerOpcionesMuseos());
+
+    $this->setTitle('Importación Masiva de Acervo Cultural');
+    $this->setView('importar/importar');
+    $this->render();
+  }
+
+  /**
+   * Alias de ruta para admin/importar_acervo
+   */
+  public function importar_acervo()
+  {
+    $this->importar();
+  }
+
+  /**
+   * Descarga la plantilla oficial en Excel (.xlsx) o CSV (.csv) para el acervo seleccionado
+   */
+  public function descargar_plantilla_importacion()
+  {
+    $this->check_user_permission('importar_acervo');
+
+    $tipo = isset($_GET['tipo']) ? trim((string)$_GET['tipo']) : 'general';
+    $formato = isset($_GET['formato']) ? trim((string)$_GET['formato']) : 'xlsx';
+
+    require_once CLASSES . 'AcervoImportador.php';
+    AcervoImportador::generarPlantilla($tipo, $formato);
+    exit;
+  }
+
+  /**
+   * Procesa la importación masiva vía AJAX multipart/form-data
+   */
+  public function post_importar_acervo()
+  {
+    $this->check_user_permission('importar_acervo');
+
+    header('Content-Type: application/json; charset=UTF-8');
+
+    // Validación de Token CSRF
+    if (!check_csrf()) {
+      echo json_encode([
+        'status' => false,
+        'msg'    => 'Token CSRF inválido o sesión expirada. Por favor recargue la página.'
+      ]);
+      exit;
+    }
+
+    if (!isset($_FILES['archivo_acervo'])) {
+      echo json_encode([
+        'status' => false,
+        'msg'    => 'No se recibió ningún archivo para procesar.'
+      ]);
+      exit;
+    }
+
+    $tipoAcervo = isset($_POST['tipo_acervo']) ? trim((string)$_POST['tipo_acervo']) : 'general';
+    $manejoDuplicados = isset($_POST['manejo_duplicados']) ? trim((string)$_POST['manejo_duplicados']) : 'skip';
+    $autoAprobar = !empty($_POST['auto_aprobar']) && (is_super_admin() || user_can_dictate_acervo());
+
+    $opciones = [
+      'manejo_duplicados'    => $manejoDuplicados,
+      'auto_aprobar'         => $autoAprobar,
+      'id_usuario'           => get_user_id(),
+      'id_museo_usuario'     => get_user_museum_id(),
+      'museo_usuario_nombre' => get_user_museum_name(),
+      'es_super_admin'       => is_super_admin()
+    ];
+
+    require_once CLASSES . 'AcervoImportador.php';
+    $resultado = AcervoImportador::procesarImportacion($_FILES['archivo_acervo'], $tipoAcervo, $opciones);
+
+    echo json_encode($resultado);
+    exit;
+  }
+
 }
 
 function obtenerCamposAcervoGeneral()

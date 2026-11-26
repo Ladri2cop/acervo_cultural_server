@@ -101,6 +101,7 @@ El sistema cuenta con un catálogo de **26 permisos granulares**, clasificados t
 | | `31` | `cancelar_prestamo_transferencia` | Cancelar Movimientos de Obra | ✅ | ✅ | ❌ | ❌ |
 | **Reportes y Exportación** | `22` | `exportar_excel` | Exportar Excel | ✅ | ✅ | ❌ | ❌ |
 | | `23` | `exportar_pdf` | Exportar PDF | ✅ | ✅ | ✅ | ✅ |
+| **Ingesta Masiva** | `36` | `importar_acervo` | Importación Masiva de Acervo | ✅ | ✅ | ❌ | ❌ |
 | **Gestión y Auditoría** | `1` | `admin-access` | Acceso de administrador | ✅ | ❌ | ❌ | ❌ |
 | | `32` | `gestion_usuarios` | Gestión de Usuarios | ✅ | ✅ | ❌ | ❌ |
 | | `33` | `gestion_roles` | Gestión de Roles y Permisos | ✅ | ❌ | ❌ | ❌ |
@@ -125,6 +126,7 @@ function user_can(string $permissionSlug): bool;
 // Módulo de Acervo
 function user_can_view_acervo(): bool;
 function user_can_register(): bool;
+function user_can_import_acervo(): bool;
 function user_can_edit_acervo(?string $tipo = null): bool;
 function user_can_delete_acervo(?string $tipo = null): bool;
 
