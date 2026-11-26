@@ -96,10 +96,22 @@
             Descargue la plantilla prediseñada para el tipo de acervo seleccionado. Cada archivo incluye encabezados normalizados, claves técnicas de ingesta y ejemplos reales de captura.
           </p>
 
+          <div class="alert alert-success bg-success-subtle border-success border-opacity-25 rounded-3 p-3 mb-3 small">
+            <div class="d-flex align-items-start gap-2">
+              <i class='bx bx-list-check text-success fs-4 mt-1'></i>
+              <div>
+                <h6 class="fw-bold text-success mb-1">¡Listas Desplegables Automatizadas en Excel!</h6>
+                <p class="mb-0 text-dark">
+                  La plantilla <strong>Excel (.xlsx)</strong> incorpora listas desplegables nativas en las celdas y una hoja auxiliar <strong>«Catálogos»</strong> con los museos, épocas, técnicas, materiales y estados oficiales para que no tenga que escribirlos a mano.
+                </p>
+              </div>
+            </div>
+          </div>
+
           <div class="d-grid gap-2 mb-4">
             <a href="admin/descargar_plantilla_importacion?tipo=general&formato=xlsx" id="btn-download-xlsx" class="btn btn-outline-success d-flex align-items-center justify-content-center gap-2 py-2 fw-semibold">
               <i class='bx bxs-file-export fs-5'></i>
-              <span>Descargar Plantilla Excel (.xlsx)</span>
+              <span>Descargar Plantilla Excel (.xlsx) con Catálogos</span>
             </a>
             <a href="admin/descargar_plantilla_importacion?tipo=general&formato=csv" id="btn-download-csv" class="btn btn-outline-secondary d-flex align-items-center justify-content-center gap-2 py-2">
               <i class='bx bx-file fs-5'></i>
@@ -109,12 +121,13 @@
 
           <div class="alert alert-light border rounded-3 p-3 mb-0 small">
             <h6 class="fw-bold text-dark d-flex align-items-center gap-1 mb-2">
-              <i class='bx bx-info-circle text-primary'></i> Instrucciones Importantes
+              <i class='bx bx-info-circle text-primary'></i> Instrucciones y Buenas Prácticas
             </h6>
             <ul class="mb-0 ps-3 text-muted">
+              <li class="mb-1"><strong>Listas desplegables:</strong> En Excel (.xlsx), haga clic en la flecha de la celda en columnas como Ubicación, Época, Tipo, Material o Técnica para elegir directamente la opción oficial.</li>
               <li class="mb-1"><strong>No modifique</strong> ni elimine las filas 1 y 2 (títulos descriptivos y claves técnicas).</li>
               <li class="mb-1">Los campos marcados con asterisco <strong>(*) son obligatorios</strong> (ej. Nombre/Título de la pieza y Ubicación Física).</li>
-              <li class="mb-1">Para la <strong>Ubicación Física</strong>, use el nombre exacto del museo custodio registrado en los catálogos del sistema.</li>
+              <li class="mb-1">Para la <strong>Ubicación Física</strong>, debe seleccionarse o coincidir exactamente con una sede activa del catálogo.</li>
               <li class="mb-1">Puede borrar las filas de ejemplo antes de subir su archivo, o dejarlas ya que el sistema las identificará automáticamente.</li>
               <li>Tamaño máximo del archivo: <strong>20 MB</strong>.</li>
             </ul>

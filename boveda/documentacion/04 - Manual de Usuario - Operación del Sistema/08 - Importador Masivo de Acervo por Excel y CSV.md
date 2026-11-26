@@ -59,8 +59,47 @@ El sistema soporta los tres acervos patrimoniales del Sistema de Inventario para
 Cada plantilla generada dinámicamente contiene:
 - **Fila 1 (Encabezados Formales)**: Títulos en español institucional con fondo guinda (`#6B1D2F`) y texto blanco en negrita. Los campos obligatorios se indican con `(*)`.
 - **Fila 2 (Claves Técnicas)**: Nombres de columnas de base de datos en minúsculas (`codigo_interno`, `no_inventario`, `nombre_titulo_pieza`, etc.), útiles para que el motor identifique los campos sin ambigüedades.
-- **Fila 3 (Guía de Llenado)**: Instrucciones breves y tipos de valores admitidos (resaltada en amarillo sutil).
+- **Fila 3 (Guía de Llenado)**: Instrucciones breves y tipos de valores admitidos (resaltada en gris sutil con texto en cursiva).
 - **Filas 4 en adelante (Ejemplos Reales)**: Tres filas con datos auténticos del patrimonio mexiquense (ej. pinturas de José María Velasco, cerámica teotihuacana, monedas de 8 Reales Carlos IV) que ilustran el formato correcto de medidas, materiales y técnicas.
+
+### 🎯 Listas Desplegables Nativas en Celdas y Hoja Complementaria «Catálogos»
+
+Para evitar que los usuarios tengan que escribir manualmente nombres de museos, técnicas, materiales o épocas (y prevenir errores tipográficos o discrepancias de ortografía), las plantillas en formato **Excel (`.xlsx`)** integran **validación de datos nativa (`DataValidation::TYPE_LIST`)** y una pestaña auxiliar de referencia:
+
+```mermaid
+flowchart TD
+    subgraph Libro_Excel["Plantilla Oficial Excel (.xlsx)"]
+        subgraph Hoja1["Hoja 1: Captura de Acervo (Activa)"]
+            H1["Filas 1 a 3: Encabezados y Guías"]
+            H2["Filas 4 a 500: Celdas de Captura con Menú Desplegable ▼"]
+        end
+        subgraph Hoja2["Hoja 2: Catálogos de Referencia (Auxiliar)"]
+            C1["Col A: Museos y Sedes Activas"]
+            C2["Col B: Épocas y Periodos Históricos"]
+            C3["Col C: Estados de Conservación"]
+            C4["Col D+: Tipos de Obra / Formas / Técnicas / Materiales"]
+        end
+    end
+    Hoja2 -.->|"DataValidation = 'Catalogos'!$Col$2:$Col$Max"| Hoja1
+```
+
+1. **Menús Desplegables Automáticos en Celdas**:
+   - Al posicionarse en cualquiera de las celdas de las filas **4 a 500** de las columnas catalogadas, Excel despliega automáticamente una **flecha de selección (`▼`)**.
+   - El usuario hace clic sobre la flecha y elige la opción deseada de la lista oficial con un solo clic.
+   - Cuenta con mensajes de orientación contextual integrados (*"Catálogo Oficial: Haga clic en la flecha para desplegar las opciones oficiales del catálogo"*).
+   - Estilo informativo permisivo (`STYLE_INFORMATION`): Facilita la selección inmediata del catálogo oficial pero permite flexibilidad curatorial si se requiere registrar una técnica o material atípico.
+
+2. **Hoja Complementaria «Catálogos»**:
+   - Se crea automáticamente como segunda pestaña del libro Excel.
+   - Contiene columnas independientes para cada catálogo con encabezados guinda (`#6B1D2F`) y auto-ajuste de ancho:
+     - **🏛️ Acervo General**: *Museos y Sedes (Ubicación)*, *Épocas y Periodos*, *Estado de Conservación*, *Tipos de Obra*, *Técnicas*, *Materiales*.
+     - **🏺 Acervo Arqueológico**: *Museos y Sedes*, *Épocas y Periodos*, *Estado de Conservación*, *Formas y Tipologías*, *Técnicas de Manufactura*, *Técnicas Decorativas*, *Materiales Arqueológicos*, *Modos de Obtención*, *Representaciones Iconográficas*.
+     - **🪙 Acervo Numismático**: *Museos y Sedes*, *Épocas y Periodos*, *Estado de Conservación*, *Tipos de Obra Numismática*, *Metales y Materiales*, *Técnicas Numismáticas*.
+
+> [!NOTE]
+> **Diferencia entre formatos Excel (.xlsx) y CSV (.csv)**:
+> - **Excel (`.xlsx`)**: Soporta múltiples hojas de cálculo, estilos tipográficos institucionales, paneles congelados y **listas desplegables interactivas en celdas**. Es el formato recomendado para la captura manual por parte de los usuarios.
+> - **CSV (`.csv`)**: Es un formato de texto plano estructurado que no soporta múltiples hojas ni controles interactivos de celda. Se incluye para procesos automatizados, scripts de migración o usuarios que exportan directamente desde otros sistemas de base de datos.
 
 > [!TIP]
 > **Compatibilidad de CSV**: Las plantillas en formato `.csv` se exportan con firma **UTF-8 BOM** (`\xEF\xBB\xBF`), garantizando que Microsoft Excel en cualquier versión de Windows abra los acentos, diéresis y caracteres de la letra `ñ` sin corrupción tipográfica (*mojibake*).

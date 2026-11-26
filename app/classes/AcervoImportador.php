@@ -580,13 +580,14 @@ class AcervoImportador
   }
 
   /**
-   * Genera y descarga una plantilla oficial en formato XLSX o CSV
+   * Construye el objeto Spreadsheet de la plantilla con estilos institucionales,
+   * hoja complementaria de catálogos y validaciones de datos (listas desplegables).
    *
-   * @param string $tipo 'general', 'arqueologico', 'numismatica'
-   * @param string $formato 'xlsx', 'csv'
-   * @return void
+   * @param string $tipo
+   * @param string $formato
+   * @return Spreadsheet
    */
-  public static function generarPlantilla(string $tipo, string $formato = 'xlsx'): void
+  public static function construirSpreadsheetPlantilla(string $tipo, string $formato = 'xlsx'): Spreadsheet
   {
     $tipo = strtolower(trim($tipo));
     $formato = strtolower(trim($formato));
@@ -728,7 +729,61 @@ class AcervoImportador
         $letter = Coordinate::stringFromColumnIndex($i);
         $sheet->getColumnDimension($letter)->setAutoSize(true);
       }
+
+      // Construir hoja complementaria de catálogos y aplicar listas desplegables (DataValidation)
+      $catalogRanges = self::construirHojaCatalogos($spreadsheet, $tipo);
+
+      for ($i = 1; $i <= $totalCols; $i++) {
+        $letter = Coordinate::stringFromColumnIndex($i);
+        $colKey = $columnas[$i - 1]['key'] ?? '';
+
+        if (!empty($colKey) && isset($catalogRanges[$colKey])) {
+          $valRange = $catalogRanges[$colKey];
+          $validation = new \PhpOffice\PhpSpreadsheet\Cell\DataValidation();
+          $validation->setType(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::TYPE_LIST);
+          $validation->setErrorStyle(\PhpOffice\PhpSpreadsheet\Cell\DataValidation::STYLE_INFORMATION);
+          $validation->setAllowBlank(true);
+          $validation->setShowDropDown(true);
+          $validation->setShowInputMessage(true);
+          $validation->setShowErrorMessage(true);
+          $validation->setErrorTitle('Elemento de Catálogo Oficial');
+          $validation->setError('Se sugiere seleccionar una opción del catálogo oficial o verificar la ortografía.');
+          $validation->setPromptTitle('Catálogo Oficial');
+          $validation->setPrompt('Haga clic en la flecha para desplegar las opciones oficiales del catálogo.');
+          $validation->setFormula1($valRange);
+
+          // Aplicar la validación de la fila 4 a la 500 para agilizar la captura sin necesidad de escribir
+          $sheet->setDataValidation("{$letter}4:{$letter}500", $validation);
+        }
+      }
+
+      // Asegurar que la hoja activa visible sea la primera (Captura de Acervo)
+      $spreadsheet->setActiveSheetIndex(0);
     }
+
+    return $spreadsheet;
+  }
+
+  /**
+   * Genera y descarga una plantilla oficial en formato XLSX o CSV
+   *
+   * @param string $tipo 'general', 'arqueologico', 'numismatica'
+   * @param string $formato 'xlsx', 'csv'
+   * @return void
+   */
+  public static function generarPlantilla(string $tipo, string $formato = 'xlsx'): void
+  {
+    $tipo = strtolower(trim($tipo));
+    $formato = strtolower(trim($formato));
+
+    if (!in_array($tipo, self::TIPOS_VALIDOS, true)) {
+      $tipo = 'general';
+    }
+    if (!in_array($formato, ['xlsx', 'csv'], true)) {
+      $formato = 'xlsx';
+    }
+
+    $spreadsheet = self::construirSpreadsheetPlantilla($tipo, $formato);
 
     $timestamp = date('Ymd_His');
     $fileName = "plantilla_importacion_{$tipo}_{$timestamp}.{$formato}";
@@ -763,6 +818,279 @@ class AcervoImportador
     }
 
     exit;
+  }
+
+  /**
+   * Construye una hoja complementaria con los catálogos oficiales del sistema
+   * y retorna el mapeo de rangos para las listas desplegables (DataValidation)
+   *
+   * @param Spreadsheet $spreadsheet
+   * @param string $tipo
+   * @return array [field_key => "'Catalogos'!$Col$2:$Col$Max"]
+   */
+  private static function construirHojaCatalogos(Spreadsheet $spreadsheet, string $tipo): array
+  {
+    $catSheet = $spreadsheet->createSheet();
+    $catSheet->setTitle('Catalogos');
+
+    $db = Db::connect();
+
+    // 1. Catálogo común: Museos / Sedes Custodias
+    $museos = [];
+    try {
+      $stmt = $db->query("SELECT nombre_museo FROM museos WHERE status = 1 ORDER BY nombre_museo ASC");
+      $museos = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+    } catch (Throwable $e) {}
+    if (empty($museos) && function_exists('obtenerOpcionesMuseos')) {
+      $mArr = obtenerOpcionesMuseos();
+      unset($mArr[''], $mArr['Otro']);
+      $museos = array_values($mArr);
+    }
+    $museos[] = 'Otro';
+
+    // 2. Catálogo común: Épocas y Periodos Históricos
+    $epocas = [];
+    try {
+      $stmt = $db->query("SELECT nombre_epoca_periodo FROM epocas_periodos WHERE status = 1 ORDER BY id_epoca_periodo ASC");
+      $epocas = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+    } catch (Throwable $e) {}
+    if (empty($epocas) && function_exists('obtenerOpcionesEpocas')) {
+      $eArr = obtenerOpcionesEpocas();
+      unset($eArr['']);
+      $epocas = array_values($eArr);
+    }
+
+    // 3. Catálogo común: Estados de Conservación
+    $estadosConservacion = ['Bueno', 'Regular', 'Malo'];
+
+    // 4. Catálogos específicos según el tipo de acervo
+    $columnasCatalogos = [];
+    $mapeoRangos = [];
+
+    // Col A: Museos
+    $columnasCatalogos[] = [
+      'titulo' => 'Museos y Sedes (Ubicación)',
+      'items'  => $museos,
+      'keys'   => ['ubicacion_fisica']
+    ];
+
+    // Col B: Épocas
+    $columnasCatalogos[] = [
+      'titulo' => 'Épocas y Periodos',
+      'items'  => $epocas,
+      'keys'   => ['epoca', 'fecha_epoca']
+    ];
+
+    // Col C: Estado de Conservación
+    $columnasCatalogos[] = [
+      'titulo' => 'Estado de Conservación',
+      'items'  => $estadosConservacion,
+      'keys'   => ['estado_conservacion']
+    ];
+
+    if ($tipo === 'general') {
+      // Tipos de Obra
+      $tiposObra = [];
+      try {
+        $stmt = $db->query("SELECT nombre_tipo_obra FROM tipo_obras WHERE status = 1 ORDER BY categoria ASC, nombre_tipo_obra ASC");
+        $tiposObra = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+      } catch (Throwable $e) {}
+      if (empty($tiposObra)) {
+        $tiposObra = ['Pintura', 'Escultura', 'Mobiliario', 'Cerámica', 'Textil', 'Dibujo', 'Grabado', 'Fotografía', 'Acuarela', 'Objeto', 'Otro'];
+      }
+      $columnasCatalogos[] = [
+        'titulo' => 'Tipos de Obra',
+        'items'  => $tiposObra,
+        'keys'   => ['tipo']
+      ];
+
+      // Técnicas
+      $tecnicas = [];
+      try {
+        $stmt = $db->query("SELECT nombre_tecnica FROM tecnicas WHERE status = 1 ORDER BY nombre_tecnica ASC");
+        $tecnicas = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+      } catch (Throwable $e) {}
+      if (empty($tecnicas)) {
+        $tecnicas = ['Óleo sobre tela', 'Acrílico', 'Acuarela', 'Talla en madera', 'Telar de cintura', 'Vaciado sobre bronce', 'Grabado', 'Fotografía', 'Mixta', 'Otros'];
+      }
+      $columnasCatalogos[] = [
+        'titulo' => 'Técnicas',
+        'items'  => $tecnicas,
+        'keys'   => ['tecnica']
+      ];
+
+      // Materiales
+      $materiales = [];
+      try {
+        $stmt = $db->query("SELECT nombre_material FROM materiales WHERE status = 1 ORDER BY nombre_material ASC");
+        $materiales = $stmt ? $stmt->fetchAll(PDO::FETCH_COLUMN) : [];
+      } catch (Throwable $e) {}
+      if (empty($materiales)) {
+        $materiales = ['Lienzo', 'Madera de cedro', 'Algodón', 'Bronce', 'Mármol', 'Papel', 'Barro', 'Hierro', 'Otro'];
+      }
+      $columnasCatalogos[] = [
+        'titulo' => 'Materiales',
+        'items'  => $materiales,
+        'keys'   => ['material']
+      ];
+
+    } elseif ($tipo === 'arqueologico') {
+      // Formas
+      $formas = function_exists('obtenerOpcionesFormasArqueologico') ? array_values(array_filter(obtenerOpcionesFormasArqueologico())) : ['Olla', 'Cuenco', 'Cajete', 'Figurilla', 'Vaso trípode', 'Punta de proyectil', 'Hacha', 'Plato', 'Incensario', 'Otro'];
+      $columnasCatalogos[] = [
+        'titulo' => 'Formas y Tipologías',
+        'items'  => $formas,
+        'keys'   => ['forma']
+      ];
+
+      // Manufactura
+      $tecManuf = function_exists('obtenerOpcionesTecnicasManufacturaArqueologico') ? array_values(array_filter(obtenerOpcionesTecnicasManufacturaArqueologico())) : ['Modelado a mano', 'Moldeado', 'Pastillaje', 'Percusión', 'Presión', 'Otro'];
+      $columnasCatalogos[] = [
+        'titulo' => 'Técnicas de Manufactura',
+        'items'  => $tecManuf,
+        'keys'   => ['tecnica_manufactura']
+      ];
+
+      // Decorativa
+      $tecDeco = function_exists('obtenerOpcionesTecnicasDecorativasArqueologico') ? array_values(array_filter(obtenerOpcionesTecnicasDecorativasArqueologico())) : ['Incisión', 'Bruñido', 'Pintura al fresco', 'Esgrafiado', 'Engobe', 'Sin decoración', 'Otro'];
+      $columnasCatalogos[] = [
+        'titulo' => 'Técnicas Decorativas',
+        'items'  => $tecDeco,
+        'keys'   => ['tecnica_decorativa']
+      ];
+
+      // Materiales Arqueológicos
+      $matArq = function_exists('obtenerOpcionesMaterialesArqueologico') ? array_values(array_filter(obtenerOpcionesMaterialesArqueologico())) : ['Barro cocido', 'Obsidiana', 'Basalto', 'Jadeíta', 'Concha', 'Hueso', 'Piedra verde', 'Otro'];
+      $columnasCatalogos[] = [
+        'titulo' => 'Materiales Arqueológicos',
+        'items'  => $matArq,
+        'keys'   => ['material']
+      ];
+
+      // Modos de Obtención
+      $obtencion = ['Proyecto de excavación arqueológica', 'Donación de particulares', 'Decomiso oficial', 'Salvamento arqueológico', 'Hallazgo fortuito', 'Otro'];
+      $columnasCatalogos[] = [
+        'titulo' => 'Modos de Obtención',
+        'items'  => $obtencion,
+        'keys'   => ['obtencion']
+      ];
+
+      // Representaciones
+      $rep = ['Deidad (Tláloc, Quetzalcóatl, etc.)', 'Antropomorfa femenina', 'Antropomorfa masculina', 'Zoomorfa', 'Fitomorfa', 'Geométrica', 'No aplica', 'Otro'];
+      $columnasCatalogos[] = [
+        'titulo' => 'Representaciones Iconográficas',
+        'items'  => $rep,
+        'keys'   => ['representacion']
+      ];
+
+    } elseif ($tipo === 'numismatica') {
+      // Tipos de Obra
+      $tiposNum = function_exists('obtenerOpcionesTiposNumismatica') ? array_values(array_filter(obtenerOpcionesTiposNumismatica())) : ['Moneda', 'Billete o notafilia', 'Medallística', 'Tlacos', 'Ficha de hacienda', 'Condecoraciones', 'Filatelia', 'Loterofilia', 'Acciones', 'Documentos fiduciarios', 'Sellos', 'Otro'];
+      $columnasCatalogos[] = [
+        'titulo' => 'Tipos de Obra Numismática',
+        'items'  => $tiposNum,
+        'keys'   => ['tipo_obra']
+      ];
+
+      // Materiales Numismática
+      $matNum = function_exists('obtenerOpcionesMaterialesNumismatica') ? array_values(array_filter(obtenerOpcionesMaterialesNumismatica())) : ['Plata Ley .903', 'Plata Ley .720', 'Plata Ley .925', 'Oro Ley .875', 'Oro Ley .900', 'Cobre', 'Bronce', 'Latón', 'Cuproníquel', 'Níquel', 'Aluminio', 'Papel de algodón con fibras de seguridad', 'Polímero', 'Otro'];
+      $columnasCatalogos[] = [
+        'titulo' => 'Metales y Materiales',
+        'items'  => $matNum,
+        'keys'   => ['material']
+      ];
+
+      // Técnicas numismáticas
+      $tecNum = function_exists('obtenerOpcionesTecnicasNumismatica') ? array_values(array_filter(obtenerOpcionesTecnicasNumismatica())) : ['Acuñación a volante', 'Acuñación a prensa', 'Fundición', 'Grabado calcográfico', 'Litografía', 'Troquelado', 'Cincelado', 'Vaciado', 'Otro'];
+      $columnasCatalogos[] = [
+        'titulo' => 'Técnicas Numismáticas',
+        'items'  => $tecNum,
+        'keys'   => ['tecnica']
+      ];
+    }
+
+    // Helper recursivo para aplanar opciones (soporta arrays multidimensionales y optgroups)
+    $flatten = function ($arr) use (&$flatten) {
+      $flat = [];
+      if (!is_array($arr)) {
+        $str = trim((string)$arr);
+        if ($str !== '' && !str_starts_with(mb_strtolower($str), 'seleccione')) {
+          $flat[] = $str;
+        }
+        return $flat;
+      }
+      foreach ($arr as $val) {
+        if (is_array($val)) {
+          $flat = array_merge($flat, $flatten($val));
+        } else {
+          $str = trim((string)$val);
+          if ($str !== '' && !str_starts_with(mb_strtolower($str), 'seleccione')) {
+            $flat[] = $str;
+          }
+        }
+      }
+      return $flat;
+    };
+
+    // Escribir en la hoja Catálogos
+    $colIdx = 1;
+    $burgundyHex = '6B1D2F';
+
+    foreach ($columnasCatalogos as $colData) {
+      $letter = Coordinate::stringFromColumnIndex($colIdx);
+
+      // Encabezado
+      $catSheet->setCellValueExplicit("{$letter}1", $colData['titulo'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+
+      $items = array_values(array_unique(array_filter($flatten($colData['items'] ?? []))));
+      if (empty($items)) {
+        $items = ['N/A'];
+      }
+      $totalItems = count($items);
+
+      for ($row = 0; $row < $totalItems; $row++) {
+        $rowNum = $row + 2;
+        $catSheet->setCellValueExplicit("{$letter}{$rowNum}", $items[$row], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+      }
+
+      $maxRow = max(2, $totalItems + 1);
+
+      // Mapear cada clave a su fórmula de rango en la hoja Catalogos
+      foreach ($colData['keys'] as $key) {
+        $mapeoRangos[$key] = "'Catalogos'!\${$letter}\$2:\${$letter}\${$maxRow}";
+      }
+
+      // Estilizar encabezado de catálogo
+      $catSheet->getStyle("{$letter}1")->applyFromArray([
+        'font' => [
+          'bold'  => true,
+          'color' => ['rgb' => 'FFFFFF'],
+          'size'  => 10
+        ],
+        'fill' => [
+          'fillType'   => Fill::FILL_SOLID,
+          'startColor' => ['rgb' => $burgundyHex]
+        ],
+        'alignment' => [
+          'horizontal' => Alignment::HORIZONTAL_CENTER,
+          'vertical'   => Alignment::VERTICAL_CENTER
+        ]
+      ]);
+
+      // Bordes tenues en la lista
+      $catSheet->getStyle("{$letter}1:{$letter}{$maxRow}")->getBorders()->getAllBorders()->applyFromArray([
+        'borderStyle' => Border::BORDER_THIN,
+        'color'       => ['rgb' => 'E2E8F0']
+      ]);
+
+      $catSheet->getColumnDimension($letter)->setAutoSize(true);
+      $colIdx++;
+    }
+
+    $catSheet->getRowDimension(1)->setRowHeight(26);
+    $catSheet->freezePane('A2');
+
+    return $mapeoRangos;
   }
 
   /**

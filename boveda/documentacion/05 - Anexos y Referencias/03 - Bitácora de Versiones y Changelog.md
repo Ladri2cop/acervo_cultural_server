@@ -24,6 +24,10 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
     3. **🪙 Acervo Numismático** (`acervo_numismatica` - Módulo 4): 16 columnas con denominación facial, tipo de obra, metales, cecas, ensayadores y descripciones de anverso y reverso.
 - **Motor Especializado `AcervoImportador` (`app/classes/AcervoImportador.php`)**:
   - Generación de plantillas oficiales con encabezados estilizados institucionales en color guinda (`#6B1D2F`), fila secundaria con claves técnicas de base de datos, fila terciaria con instrucciones y ejemplos reales del patrimonio mexiquense.
+  - **Listas Desplegables Nativas en Celdas (`DataValidation::TYPE_LIST`)**:
+    - En el formato `.xlsx`, las celdas de las filas 4 a 500 para columnas basadas en catálogos oficiales disponen de menús desplegables interactivos nativos. El usuario simplemente hace clic en la flecha de la celda y selecciona la opción oficial sin tener que escribir manualmente.
+    - Hoja complementaria automatizada `Catalogos` con columnas dinámicas para museos/sedes activos, épocas históricas, estados de conservación, tipos de obra, formas tipológicas, técnicas de manufactura y decorativas, materiales, modos de obtención y representaciones iconográficas.
+    - Soporte recursivo de aplanamiento de catálogos para extraer opciones agrupadas por categoría (*optgroups*), filtrando encabezados vacíos y eliminando duplicados.
   - Exportación en `.xlsx` y `.csv` con firma UTF-8 BOM (`\xEF\xBB\xBF`) para compatibilidad nativa con Microsoft Excel en Windows sin distorsión de caracteres o acentos.
   - Normalizador inteligente de columnas capaz de mapear tanto claves técnicas directas como sinónimos amigables en español.
 - **Detección Avanzada de Duplicados e Integridad Relacional**:
