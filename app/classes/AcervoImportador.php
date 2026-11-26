@@ -34,7 +34,7 @@ class AcervoImportador
       case 'general':
         return [
           'tipo'          => 'general',
-          'nombre'        => 'Acervo General (Plástica, Utilitaria, Mobiliario)',
+          'nombre'        => 'Acervo General',
           'tabla'         => 'acervo_general',
           'pk'            => 'id_acervo_general',
           'id_modulo'     => 5,
@@ -218,7 +218,7 @@ class AcervoImportador
       case 'arqueologico':
         return [
           'tipo'          => 'arqueologico',
-          'nombre'        => 'Acervo Arqueológico (Prehispánico y Lítico)',
+          'nombre'        => 'Acervo Arqueológico',
           'tabla'         => 'acervo_arqueologico',
           'pk'            => 'id_acervo_arq',
           'id_modulo'     => 3,
@@ -420,7 +420,7 @@ class AcervoImportador
       case 'numismatica':
         return [
           'tipo'          => 'numismatica',
-          'nombre'        => 'Acervo Numismático (Monedas, Billetes, Medallas)',
+          'nombre'        => 'Acervo Numismático',
           'tabla'         => 'acervo_numismatica',
           'pk'            => 'id_acervo_numismatica',
           'id_modulo'     => 4,
@@ -1300,9 +1300,9 @@ class AcervoImportador
 
     if ($tipoDetectado !== null && $tipoDetectado !== $tipoAcervo) {
       $nombres = [
-        'general'      => 'Acervo General (Plástica, Utilitaria y Escultura)',
-        'arqueologico' => 'Acervo Arqueológico (Prehispánico y Lítico)',
-        'numismatica'  => 'Acervo Numismático (Monedas, Billetes y Medallas)'
+        'general'      => 'Acervo General',
+        'arqueologico' => 'Acervo Arqueológico',
+        'numismatica'  => 'Acervo Numismático'
       ];
 
       $nombreDetectado = $nombres[$tipoDetectado] ?? ucfirst($tipoDetectado);
