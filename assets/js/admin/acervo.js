@@ -1005,7 +1005,39 @@ function abrirModalVerPieza(id, tipoAcervo = 'general') {
           $('#ver-num-material').text(pieza.material || '-');
           $('#ver-num-fecha_epoca').text(pieza.fecha_epoca || '-');
 
-          $('#ver-num-dimensiones').text(pieza.dimensiones || '-');
+          // Lógica de dimensiones para Numismática en visualización
+          const bidimensionalesNum = ['Billetes o notafilia', 'Filatelia', 'Loterofilia', 'Acciones', 'Documentos fiduciarios', 'Sellos'];
+          let esTridimensional = true;
+
+          if (pieza.medidas && pieza.medidas.trim() !== '') {
+            esTridimensional = true;
+          } else if (pieza.cm && pieza.cm.trim() !== '') {
+            esTridimensional = false;
+          } else if (bidimensionalesNum.includes(pieza.tipo_obra)) {
+            esTridimensional = false;
+          } else {
+            esTridimensional = true;
+          }
+
+          const cmVal = pieza.cm || (!esTridimensional ? (pieza.dimensiones || '') : '');
+          const medidasVal = pieza.medidas || (esTridimensional ? (pieza.dimensiones || '') : '');
+
+          if (esTridimensional) {
+            $('#ver-num-tipo_dimension_badge')
+              .removeClass('bg-info')
+              .addClass('bg-primary')
+              .text('Tridimensional');
+          } else {
+            $('#ver-num-tipo_dimension_badge')
+              .removeClass('bg-primary')
+              .addClass('bg-info')
+              .text('Bidimensional');
+          }
+
+          $('#ver-num-cm').text(cmVal || '-');
+          $('#ver-num-medidas').text(medidasVal || '-');
+          $('#ver-num-dimensiones').val(pieza.dimensiones || (esTridimensional ? medidasVal : cmVal) || '-');
+
           $('#ver-num-ubicacion_fisica').text(pieza.ubicacion_fisica || '-');
           $('#ver-num-ubicacion_topografica').text(pieza.ubicacion_topografica || '-');
           $('#ver-num-estado_conservacion').text(pieza.estado_conservacion || '-');

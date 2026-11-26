@@ -1196,21 +1196,34 @@
             <i class="bx bx-map-pin me-1"></i>Dimensiones, Ubicación y Conservación
           </h6>
           <div class="row g-3 mb-4">
-            <div class="col-md-3">
-              <label class="form-label fw-semibold">Dimensiones (cm)</label>
-              <div class="form-control bg-light" id="ver-num-dimensiones">-</div>
+            <div class="col-12 col-md-4">
+              <label class="form-label fw-semibold">Tipo de Dimensiones</label>
+              <div class="form-control bg-light d-flex align-items-center" id="ver-num-tipo_dimension" style="height: auto; min-height: 38px;">
+                <span class="badge bg-primary px-2 py-1" id="ver-num-tipo_dimension_badge">Tridimensional</span>
+              </div>
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-md-4" id="ver-num-container-cm">
+              <label class="form-label fw-semibold" id="ver-num-cm-label">Centímetros (Bidimensional)</label>
+              <div class="form-control bg-light text-break" id="ver-num-cm" style="height: auto; min-height: 38px; word-break: break-word;">-</div>
+            </div>
+            <div class="col-12 col-md-4" id="ver-num-container-medidas">
+              <label class="form-label fw-semibold" id="ver-num-medidas-label">Medidas (Tridimensional)</label>
+              <div class="form-control bg-light text-break" id="ver-num-medidas" style="height: auto; min-height: 38px; word-break: break-word;">-</div>
+            </div>
+            <!-- Campo oculto para compatibilidad retroactiva -->
+            <input type="hidden" id="ver-num-dimensiones">
+
+            <div class="col-12 col-md-4">
               <label class="form-label fw-semibold">Ubicación Física</label>
-              <div class="form-control bg-light" id="ver-num-ubicacion_fisica">-</div>
+              <div class="form-control bg-light text-break" id="ver-num-ubicacion_fisica" style="height: auto; min-height: 38px; word-break: break-word;">-</div>
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-md-4">
               <label class="form-label fw-semibold">Ubicación Topográfica</label>
-              <div class="form-control bg-light" id="ver-num-ubicacion_topografica">-</div>
+              <div class="form-control bg-light text-break" id="ver-num-ubicacion_topografica" style="height: auto; min-height: 38px; word-break: break-word;">-</div>
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-md-4">
               <label class="form-label fw-semibold">Estado de Conservación</label>
-              <div class="form-control bg-light" id="ver-num-estado_conservacion">-</div>
+              <div class="form-control bg-light text-break" id="ver-num-estado_conservacion" style="height: auto; min-height: 38px; word-break: break-word;">-</div>
             </div>
           </div>
 

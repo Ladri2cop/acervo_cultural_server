@@ -35,6 +35,9 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 - **Integración con el Flujo de Calidad Curatorial**:
   - Por defecto, toda pieza importada nace con `estatus_revision = 'pendiente'` y `status = 0`, canalizándose a la Mesa de Revisión para dictamen curatorial previo a su visibilidad pública.
   - Opción de aprobación directa e inmediata (`estatus_revision = 'aprobado'`, `status = 1`) disponible para Super Administradores y dictaminadores.
+- **Corrección en Modal de Visualización ("Ver Pieza Numismática")**:
+  - Se corrigió la discrepancia de dimensiones en `modalVerPieza` para acervo numismático: ahora refleja explícitamente el badge `Tipo de Dimensiones` (*Tridimensional* o *Bidimensional*), mostrando los campos *Centímetros (Bidimensional)* y *Medidas (Tridimensional)* conforme al formulario de edición.
+  - Se eliminó el desbordamiento de texto (*text overflow*) agregando auto-expansión vertical (`height: auto !important`, `min-height: 38px`, `word-break: break-word`, `overflow-wrap: anywhere`) a los contenedores `.form-control` del modal, impidiendo que textos largos (como medidas compuestas con peso y grosor) se salgan de los bordes del campo.
 - **Seguridad Multimuseo y Transaccionalidad**:
   - Aislamiento de sede (tenancy): los usuarios administradores sólo pueden importar piezas asignadas a su museo custodio.
   - Ingesta atómica con transacciones PDO (`beginTransaction` / `commit` / `rollBack`), previniendo estados inconsistentes.
