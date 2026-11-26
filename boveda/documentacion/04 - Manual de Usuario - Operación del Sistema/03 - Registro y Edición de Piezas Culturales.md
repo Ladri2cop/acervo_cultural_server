@@ -41,7 +41,7 @@ flowchart TD
     Dim -- Bidimensional --> Radio2D["Seleccionar 'Bidimensional' -> Capturar Centímetros (cm)"]
     Dim -- Tridimensional --> Radio3D["Seleccionar 'Tridimensional' -> Capturar Medidas Completas"]
     
-    Radio2D --> Cur["3. Datos Curatoriales (Autor, Año, Técnica, Material)"]
+    Radio2D --> Cur["3. Datos De revisión (Autor, Año, Técnica, Material)"]
     Radio3D --> Cur
     
     Cur --> Ubi["4. Ubicación"]
@@ -93,13 +93,13 @@ Para evitar confusiones en la captura, se dispone de botones de selección dimen
 Al presionar el botón **"Guardar Pieza"**:
 1. El sistema valida que todos los campos obligatorios estén completos.
 2. La imagen se almacena en el servidor y se genera el registro en la base de datos.
-3. La pieza ingresa con estatus curatorial **"Pendiente"** (marcador azul) y se canaliza a la **Bandeja de Revisión** para dictamen de los curadores.
+3. La pieza ingresa con estatus de revisión **"Pendiente"** (marcador azul) y se canaliza a la **Bandeja de Revisión** para dictamen de los revisores.
 
 ---
 
 ## 4. Edición de Piezas con "Cambios Solicitados"
 
-Si un curador o administrador evaluó tu pieza y solicitó modificaciones:
+Si un revisor o administrador evaluó tu pieza y solicitó modificaciones:
 1. Recibirás el registro en tu listado con el distintivo amarillo **"Cambios Solicitados"**.
 2. Haz clic en el menú **"Acciones"** y selecciona **"Editar Pieza"**.
 3. En la parte superior del formulario podrás leer las **Observaciones del Revisor** (ejemplo: *"Por favor rectificar el material y subir una foto con mejor iluminación"*).
@@ -109,7 +109,7 @@ Si un curador o administrador evaluó tu pieza y solicitó modificaciones:
 ---
 
 ## 5. Referencias Cruzadas
-- Conoce el proceso de aprobación curatorial: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
+- Conoce el proceso de aprobación de revisión: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
 - Consulta el catálogo de piezas aprobadas: [[02 - Exploración, Búsqueda y Filtrado del Acervo]]
 - Préstamos y movimientos de piezas: [[05 - Gestión de Préstamos y Transferencias]]
 

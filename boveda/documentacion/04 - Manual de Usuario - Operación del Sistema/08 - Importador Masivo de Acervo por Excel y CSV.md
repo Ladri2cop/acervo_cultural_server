@@ -20,8 +20,8 @@ tags:
 El módulo de **Importación Masiva de Acervo** permite a los administradores y custodios incorporar grandes volúmenes de piezas patrimoniales al sistema mediante hojas de cálculo de Microsoft Excel (`.xlsx`, `.xls`) o archivos de valores separados por comas (`.csv`), garantizando la integridad de datos, la validación de inventarios y la trazabilidad institucional.
 
 > [!IMPORTANT]
-> **Garantía Curatorial y Control de Calidad**:
-> Por directriz de conservación patrimonial, toda pieza importada por defecto es registrada con **estatus de revisión "Pendiente"** (`estatus_revision = 'pendiente'` y `status = 0`), canalizándose automáticamente a la [[04 - Flujo de Revisión y Semáforo de Aprobación|Mesa de Revisión]] para que el equipo curatorial y de registro valide la información antes de su publicación en el catálogo general.
+> **Garantía Institucional y Control de Calidad**:
+> Por directriz de conservación patrimonial, toda pieza importada por defecto es registrada con **estatus de revisión "Pendiente"** (`estatus_revision = 'pendiente'` y `status = 0`), canalizándose automáticamente a la [[04 - Flujo de Revisión y Semáforo de Aprobación|Mesa de Revisión]] para que el equipo de revisión y de registro valide la información antes de su publicación en el catálogo general.
 
 ---
 
@@ -87,7 +87,7 @@ flowchart TD
    - Al posicionarse en cualquiera de las celdas de las filas **4 a 500** de las columnas catalogadas, Excel despliega automáticamente una **flecha de selección (`▼`)**.
    - El usuario hace clic sobre la flecha y elige la opción deseada de la lista oficial con un solo clic.
    - Cuenta con mensajes de orientación contextual integrados (*"Catálogo Oficial: Haga clic en la flecha para desplegar las opciones oficiales del catálogo"*).
-   - Estilo informativo permisivo (`STYLE_INFORMATION`): Facilita la selección inmediata del catálogo oficial pero permite flexibilidad curatorial si se requiere registrar una técnica o material atípico.
+   - Estilo informativo permisivo (`STYLE_INFORMATION`): Facilita la selección inmediata del catálogo oficial pero permite flexibilidad de registro si se requiere registrar una técnica o material atípico.
 
 2. **Hoja Complementaria «Catálogos»**:
    - Se crea automáticamente como segunda pestaña del libro Excel.
@@ -190,8 +190,8 @@ Antes de ejecutar la importación, el usuario puede personalizar dos directivas 
 2. **Actualizar datos de pieza existente**: Si se localiza una pieza previa con la misma clave de inventario, se actualizan sus columnas con la información provista en el archivo.
 3. **Rechazar fila**: Si se detecta una coincidencia previa, la fila se marca como error en la tabla de auditoría del proceso.
 
-### B. Destino en el Flujo de Curaduría
-1. **Mesa de Revisión (Pendiente)**: Las piezas se insertan inactivas (`status = 0`, `estatus_revision = 'pendiente'`), quedando visibles en `/admin/revision` para que los curadores emitan su dictamen formal.
+### B. Destino en el Flujo de Revisión
+1. **Mesa de Revisión (Pendiente)**: Las piezas se insertan inactivas (`status = 0`, `estatus_revision = 'pendiente'`), quedando visibles en `/admin/revision` para que los revisores emitan su dictamen formal.
 2. **Aprobar e incorporar de inmediato**: *Disponible únicamente para Super Administrador y usuarios con permiso de dictamen*. Las piezas se marcan aprobadas (`status = 1`, `estatus_revision = 'aprobado'`) e ingresan de inmediato al catálogo público y consultas activas.
 
 ---

@@ -98,7 +98,7 @@ Las respuestas de la API utilizan el tipo MIME `application/json; charset=UTF-8`
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Admin as Curador / Admin
+    actor Admin as Revisor / Admin
     participant JS as revision.js
     participant API as adminController
 
@@ -111,7 +111,7 @@ sequenceDiagram
     JS-->>Admin: Alerta SweetAlert2 y recarga tabla
 ```
 
-### 3.1. Listado de Revisión Curatorial
+### 3.1. Listado de Revisión de Acervo
 - **Ruta**: `GET /admin/get_revision_data`
 - **Parámetros Query**:
   - `tipo` *(string, opcional)*: `todos`, `general`, `arqueologico`, `numismatica`.
@@ -269,7 +269,7 @@ sequenceDiagram
   - `archivo_acervo`: Archivo binario `.xlsx`, `.xls` o `.csv` (hasta 20 MB).
   - `tipo_acervo`: `general`, `arqueologico` o `numismatica`.
   - `manejo_duplicados`: `skip` (omitir), `update` (sobrescribir) o `error` (rechazar fila).
-  - `auto_aprobar`: `0` (derivación a Mesa de Revisión) o `1` (aprobación directa para Super Admin/Curador).
+  - `auto_aprobar`: `0` (derivación a Mesa de Revisión) o `1` (aprobación directa para Super Admin/Revisor).
   - `csrf`: Token de validación CSRF.
 - **Respuesta 200 JSON**:
   ```json

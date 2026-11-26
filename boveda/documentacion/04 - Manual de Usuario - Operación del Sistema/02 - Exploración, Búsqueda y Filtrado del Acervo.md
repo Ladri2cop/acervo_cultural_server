@@ -64,7 +64,7 @@ Cada fila de la tabla presenta información resumida y de alta relevancia:
 | **Autor / Cultura** | Creador de la obra o cultura mesoamericana atribuida. |
 | **Ubicación Física** | Nombre del museo o recinto donde se encuentra resguardada. |
 | **Ubicación Topográfica**| Coordenadas exactas al interior del inmueble (Sala, Vitrina, Bóveda, Estante). |
-| **Semáforo** | Insignia de color que indica el estatus curatorial: Verde (Aprobado), Amarillo (Cambios Solicitados), Azul (Pendiente) o Rojo (Rechazado). |
+| **Semáforo** | Insignia de color que indica el estatus de revisión: Verde (Aprobado), Amarillo (Cambios Solicitados), Azul (Pendiente) o Rojo (Rechazado). |
 | **Acciones** | Menú desplegable con herramientas operativas. |
 
 ---
@@ -80,7 +80,7 @@ graph TD
     Btn --> Op3["Eliminar Pieza (Ícono Papelera)"]
 ```
 
-1. 👁️ **Ver Expediente Completo**: Abre una ventana modal con la cédula técnica detallada, historial de conservación, observaciones curatoriales e imagen en alta definición.
+1. 👁️ **Ver Expediente Completo**: Abre una ventana modal con la cédula técnica detallada, historial de conservación, observaciones de revisión e imagen en alta definición.
 2. ✏️ **Editar Pieza**: Abre el formulario de actualización de datos. (Solo disponible para Administradores, o para Capturistas si la pieza requiere correcciones).
 3. 🗑️ **Eliminar Pieza**: Solicita una confirmación interactiva mediante SweetAlert2 para dar de baja lógica el registro. (Restringido a Administradores).
 
@@ -99,6 +99,6 @@ En la esquina superior derecha del catálogo dispones de dos opciones de salida:
 
 ## 6. Referencias Cruzadas
 - Guía para dar de alta una nueva obra: [[03 - Registro y Edición de Piezas Culturales]]
-- Conoce el semáforo curatorial: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
+- Conoce el semáforo de revisión: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
 - Guía de préstamos: [[05 - Gestión de Préstamos y Transferencias]]
 

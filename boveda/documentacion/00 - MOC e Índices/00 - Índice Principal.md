@@ -92,15 +92,15 @@ Guía exhaustiva para ingenieros de software, administradores de sistemas y mant
 - [[06 - Despliegue, Servidor y Mantenimiento]]: Configuración de Apache VirtualHost, directivas `.htaccess`, permisos de escritura en carpetas de uploads, respaldos MySQL y rotación de logs.
 
 ### 4. Manual de Usuario - Operación del Sistema
-Guía práctica e interactiva para operadores, capturistas, curadores y administradores:
+Guía práctica e interactiva para operadores, capturistas, revisores y administradores:
 - [[01 - Inicio de Sesión y Perfiles de Usuario]]: Credenciales de acceso, recuperación de contraseña, asignación de roles y navegación por el panel principal.
 - [[02 - Exploración, Búsqueda y Filtrado del Acervo]]: Operación del catálogo unificado, filtros dinámicos por año, autor, técnica, material, ubicación y buscador global.
 - [[03 - Registro y Edición de Piezas Culturales]]: Procedimiento paso a paso para el alta de piezas, selección entre bidimensional (`cm`) y tridimensional (`medidas`), selección de museos institucionales y sedes externas.
-- [[04 - Flujo de Revisión y Semáforo de Aprobación]]: Protocolo curatorial de aprobación de piezas: estados Verde (Aprobado), Amarillo (Cambios Solicitados), Rojo (Rechazado) y Azul (Pendiente), retroalimentación y reenvío de correcciones.
+- [[04 - Flujo de Revisión y Semáforo de Aprobación]]: Protocolo de revisión de aprobación de piezas: estados Verde (Aprobado), Amarillo (Cambios Solicitados), Rojo (Rechazado) y Azul (Pendiente), retroalimentación y reenvío de correcciones.
 - [[05 - Gestión de Préstamos y Transferencias]]: Guía de préstamos temporales y traslados definitivos, generación de folios, registro de responsables, retorno de piezas y cancelación de solicitudes.
 - [[06 - Fichas Técnicas, Exportaciones y Auditoría]]: Generación de cédulas museográficas, exportación masiva a Excel y PDF con sellos institucionales, y consulta del historial de auditoría.
 - [[07 - Gestión de Catálogos Maestros]]: Centro unificado de administración de vocabularios oficiales, clasificación por disciplinas, alta, edición, política de borrado lógico y reactivación de términos patrimoniales.
-- [[08 - Importador Masivo de Acervo por Excel y CSV]]: Ingesta masiva de piezas culturales vía plantillas oficiales Excel y CSV, prevención de duplicados, aislamiento multimuseo y derivación a la mesa de revisión curatorial.
+- [[08 - Importador Masivo de Acervo por Excel y CSV]]: Ingesta masiva de piezas culturales vía plantillas oficiales Excel y CSV, prevención de duplicados, aislamiento multimuseo y derivación a la mesa de revisión.
 
 ### 5. Anexos y Referencias
 Información complementaria y material de consulta técnica:
@@ -116,7 +116,7 @@ Información complementaria y material de consulta técnica:
 | :--- | :--- | :--- |
 | **Catálogo General** | [[02 - Tablas de Acervo (General, Arqueológico, Numismático)]] | [[02 - Exploración, Búsqueda y Filtrado del Acervo]] |
 | **Alta de Piezas** | [[01 - Controladores y Flujo de Peticiones#Registro de Piezas]] | [[03 - Registro y Edición de Piezas Culturales]] |
-| **Semáforo Curatorial** | [[04 - Endpoints AJAX y API Interna#Módulo de Revisión]] | [[04 - Flujo de Revisión y Semáforo de Aprobación]] |
+| **Semáforo de Revisión** | [[04 - Endpoints AJAX y API Interna#Módulo de Revisión]] | [[04 - Flujo de Revisión y Semáforo de Aprobación]] |
 | **Catálogos Maestros** | [[05 - Catálogos y Tablas Auxiliares]] | [[07 - Gestión de Catálogos Maestros]] |
 | **Importador Masivo** | [[04 - Endpoints AJAX y API Interna#Importación Masiva]] | [[08 - Importador Masivo de Acervo por Excel y CSV]] |
 | **Préstamos y Traslados** | [[03 - Módulo de Préstamos y Transferencias]] | [[05 - Gestión de Préstamos y Transferencias]] |

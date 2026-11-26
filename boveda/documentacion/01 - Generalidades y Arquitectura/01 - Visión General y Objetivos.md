@@ -27,8 +27,8 @@ El acervo patrimonial del estado abarca miles de bienes clasificados en tres gra
 - Centralizar en una única base de datos estructurada el expediente técnico, fotográfico y legal de cada bien cultural.
 - Eliminar la dispersión de información en hojas de cálculo no estandarizadas o registros físicos vulnerables a pérdida.
 
-### 2.2. Flujo Curatorial y Control de Calidad
-- Implementar un flujo de revisión por **Semáforo** (Aprobado, Cambios Solicitados, Rechazado, Pendiente) que garantice que ninguna pieza quede registrada como parte del inventario definitivo sin la previa validación de curadores y administradores autorizados.
+### 2.2. Flujo de Revisión y Control de Calidad
+- Implementar un flujo de revisión por **Semáforo** (Aprobado, Cambios Solicitados, Rechazado, Pendiente) que garantice que ninguna pieza quede registrada como parte del inventario definitivo sin la previa validación de revisores y administradores autorizados.
 - Permitir la retroalimentación continua entre el personal capturista y los revisores institucionales mediante observaciones específicas.
 
 ### 2.3. Control de Movilidad y Trazabilidad (Préstamos y Traslados)
@@ -58,7 +58,7 @@ mindmap
       Acervo Numismático
         Ensayador y denominación
         Anverso (Cara A) y Reverso (Cara B)
-    Revisión Curatorial
+    Revisión de Acervo
       Semáforo de Validación
       Observaciones de corrección
       Historial de versiones

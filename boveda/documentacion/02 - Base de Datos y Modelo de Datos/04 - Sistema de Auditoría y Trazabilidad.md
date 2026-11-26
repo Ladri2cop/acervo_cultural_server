@@ -49,9 +49,9 @@ CREATE TABLE `auditoria` (
 | `REGISTRO_PIEZA` | Catálogo / Registro | `datos_despues` (Objeto JSON completo de la nueva pieza). |
 | `EDICION_PIEZA` | Catálogo / Edición | `datos_antes` vs `datos_despues` (Comparativa diferencial de campos). |
 | `ELIMINACION_PIEZA` | Catálogo / Eliminar | `datos_antes` (Snapshot completo antes de la baja lógica). |
-| `REVISION_APROBADA` | Revisión Curatorial | Dictamen de autorización y usuario revisor. |
-| `SOLICITUD_CAMBIOS` | Revisión Curatorial | Observaciones del revisor y respaldo en `datos_anteriores_edicion`. |
-| `REVISION_RECHAZADA`| Revisión Curatorial | Causa del rechazo definitivo de la pieza. |
+| `REVISION_APROBADA` | Revisión de Acervo | Dictamen de autorización y usuario revisor. |
+| `SOLICITUD_CAMBIOS` | Revisión de Acervo | Observaciones del revisor y respaldo en `datos_anteriores_edicion`. |
+| `REVISION_RECHAZADA`| Revisión de Acervo | Causa del rechazo definitivo de la pieza. |
 | `MOVIMIENTO_REGISTRO`| Préstamos / Traslados | Folio generado, fechas pactadas y recintos involucrados. |
 | `MOVIMIENTO_DEVOLUCION`| Préstamos | Condiciones físicas registradas al retorno de la obra. |
 | `MOVIMIENTO_CANCELACION`| Préstamos | Justificación de la anulación del traslado. |

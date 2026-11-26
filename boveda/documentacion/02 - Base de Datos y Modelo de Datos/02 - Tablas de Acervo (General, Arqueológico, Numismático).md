@@ -12,7 +12,7 @@ tags:
 
 # 🏺 Tablas de Acervo Cultural (General, Arqueológico, Numismático)
 
-El patrimonio material se encuentra particionado en tres tablas relacionales optimizadas para las características formales y curatoriales de cada disciplina.
+El patrimonio material se encuentra particionado en tres tablas relacionales optimizadas para las características formales y de revisión de cada disciplina.
 
 ---
 
@@ -43,13 +43,13 @@ Esta entidad gestiona pinturas, grabados, esculturas, mobiliario histórico, tex
 | `ubicacion_fisica` | `varchar(255)` | SÍ | Recinto o museo donde se localiza (o sede externa). |
 | `ubicacion_topografica`| `varchar(255)`| SÍ | Posición exacta dentro del inmueble (Sala 2, Vitrina 4, Pasillo C). |
 | `estado_conservacion` | `varchar(255)` | SÍ | Bueno, Regular, Malo, En Restauración. |
-| `observaciones` | `text` | SÍ | Notas curatoriales, marcas de autor, deterioros observados. |
+| `observaciones` | `text` | SÍ | Notas de revisión, marcas de autor, deterioros observados. |
 | `descripcion` | `text` | SÍ | Reseña iconográfica y estilística de la pieza. |
 | `status` | `tinyint(1)` | SÍ | Estado lógico: `1` Activo, `0` Eliminado/Baja lógica. |
 | `estatus_revision` | `enum` | NO | Semáforo: `'aprobado'`, `'pendiente'`, `'cambios_solicitados'`, `'rechazado'`. |
 | `observacion_revision` | `text` | SÍ | Retroalimentación del revisor si solicita correcciones o rechaza. |
 | `id_usuario_revisor` | `int` | SÍ | ID del usuario que evaluó la pieza. |
-| `fecha_revision` | `datetime` | SÍ | Marca de tiempo del último dictamen curatorial. |
+| `fecha_revision` | `datetime` | SÍ | Marca de tiempo del último dictamen de revisión. |
 | `id_usuario_creador` | `int` | SÍ | ID del usuario capturista que dio de alta la pieza. |
 | `datos_anteriores_edicion`| `longtext` | SÍ | JSON con el snapshot anterior previo a la solicitud de cambios. |
 

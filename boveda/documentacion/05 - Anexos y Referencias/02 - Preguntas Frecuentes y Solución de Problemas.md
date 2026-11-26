@@ -19,7 +19,7 @@ Esta sección reúne las dudas operativas más comunes de los usuarios y una gu�
 ## 1. Preguntas Frecuentes de Usuarios
 
 ### P1. ¿Por qué una pieza que acabo de registrar no aparece en el Catálogo General de consulta?
-> **Respuesta**: Al registrar una pieza, esta ingresa automáticamente con estatus **"Pendiente"** (marcador azul). Para evitar que información incompleta se publique en el inventario oficial, las obras solo aparecen en el catálogo general una vez que un curador o administrador las haya evaluado y autorizado mediante el botón verde del **Semáforo Curatorial**.
+> **Respuesta**: Al registrar una pieza, esta ingresa automáticamente con estatus **"Pendiente"** (marcador azul). Para evitar que información incompleta se publique en el inventario oficial, las obras solo aparecen en el catálogo general una vez que un revisor o administrador las haya evaluado y autorizado mediante el botón verde del **Semáforo de Revisión**.
 
 ### P2. ¿Dónde quedaron los campos "Materia" y "Colección" en Acervo General?
 > **Respuesta**: Por disposición de la normativa técnica institucional, se simplificó el formulario para eliminar duplicidad. La composición de la obra se registra de manera unificada en el campo **Material** (ej. *Óleo sobre lienzo*, *Bronce*, *Madera estofada*).

@@ -43,7 +43,7 @@ Almacena el inventario de artes plásticas, visuales y bienes artísticos mueble
 | `ubicacion_fisica` | `varchar(255)` | SÍ | `NULL` | | Museo institucional o sede externa donde reside. |
 | `ubicacion_topografica`| `varchar(255)`| SÍ | `NULL` | | Ubicación micro (Sala, Vitrina, Bóveda, Estante). |
 | `estado_conservacion` | `varchar(255)` | SÍ | `NULL` | | Estado: Excelente, Bueno, Regular, Malo, En Restauración. |
-| `observaciones` | `text` | SÍ | `NULL` | | Notas curatoriales, marcas, sellos y particularidades. |
+| `observaciones` | `text` | SÍ | `NULL` | | Notas de revisión, marcas, sellos y particularidades. |
 | `descripcion` | `text` | SÍ | `NULL` | | Análisis formal e iconográfico de la pieza. |
 | `status` | `tinyint(1)` | SÍ | `1` | | Estatus lógico: `1` Activa, `0` Eliminada/Baja. |
 | `estatus_revision` | `enum(...)` | NO | `'aprobado'` | | `'aprobado'`, `'pendiente'`, `'cambios_solicitados'`, `'rechazado'`. |
@@ -83,7 +83,7 @@ Inventario de bienes culturales de carácter mesoamericano e histórico registra
 | `ubicacion_fisica` | `varchar(255)` | SÍ | `NULL` | | Museo donde se resguarda físicamente. |
 | `ubicacion_topografica`| `varchar(255)`| SÍ | `NULL` | | Vitrina, estante, sala o bóveda. |
 | `estado_conservacion` | `varchar(255)` | SÍ | `NULL` | | Estado: Excelente, Bueno, Regular, Malo, En Restauración. |
-| `observaciones` | `varchar(255)` | SÍ | `NULL` | | Notas adicionales del arqueólogo/curador. |
+| `observaciones` | `varchar(255)` | SÍ | `NULL` | | Notas adicionales del arqueólogo/revisor. |
 | `descripcion` | `varchar(500)` | SÍ | `NULL` | | Descripción contextual e iconográfica. |
 | `representacion` | `varchar(255)` | SÍ | `NULL` | | Figura zoomorfa, antropomorfa, fitomorfa, geométrica. |
 | `status` | `tinyint(1)` | SÍ | `1` | | `1` Activa, `0` Baja lógica. |
@@ -123,8 +123,8 @@ Inventario de monedas coloniales, conmemorativas, fichas y medallas.
 | `status` | `tinyint(1)` | SÍ | `1` | | `1` Activa, `0` Baja lógica. |
 | `estatus_revision` | `enum(...)` | NO | `'aprobado'` | | `'aprobado'`, `'pendiente'`, `'cambios_solicitados'`, `'rechazado'`. |
 | `observacion_revision` | `text` | SÍ | `NULL` | | Observaciones del revisor. |
-| `id_usuario_revisor` | `int` | SÍ | `NULL` | | ID del curador revisor. |
-| `fecha_revision` | `datetime` | SÍ | `NULL` | | Fecha de dictamen curatorial. |
+| `id_usuario_revisor` | `int` | SÍ | `NULL` | | ID del usuario revisor. |
+| `fecha_revision` | `datetime` | SÍ | `NULL` | | Fecha de dictamen de revisión. |
 | `id_usuario_creador` | `int` | SÍ | `NULL` | | ID del usuario capturista. |
 | `created_at` | `timestamp` | NO | `CURRENT_TIMESTAMP` | | Fecha de registro. |
 | `updated_at` | `timestamp` | SÍ | `NULL` | | Fecha de modificación. |
@@ -256,7 +256,7 @@ Catálogo de técnicas de manufactura, artísticas y arqueológicas.
 | Nombre de Campo | Tipo de Dato | Nulo | Default | Clave | Descripción |
 | :--- | :--- | :---: | :---: | :---: | :--- |
 | `id_tecnica` | `int` | NO | *Auto Inc* | **PRI** | Identificador de la técnica. |
-| `nombre_tecnica` | `varchar(50)` | NO | `NULL` | | Denominación curatorial de la técnica. |
+| `nombre_tecnica` | `varchar(50)` | NO | `NULL` | | Denominación técnica de la técnica. |
 | `categoria` | `varchar(100)` | SÍ | `NULL` | | Disciplina: *Técnicas Pictóricas, Culturas Populares, Ciencias Naturales, Manufactura Arqueológica, Decorativas Arqueológicas*. |
 | `status` | `tinyint(1)` | NO | `1` | | `1` Activo para captura, `0` Baja lógica. |
 | `created_at` | `timestamp` | NO | `CURRENT_TIMESTAMP` | | Fecha de creación. |

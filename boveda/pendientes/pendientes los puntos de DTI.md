@@ -29,7 +29,7 @@
 - [x] **8. Asignación y herencia automática de museo en usuarios creados por Administradores.**
   * *Implementación:* En `app/controllers/adminController.php` (`post_usuarios`, `post_editar_usuario`) y `usuariosView.php`. Cuando un Administrador crea un usuario (`created_by`), el sistema hereda automáticamente su `id_museo` y bloquea el selector visual para evitar asignaciones erróneas. El Super Administrador conserva la asignación global irrestricta.
 
-- [x] **9. Validación curatorial en semáforo de revisión para piezas creadas por usuarios dependientes del Administrador.**
+- [x] **9. Validación en semáforo de revisión para piezas creadas por usuarios dependientes del Administrador.**
   * *Implementación:* En `adminController.php` (`check_museo_tenancy()`, `get_revision_data()`, `get_mis_registros()`). Los administradores pueden inspeccionar y dictaminar (aprobar, rechazar, solicitar cambios) piezas capturadas por sus usuarios a cargo o asignadas a su recinto, previniendo vulnerabilidades IDOR entre museos.
 
 - [x] **10. Supervisión y visibilidad omnímoda para el rol Super Administrador.**
@@ -42,7 +42,7 @@
   * *Implementación:* Cambio de denominación en encabezados y título de pestaña del navegador a **SIPAC** (`SITE_NAME = 'SIPAC'`), creación de suite de favicons multirresolución (`assets/favicon/`) e integración de avatar institucional del Colibrí en tonos Granate (`#8A2035`) y Oro (`#B99056`) mediante el helper `get_user_avatar()`.
 
 - [x] **13. Dashboard y analítica patrimonial en tiempo real.**
-  * *Implementación:* En `adminController.php` (`index()`) y `indexView.php`. Sustitución de valores demo por KPIs reales de la base de datos (conteo de acervo total, semáforo curatorial, préstamos activos y top 5 de museos), gráficas dinámicas en Chart.js y tabla de piezas recientemente registradas con acceso directo a revisión.
+  * *Implementación:* En `adminController.php` (`index()`) y `indexView.php`. Sustitución de valores demo por KPIs reales de la base de datos (conteo de acervo total, semáforo de revisión, préstamos activos y top 5 de museos), gráficas dinámicas en Chart.js y tabla de piezas recientemente registradas con acceso directo a revisión.
 
 - [x] **14. Sistema de semáforo preventivo y alertas de préstamos vencidos / próximos a vencer en Préstamos y Transferencias.**
   * *Implementación:* En `app/models/prestamosModel.php`, `templates/views/admin/prestamos/prestamosView.php` y `assets/js/admin/prestamos_transferencias.js` / `prestamos.js`. Alertas automáticas para préstamos vencidos (`< hoy`) y por vencer (`<= 7 días`), banner de alerta reactiva con botón para filtrar en riesgo en 1 clic, KPI específico para obras por vencer, badges animados con efecto de pulso (`pulse-danger` y `pulse-warning`) y barra de píldoras de filtrado rápido.

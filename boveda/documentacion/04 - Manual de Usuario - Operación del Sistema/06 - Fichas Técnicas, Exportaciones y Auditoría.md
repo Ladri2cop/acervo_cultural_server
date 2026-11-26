@@ -39,11 +39,11 @@ graph TD
    - **Cédula Material**: Técnica de manufactura, material de soporte y dimensiones (detallando `cm` para obras bidimensionales o `medidas completas` para tridimensionales).
    - **Resguardo y Conservación**: Ubicación física (museo o sede externa), ubicación topográfica (sala, vitrina, estante) y estado físico de conservación.
    - **Registro Visual**: Fotografía en alta resolución.
-   - **Reseña Descriptiva**: Texto analítico y observaciones curatoriales.
+   - **Reseña Descriptiva**: Texto analítico y observaciones de revisión.
 
 ### 1.2. Impresión Oficial en PDF:
 - Desde el modal de la ficha, haz clic en el botón superior **"Imprimir Ficha PDF"**.
-- El sistema compilará un archivo PDF con formato oficial de hoja membretada institucional listo para archivar en expedientes físicos o entregar a comités curatoriales.
+- El sistema compilará un archivo PDF con formato oficial de hoja membretada institucional listo para archivar en expedientes físicos o entregar a comités de revisión.
 
 ---
 

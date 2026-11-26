@@ -110,12 +110,12 @@ graph TD
   - Inserta el registro inicial con `estatus_revision = 'pendiente'`.
   - Genera una entrada en la tabla `auditoria` con el payload JSON de la nueva pieza.
 
-### 3.3. Revisión Curatorial (`revision`, `autorizar_pieza`, etc.)
+### 3.3. Revisión de Acervo (`revision`, `autorizar_pieza`, etc.)
 - **`autorizar_pieza()`**:
   - Actualiza `estatus_revision = 'aprobado'`, fija `fecha_revision = NOW()` y asigna `id_usuario_revisor`.
   - Registra auditoría con `tipo_accion = 'REVISION_APROBADA'`.
 - **`solicitar_cambios_pieza()`**:
-  - Recibe el texto de retroalimentación curatorial en `observaciones`.
+  - Recibe el texto de retroalimentación de revisión en `observaciones`.
   - Realiza un respaldo del registro actual en la columna `datos_anteriores_edicion` para trazabilidad de la corrección.
   - Actualiza `estatus_revision = 'cambios_solicitados'`.
 - **`rechazar_pieza()`**:

@@ -189,7 +189,7 @@ Cuando un usuario con rol de **Administrador** da de alta a un nuevo usuario (t�
 3. En la interfaz gráfica (`usuariosView.php`), el selector de museo se bloquea y preselecciona dicho museo de adscripción, impidiendo asignaciones accidentales o no autorizadas a otros recintos.
 4. El rol **Super Administrador** (`id_role = 1`) mantiene el selector editable para asignar o reasignar usuarios libremente a cualquiera de los 31 museos del catálogo.
 
-### 5.2. Reglas de Validación Curatorial y Alcance del Semáforo (`check_museo_tenancy`)
+### 5.2. Reglas de Validación de Revisión y Alcance del Semáforo (`check_museo_tenancy`)
 La función interna `check_museo_tenancy($tipo_acervo, $id_pieza)` en `adminController.php` gobierna qué piezas puede dictaminar cada usuario en los endpoints `/admin/autorizar_pieza`, `/admin/solicitar_cambios_pieza` y `/admin/rechazar_pieza`:
 
 ```mermaid
@@ -214,5 +214,5 @@ Este mecanismo neutraliza cualquier intento de manipulación cruzada: incluso si
 - Consulta el flujo de autenticación en: [[01 - Inicio de Sesión y Perfiles de Usuario]]
 - Revisa el controlador central en: [[01 - Controladores y Flujo de Peticiones]]
 - Modelo de datos: [[01 - Diagrama Entidad-Relación (ERD)]]
-- Flujo curatorial de semáforo: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
+- Flujo de revisión de semáforo: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
 

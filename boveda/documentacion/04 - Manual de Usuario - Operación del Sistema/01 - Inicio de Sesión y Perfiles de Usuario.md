@@ -63,10 +63,10 @@ Tu experiencia en la plataforma dependerá del rol asignado a tu cuenta:
   - Supervisión de la bitácora forense de auditoría.
   - Acceso total al catálogo, revisión, préstamos y catálogos maestros.
 
-### 2.2. 👔 Administrador (Curador / Coordinador de Acervo)
+### 2.2. 👔 Administrador (Administrador / Coordinador de Acervo)
 - **Para quién es**: Directores de museos, conservadores en jefe y coordinadores de colecciones.
 - **Capacidades**:
-  - **Bandeja de Revisión Curatorial**: Aprobar, solicitar cambios o rechazar piezas capturadas por el personal operativo de su museo o por usuarios dados de alta por su cuenta (`created_by`).
+  - **Bandeja de Revisión**: Aprobar, solicitar cambios o rechazar piezas capturadas por el personal operativo de su museo o por usuarios dados de alta por su cuenta (`created_by`).
   - **Creación de Usuarios Dependientes**: Puede dar de alta personal operativo (Capturistas) o de consulta (Lectores Generales); el sistema asigna y bloquea automáticamente su mismo museo de adscripción (`id_museo`) al nuevo usuario.
   - **Préstamos y Traslados**: Autorizar y registrar salidas temporales o definitivas de obra, así como fiscalizar el retorno de las piezas.
   - Edición y eliminación de registros de cualquier colección bajo su jurisdicción.
@@ -147,5 +147,5 @@ Para salvaguardar la confidencialidad del patrimonio cultural y evitar accesos n
 ## 6. Referencias Cruzadas
 - Aprende a buscar obras en: [[02 - Exploración, Búsqueda y Filtrado del Acervo]]
 - Guía de alta de obras: [[03 - Registro y Edición de Piezas Culturales]]
-- Guía curatorial: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
+- Guía de revisión: [[04 - Flujo de Revisión y Semáforo de Aprobación]]
 

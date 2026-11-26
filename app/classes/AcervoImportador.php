@@ -207,7 +207,7 @@ class AcervoImportador
               'key'         => 'observaciones',
               'titulo'      => 'Observaciones',
               'requerido'   => false,
-              'guia'        => 'Condiciones especiales, intervenciones previas o notas curatoriales',
+              'guia'        => 'Condiciones especiales, intervenciones previas o notas de registro',
               'ejemplo_1'   => 'Restaurado en 2018 por el taller de conservación institucional.',
               'ejemplo_2'   => 'Pieza galardonada en certamen estatal de artesanías.',
               'ejemplo_3'   => 'Presenta leve pérdida de policromía en la base posterior.'

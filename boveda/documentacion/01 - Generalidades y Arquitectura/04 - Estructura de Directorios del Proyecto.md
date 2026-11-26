@@ -43,7 +43,7 @@ El proyecto sigue una estructura limpia y desacoplada, separando la lógica del 
 │       │   ├── catalogos/              # Mantenimiento de tablas auxiliares
 │       │   ├── prestamos/              # Control de préstamos y transferencias
 │       │   ├── registrar/              # Formularios de alta con toggle dimensional
-│       │   ├── revision/               # Bandeja curatorial con semáforo
+│       │   ├── revision/               # Bandeja de revisión con semáforo
 │       │   ├── roles/                  # Asignación de perfiles y privilegios
 │       │   └── usuarios/               # Gestión de cuentas de usuario
 │       ├── login/                      # Interfaz de acceso al sistema
@@ -65,7 +65,7 @@ El proyecto sigue una estructura limpia y desacoplada, separando la lógica del 
 - **`app/controllers/adminController.php`**: Es el controlador central. Maneja:
   - Procesamiento de filtros avanzados para las tablas de acervo.
   - Validaciones de inserción y actualización de piezas.
-  - Reglas de negocio para cambios de estatus en la revisión curatorial.
+  - Reglas de negocio para cambios de estatus en la revisión de acervo.
   - Creación, devolución y cancelación de movimientos de préstamo.
   - Exportación de listados en Excel y fichas técnicas en PDF.
 - **`app/models/`**: Clases PDO encargadas de realizar consultas preparadas (`SELECT`, `INSERT`, `UPDATE`, `DELETE`) hacia las tablas de la base de datos.
@@ -74,7 +74,7 @@ El proyecto sigue una estructura limpia y desacoplada, separando la lógica del 
 - **`assets/css/admin/custom-admin.css`**: Contiene reglas CSS personalizadas críticas, entre ellas:
   - Menú de acciones flotante (`.btn__actions`).
   - Corrección de desbordamiento en tablas (`.table-responsive:has(.dropdown-menu.show)`).
-  - Estilos de insignias para el semáforo curatorial (`.badge-aprobado`, `.badge-pendiente`, `.badge-cambios`, `.badge-rechazado`).
+  - Estilos de insignias para el semáforo de revisión (`.badge-aprobado`, `.badge-pendiente`, `.badge-cambios`, `.badge-rechazado`).
   - Animaciones de carga y transiciones de modales.
 - **`assets/js/admin/`**:
   - `acervo.js`: Control de eventos de la tabla de catálogo, búsqueda dinámica y apertura de modales de edición.

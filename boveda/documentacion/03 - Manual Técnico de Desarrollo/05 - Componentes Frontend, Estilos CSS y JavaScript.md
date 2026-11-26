@@ -142,7 +142,7 @@ $('input[name="tipo_dimension"]').on('change', function () {
 
 > [!CAUTION]
 > **Resolución de Conflicto en el DOM**:
-> Anteriormente existía un identificador duplicado `#editar-cm` en el marcado de `acervoView.php`. Cuando una pieza tridimensional era devuelta con cambios y se modificaba a bidimensional, el selector jQuery seleccionaba el elemento erróneo, impidiendo que los cambios bidimensionales se reflejaran en la bandeja curatorial. La eliminación del duplicado resolvió la sincronización bidireccional.
+> Anteriormente existía un identificador duplicado `#editar-cm` en el marcado de `acervoView.php`. Cuando una pieza tridimensional era devuelta con cambios y se modificaba a bidimensional, el selector jQuery seleccionaba el elemento erróneo, impidiendo que los cambios bidimensionales se reflejaran en la bandeja de revisión. La eliminación del duplicado resolvió la sincronización bidireccional.
 
 ---
 

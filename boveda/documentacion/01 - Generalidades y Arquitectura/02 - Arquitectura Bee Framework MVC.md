@@ -80,7 +80,7 @@ sequenceDiagram
 
 ### 3.2. Capa de Controladores (`app/controllers/`)
 Los controladores reciben las solicitudes del usuario, invocan los modelos pertinentes, aplican reglas de validación y determinan qué vista debe presentarse:
-- **`adminController.php`**: Controlador neurálgico del panel administrativo. Administra más de 4,400 líneas de lógica para la consulta de acervo, alta de piezas, autorizaciones del semáforo curatorial, gestión de préstamos, usuarios y auditoría.
+- **`adminController.php`**: Controlador neurálgico del panel administrativo. Administra más de 4,400 líneas de lógica para la consulta de acervo, alta de piezas, autorizaciones del semáforo de revisión, gestión de préstamos, usuarios y auditoría.
 - **`loginController.php`** y **`logoutController.php`**: Gestión de ciclo de vida de sesiones y autenticación.
 - **`homeController.php`**: Portal público o redirección inicial.
 

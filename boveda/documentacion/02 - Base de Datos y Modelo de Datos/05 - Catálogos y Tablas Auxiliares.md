@@ -14,7 +14,7 @@ tags:
 
 # 📚 Catálogos Maestros y Tablas Auxiliares Oficiales
 
-Para garantizar la normalización de la información curatorial, evitar discrepancias ortográficas y proteger la integridad del inventario patrimonial, el sistema centraliza la administración de **8 catálogos oficiales** validados por la Subdirección de Acervo Cultural y la Dirección de Patrimonio Cultural (documentos base: `boveda/ÉPOCA, TÉCNICAS Y MATERIALES.docx` y acuerdos de la Minuta 03 de 2026).
+Para garantizar la normalización de la información técnica, evitar discrepancias ortográficas y proteger la integridad del inventario patrimonial, el sistema centraliza la administración de **8 catálogos oficiales** validados por la Subdirección de Acervo Cultural y la Dirección de Patrimonio Cultural (documentos base: `boveda/ÉPOCA, TÉCNICAS Y MATERIALES.docx` y acuerdos de la Minuta 03 de 2026).
 
 ---
 
@@ -112,7 +112,7 @@ Al seleccionar **"Otro"**, la interfaz despliega automáticamente un campo de te
 
 ---
 
-## 2. Catálogos de Vocabulario Curatorial y Clasificación por Disciplinas
+## 2. Catálogos de Vocabulario de Catalogación y Clasificación por Disciplinas
 
 ```mermaid
 graph TD

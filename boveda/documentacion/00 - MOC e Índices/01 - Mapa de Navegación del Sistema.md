@@ -50,7 +50,7 @@ flowchart TD
     ModAcervo --> SubNum["Acervo Numismático"]
     ModAcervo --> FichaTec["Ficha Técnica Modal / Vista"]
     
-    ModRevision --> RevDetalle["Modal de Evaluación Curatorial"]
+    ModRevision --> RevDetalle["Modal de Evaluación de Revisión"]
     RevDetalle --> RevAccion["Aprobar / Solicitar Cambios / Rechazar"]
     
     ModPrestamos --> MovNuevo["Registrar Movimiento (Préstamo / Traslado)"]
@@ -73,7 +73,7 @@ A continuación se detalla la correspondencia entre las URIs del sistema, los m�
 | `/admin/acervo` | `adminController->acervo()` | `admin/acervo/acervoView.php` | Listado tabular de piezas con filtrado AJAX, edición y eliminación. |
 | `/admin/registrar` | `adminController->registrar()` | `admin/registrar/registrarView.php` | Formulario dinámico de alta de piezas con carga fotográfica. |
 | `/admin/importar` | `adminController->importar()` | `admin/importar/importarView.php` | Ingesta masiva de piezas culturales por Excel (.xlsx) y CSV (.csv) con descarga de plantillas oficiales. |
-| `/admin/revision` | `adminController->revision()` | `admin/revision/revisionView.php` | Bandeja curatorial de control de calidad y semáforo. |
+| `/admin/revision` | `adminController->revision()` | `admin/revision/revisionView.php` | Bandeja de revisión de control de calidad y semáforo. |
 | `/admin/prestamos_transferencias` | `adminController->prestamos_transferencias()` | `admin/prestamos/prestamosView.php` | Control de traslados, préstamos entre recintos y devoluciones. |
 | `/admin/auditoria` | `adminController->auditoria()` | `admin/auditoria/auditoriaView.php` | Monitoreo forense de modificaciones a registros patrimoniales. |
 | `/admin/usuarios` | `adminController->usuarios()` | `admin/usuarios/usuariosView.php` | Catálogo de usuarios, altas, ediciones y asignación de rol. |
@@ -98,7 +98,7 @@ graph LR
 
     subgraph Modulos
         M_Admin["Gestión del Sistema (Roles, Usuarios, Auditoría)"]
-        M_Rev["Bandeja de Revisión Curatorial"]
+        M_Rev["Bandeja de Revisión"]
         M_Mov["Préstamos y Transferencias"]
         M_Reg["Registro y Edición de Piezas"]
         M_Con["Consulta y Fichas Técnicas"]

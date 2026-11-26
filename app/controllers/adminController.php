@@ -5574,7 +5574,7 @@ function obtenerCamposAcervoArqueologico()
       'class' => 'form-control',
       'required' => false,
       'default_value' => '',
-      'placeholder' => 'Observaciones curatoriales',
+      'placeholder' => 'Observaciones de revisión',
       'rows' => 4,
       'cols' => 5,
       'column_class' => 'col-12 mb-3'

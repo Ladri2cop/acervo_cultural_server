@@ -36,8 +36,8 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
     - `Omitir duplicados` (*skip*): ignora registros preexistentes sin interrumpir la carga y los reporta como advertencia.
     - `Actualizar existentes` (*update*): actualiza columnas no vacías de la pieza existente preservando su identificador primario.
     - `Rechazar fila` (*error*): clasifica la coincidencia como inconsistencia en la tabla de resultados.
-- **Integración con el Flujo de Calidad Curatorial**:
-  - Por defecto, toda pieza importada nace con `estatus_revision = 'pendiente'` y `status = 0`, canalizándose a la Mesa de Revisión para dictamen curatorial previo a su visibilidad pública.
+- **Integración con el Flujo de Calidad De revisión**:
+  - Por defecto, toda pieza importada nace con `estatus_revision = 'pendiente'` y `status = 0`, canalizándose a la Mesa de Revisión para dictamen de revisión previo a su visibilidad pública.
   - Opción de aprobación directa e inmediata (`estatus_revision = 'aprobado'`, `status = 1`) disponible para Super Administradores y dictaminadores.
 - **Corrección en Modal de Visualización ("Ver Pieza Numismática")**:
   - Se corrigió la discrepancia de dimensiones en `modalVerPieza` para acervo numismático: ahora refleja explícitamente el badge `Tipo de Dimensiones` (*Tridimensional* o *Bidimensional*), mostrando los campos *Centímetros (Bidimensional)* y *Medidas (Tridimensional)* conforme al formulario de edición.
@@ -213,7 +213,7 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
   - Actualización retroactiva en base de datos: Todo usuario dependiente creado por un administrador con museo asignado adquiere automáticamente el `id_museo` de su administrador creador (ej. usuario `capturista` `id=6` asignado al Museo de Numismática `id=20`).
   - Lógica en backend: En `post_usuarios()` y `post_editar_usuario()` de `adminController.php`, si el usuario que registra o edita es un administrador de museo (no Super Admin), el sistema hereda de manera forzosa su `id_museo`, impidiendo la creación o existencia de capturistas huérfanos sin recinto asignado.
   - Interfaz de administración de usuarios (`usuariosView.php`): Para administradores de museo, el selector manual se bloquea y se sustituye por una insignia informativa que muestra el recinto institucional adscrito, transmitiendo el valor mediante un campo oculto seguro.
-- **Validación y Dictamen Curatorial por Administradores de Museo**:
+- **Validación y Dictamen de Revisión por Administradores de Museo**:
   - Ampliación del modelo de tenencia en `check_museo_tenancy()`: Un administrador ahora puede consultar, inspeccionar, autorizar (`autorizar_pieza`), solicitar correcciones (`solicitar_cambios_pieza`) y rechazar (`rechazar_pieza`) piezas creadas por él mismo, piezas capturadas o editadas por usuarios creados bajo su tutela (`created_by`), o pertenecientes a usuarios de su mismo recinto (`id_museo`).
   - Protección estricta contra ataques de referencia indirecta a objetos (IDOR): Se bloquea con código HTTP `403 Forbidden` cualquier intento de validación o dictamen cruzado entre administradores de recintos diferentes.
   - Alcance Global de Super Administrador: El rol de Super Administrador (`id_role = 1` o slug `super-administrador`) goza de facultades irrestrictas sobre todos los recintos, usuarios y piezas de Acervo General, Arqueológico y Numismático a nivel estatal.
@@ -289,7 +289,7 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 
 ## [Versión 1.6.0] - 2026-11-17
 ### 🏛️ Implementación de Catálogos Oficiales y Acuerdos de Minuta 03 (SIPAC)
-- **Catálogos Oficiales de Curaduría y Patrimonio (`ÉPOCA, TÉCNICAS Y MATERIALES.docx`)**:
+- **Catálogos Oficiales de Patrimonio (`ÉPOCA, TÉCNICAS Y MATERIALES.docx`)**:
   - Población y normalización completa de las tablas `museos` (31 recintos oficiales), `epocas_periodos` (14 épocas históricas), `estado_conservacion` (Bueno, Regular, Malo), `tipo_obras` (20 clasificaciones), `materiales` (112 materiales) y `tecnicas` (167 técnicas clasificadas).
   - Creación del módulo central de opciones `app/functions/acervo_catalogos.php` con funciones seguras y generador de opciones `renderizarOpcionesSelect()`.
 - **Soporte de Agrupación `<optgroup>` en BeeFormBuilder**:
@@ -353,11 +353,11 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 ---
 
 ## [Versión 1.2.0] - 2026-10-10
-### 🚦 Sistema Curatorial de Revisión (Semáforo de Validación)
+### 🚦 Sistema De revisión de Revisión (Semáforo de Validación)
 - Implementación de la bandeja `/admin/revision` con estados:
   - 🟢 **Aprobado** (obra oficial certificada).
   - 🟡 **Cambios Solicitados** (retroalimentación con observaciones al capturista).
-  - 🔴 **Rechazado** (baja del proceso curatorial).
+  - 🔴 **Rechazado** (baja del proceso de revisión).
   - 🔵 **Pendiente** (en espera de dictamen).
 - Respaldo de versiones previas en `datos_anteriores_edicion` al solicitar modificaciones.
 

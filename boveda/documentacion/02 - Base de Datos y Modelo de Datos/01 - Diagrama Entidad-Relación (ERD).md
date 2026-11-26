@@ -173,10 +173,10 @@ erDiagram
 - **`bee_roles` $\rightarrow$ `bee_users`**: Relación 1 a N. Cada usuario tiene asignado exactamente un rol funcional (`id_role`), el cual determina su conjunto de permisos.
 - **`bee_roles` $\leftrightarrow$ `bee_permisos`**: Relación N a M resuelta a través de la tabla intermedia `bee_roles_permisos`. Permite granularidad total en las operaciones autorizadas.
 
-### 2.2. Custodia del Acervo y Trazabilidad Curatorial
+### 2.2. Custodia del Acervo y Trazabilidad Institucional
 - Cada tabla de acervo (`acervo_general`, `acervo_arqueologico`, `acervo_numismatica`) contiene dos llaves foráneas lógicas hacia `bee_users`:
   - `id_usuario_creador`: Identifica al capturista responsable del registro inicial.
-  - `id_usuario_revisor`: Identifica al curador o administrador que autorizó, solicitó cambios o rechazó la pieza.
+  - `id_usuario_revisor`: Identifica al revisor o administrador que autorizó, solicitó cambios o rechazó la pieza.
 
 ### 2.3. Trazabilidad de Movilidad (Préstamos y Traslados)
 - `prestamos_transferencias` utiliza un polimorfismo estructurado mediante las columnas `tipo_acervo` (`general`, `arqueologico`, `numismatica`) e `id_pieza`. Esto permite enlazar un único módulo de movimientos con cualquiera de las tres colecciones sin redundancia de tablas.
