@@ -1220,20 +1220,101 @@ class AcervoImportador
 
       // 3. Revisar normalización de fila 2
       $norm2 = self::normalizarTexto($valRow2);
-      if (!empty($norm2) && isset($sinonimos[$norm2])) {
+      if (!empty($norm2) && isset($sinonimos[$norm2]) && in_array($sinonimos[$norm2], $clavesValidas, true)) {
         $mapa[$i] = $sinonimos[$norm2];
         continue;
       }
 
       // 4. Revisar normalización de fila 1
       $norm1 = self::normalizarTexto($valRow1);
-      if (!empty($norm1) && isset($sinonimos[$norm1])) {
+      if (!empty($norm1) && isset($sinonimos[$norm1]) && in_array($sinonimos[$norm1], $clavesValidas, true)) {
         $mapa[$i] = $sinonimos[$norm1];
         continue;
       }
     }
 
-    return $mapa;
+    // Asegurar que bajo ninguna circunstancia se mapeen claves ajenas a este tipo de acervo
+    return array_filter($mapa, function ($colKey) use ($clavesValidas) {
+      return in_array($colKey, $clavesValidas, true);
+    });
+  }
+
+  /**
+   * Detecta si la plantilla cargada corresponde a un tipo de acervo distinto al seleccionado
+   *
+   * @param Spreadsheet $spreadsheet
+   * @param array $rowsData
+   * @param string $tipoAcervo 'general', 'arqueologico', 'numismatica'
+   * @return array|null Retorna array con ['status' => false, 'msg' => ...] si hay discrepancia, o null si es compatible
+   */
+  public static function verificarDiscrepanciaPlantilla(Spreadsheet $spreadsheet, array $rowsData, string $tipoAcervo): ?array
+  {
+    $sheet = $spreadsheet->getActiveSheet();
+    $sheetTitle = mb_strtolower(trim($sheet->getTitle()), 'UTF-8');
+
+    $row1 = $rowsData[0] ?? [];
+    $row2 = $rowsData[1] ?? [];
+
+    $row1Str = mb_strtolower(implode(' ', array_map('strval', $row1)), 'UTF-8');
+    $row2Str = mb_strtolower(implode(' ', array_map('strval', $row2)), 'UTF-8');
+    $fullHeader = "{$sheetTitle} {$row1Str} {$row2Str}";
+
+    // Firmas inequívocas de cada tipo de plantilla oficial
+    $esFirmaNumismatica = (
+      strpos($sheetTitle, 'numism') !== false ||
+      strpos($fullHeader, 'denominacion') !== false ||
+      strpos($fullHeader, 'valor facial') !== false ||
+      strpos($fullHeader, 'ensayador') !== false ||
+      strpos($fullHeader, 'descripcion_cara_a') !== false ||
+      strpos($fullHeader, 'anverso (cara a)') !== false
+    );
+
+    $esFirmaArqueologico = (
+      strpos($sheetTitle, 'arqueol') !== false ||
+      strpos($fullHeader, 'inventario scyt') !== false ||
+      strpos($fullHeader, 'no_inventario_scyt') !== false ||
+      strpos($fullHeader, 'registro inah') !== false ||
+      strpos($fullHeader, 'no_registro_inah') !== false ||
+      strpos($fullHeader, 'forma / tipología') !== false ||
+      strpos($fullHeader, 'tecnica_manufactura') !== false ||
+      strpos($fullHeader, 'tecnica_decorativa') !== false
+    );
+
+    $esFirmaGeneral = (
+      strpos($sheetTitle, 'general') !== false ||
+      strpos($sheetTitle, 'plástica') !== false ||
+      (
+        (strpos($fullHeader, 'tipo de obra') !== false || strpos($fullHeader, 'autor / artista') !== false || strpos($fullHeader, 'año de creación') !== false) &&
+        !$esFirmaArqueologico && !$esFirmaNumismatica
+      )
+    );
+
+    $tipoDetectado = null;
+    if ($esFirmaNumismatica) {
+      $tipoDetectado = 'numismatica';
+    } elseif ($esFirmaArqueologico) {
+      $tipoDetectado = 'arqueologico';
+    } elseif ($esFirmaGeneral) {
+      $tipoDetectado = 'general';
+    }
+
+    if ($tipoDetectado !== null && $tipoDetectado !== $tipoAcervo) {
+      $nombres = [
+        'general'      => 'Acervo General (Plástica, Utilitaria y Escultura)',
+        'arqueologico' => 'Acervo Arqueológico (Prehispánico y Lítico)',
+        'numismatica'  => 'Acervo Numismático (Monedas, Billetes y Medallas)'
+      ];
+
+      $nombreDetectado = $nombres[$tipoDetectado] ?? ucfirst($tipoDetectado);
+      $nombreSeleccionado = $nombres[$tipoAcervo] ?? ucfirst($tipoAcervo);
+
+      return [
+        'status' => false,
+        'msg'    => "Discrepancia de plantilla detectada: El archivo cargado corresponde a una plantilla de '{$nombreDetectado}', pero actualmente tiene seleccionado '{$nombreSeleccionado}' en el sistema. Por favor, seleccione '{$nombreDetectado}' en el Paso 1 para importar este archivo, o bien descargue y utilice la plantilla oficial de '{$nombreSeleccionado}'."
+      ];
+    }
+
+    return null;
   }
 
   /**
@@ -1311,6 +1392,12 @@ class AcervoImportador
       return ['status' => false, 'msg' => 'El archivo subido se encuentra vacío o no contiene filas de datos.'];
     }
 
+    // Verificar si el archivo cargado pertenece a otro tipo de acervo
+    $discrepancia = self::verificarDiscrepanciaPlantilla($spreadsheet, $rowsData, $tipoAcervo);
+    if ($discrepancia !== null) {
+      return $discrepancia;
+    }
+
     // 5. Determinar fila de encabezados y mapeo
     $row1 = $rowsData[0] ?? [];
     $row2 = $rowsData[1] ?? [];
@@ -1338,8 +1425,14 @@ class AcervoImportador
       }
     }
 
-    // 6. Pre-cargar museos autorizados para validación
+    // 6. Pre-cargar museos autorizados para validación y consultar esquema de la tabla
     $db = Db::connect();
+
+    // Obtener las columnas reales existentes en la tabla destino para blindaje estricto SQL 1054
+    $colsTableStmt = $db->query("DESCRIBE {$tabla}");
+    $columnasRealesTabla = $colsTableStmt ? $colsTableStmt->fetchAll(PDO::FETCH_COLUMN) : [];
+    $validColsFlip = array_flip($columnasRealesTabla);
+
     $museosValidos = [];
     try {
       $stmtM = $db->query("SELECT id_museo, nombre_museo FROM museos WHERE status = 1");
@@ -1521,6 +1614,8 @@ class AcervoImportador
               }
             }
             $updatePayload['updated_at'] = now();
+            // Blindaje estricto: descartar cualquier columna que no exista físicamente en la tabla
+            $updatePayload = array_intersect_key($updatePayload, $validColsFlip);
 
             $setParts = [];
             $setParams = ['id' => $idExistente];
@@ -1555,6 +1650,9 @@ class AcervoImportador
           $insertPayload['status'] = 0;
           $insertPayload['estatus_revision'] = 'pendiente';
         }
+
+        // Blindaje estricto: descartar cualquier columna que no exista físicamente en la tabla destino
+        $insertPayload = array_intersect_key($insertPayload, $validColsFlip);
 
         // Construir consulta INSERT parametrizada
         $cols = array_keys($insertPayload);

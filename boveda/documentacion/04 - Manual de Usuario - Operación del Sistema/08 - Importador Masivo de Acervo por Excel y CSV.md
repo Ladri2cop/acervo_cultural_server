@@ -198,6 +198,8 @@ Antes de ejecutar la importación, el usuario puede personalizar dos directivas 
 
 ## 🔒 4. Seguridad, Tenancy y Control Transaccional
 
+- **Prevención de Discrepancia de Plantillas**: El sistema analiza los encabezados y nombres de hoja del archivo subido. Si detecta que un usuario subió por equivocación una plantilla de otra disciplina (ej. subir plantilla de *Acervo General* teniendo seleccionado *Acervo Arqueológico*), detiene el proceso antes de tocar la base de datos y emite un mensaje amigable indicando la discrepancia y cómo resolverla.
+- **Blindaje Estricto de Esquema (Schema Guard)**: El motor consulta el esquema físico de la tabla destino (`DESCRIBE {tabla}`) y filtra estrictamente las columnas a insertar o actualizar, descartando cualquier clave desconocida y previniendo errores de SQL por columnas no encontradas (`SQLSTATE[42S22]`).
 - **Aislamiento Multimuseo (Tenancy)**: Los usuarios con rol `Administrador` ligados a una sede específica sólo pueden ingresar piezas asignadas a su museo. Cualquier intento de importar piezas hacia otra sede es bloqueado fila por fila.
 - **Transacciones Atómicas (PDO)**: Toda la ingesta se ejecuta dentro de un bloque `beginTransaction()`. Si ocurre un fallo crítico de motor o base de datos, se realiza `rollBack()` integral, impidiendo la corrupción parcial de registros.
 - **Validación Binaria**: Se verifica la extensión y firma MIME contra archivos maliciosos. Tamaño tope admitido: 20 MB.

@@ -42,7 +42,9 @@ Registro cronológico de lanzamientos, nuevas funcionalidades, parches de seguri
 - **Corrección en Modal de Visualización ("Ver Pieza Numismática")**:
   - Se corrigió la discrepancia de dimensiones en `modalVerPieza` para acervo numismático: ahora refleja explícitamente el badge `Tipo de Dimensiones` (*Tridimensional* o *Bidimensional*), mostrando los campos *Centímetros (Bidimensional)* y *Medidas (Tridimensional)* conforme al formulario de edición.
   - Se eliminó el desbordamiento de texto (*text overflow*) agregando auto-expansión vertical (`height: auto !important`, `min-height: 38px`, `word-break: break-word`, `overflow-wrap: anywhere`) a los contenedores `.form-control` del modal, impidiendo que textos largos (como medidas compuestas con peso y grosor) se salgan de los bordes del campo.
-- **Seguridad Multimuseo y Transaccionalidad**:
+- **Seguridad Multimuseo, Blindaje de Esquema y Transaccionalidad**:
+  - **Detección Automática de Discrepancia de Plantilla**: Detección inteligente si se sube una plantilla perteneciente a otro acervo (ej. plantilla de *Acervo General* subida a *Acervo Arqueológico*), emitiendo una notificación explicativa inmediata antes de procesar el archivo.
+  - **Blindaje Estricto de Esquema (Schema Guard)**: Filtrado riguroso de columnas contra el esquema físico de la tabla (`DESCRIBE {tabla}`) en `INSERT` y `UPDATE`, además de restringir el mapeo de sinónimos exclusivamente a las columnas válidas del acervo en proceso, erradicando por completo el error de base de datos `SQLSTATE[42S22]: Column not found: 1054 Unknown column in field list`.
   - Aislamiento de sede (tenancy): los usuarios administradores sólo pueden importar piezas asignadas a su museo custodio.
   - Ingesta atómica con transacciones PDO (`beginTransaction` / `commit` / `rollBack`), previniendo estados inconsistentes.
   - Nuevo permiso RBAC `importar_acervo` (ID 36) asignado a roles Super Administrador y Administrador.
