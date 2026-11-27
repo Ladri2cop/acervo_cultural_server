@@ -1167,7 +1167,7 @@ class adminController extends Controller implements ControllerInterface
   function catalogos($catalogoActivo = 'museos')
   {
     $this->check_user_permission('gestion_catalogos');
-    $this->setTitle('Gestión de Catálogos Maestros - ' . get_bee_name());
+    $this->setTitle('Catálogos');
 
     $catalogos = catalogosModel::getCatalogosDisponibles();
     if (!isset($catalogos[$catalogoActivo])) {

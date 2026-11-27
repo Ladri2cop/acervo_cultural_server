@@ -4,9 +4,6 @@
   <!-- Encabezado de Sección -->
   <div class="d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center mb-4 gap-2">
     <div>
-      <h1 class="h3 mb-1 text-gray-800 fw-bold d-flex align-items-center gap-2">
-        <i class='bx bx-cloud-upload text-primary'></i> Importador Masivo de Acervo Cultural
-      </h1>
       <p class="text-muted mb-0 small">
         Carga por lotes mediante plantillas estructuradas Excel (.xlsx) o CSV (.csv) con validación automática y trazabilidad institucional.
       </p>
